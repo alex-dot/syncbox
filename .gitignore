@@ -1,0 +1,8 @@
+*.*~
+sync-box.sublime-workspace
+sync-box.sublime-project
+build.sh
+bin/
+build/
+bib/
+obj/
