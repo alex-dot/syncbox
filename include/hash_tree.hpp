@@ -28,7 +28,7 @@ class HashTree
     void makeHashTreeFromSelf();
 
     std::vector<Hash*> const getHashes() const;
-    bool compareHashTree(HashTree* const left) const;
+    bool compareHashTree(HashTree& left) const;
     std::vector<Hash*> const getChangedHashes() const;
 
     std::vector<int> const getElementsPerLevel() const { return elements_per_level_; }
