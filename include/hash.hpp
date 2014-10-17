@@ -35,11 +35,11 @@ class Hash
 {
   public: 
     Hash();
-    Hash(std::string string);
+    Hash(const std::string& string);
     ~Hash();
 
-    void makeHash(std::string string);
-    const std::string getHash() const;
+    void makeHash(const std::string& string);
+    const std::string& getHash() const;
 
   private:
     std::string hash_;
