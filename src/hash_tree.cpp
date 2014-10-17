@@ -105,9 +105,9 @@ void HashTree::makeHashTreeFromSelf()
 
 std::vector<Hash*> const HashTree::getHashes() const { return hashes_; }
 
-bool HashTree::compareHashTree(std::vector<Hash*> lhs) const
+bool HashTree::compareHashTree(HashTree* const lhs) const
 {
-  if ( lhs.back()->getHash() != hashes_.back()->getHash() )
+  if ( lhs->getHashes().back()->getHash() != hashes_.back()->getHash() )
     return false;
   else 
     return true;
