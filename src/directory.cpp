@@ -22,7 +22,7 @@ Directory::Directory() :
   directory_hash_()
   {}
 
-Directory::Directory(boost::filesystem::path p) :
+Directory::Directory(const boost::filesystem::path& p) :
   path_(p),
   entries_(),
   hash_tree_(),
@@ -36,9 +36,9 @@ Directory::~Directory()
   //delete hashes
 }
 
-std::vector<boost::filesystem::directory_entry> Directory::fillDirectory(boost::filesystem::path document_root)
+std::vector<boost::filesystem::directory_entry>* Directory::fillDirectory(const boost::filesystem::path& document_root)
 {
-  std::vector<boost::filesystem::directory_entry> dirs;
+  std::vector<boost::filesystem::directory_entry>* dirs = new std::vector<boost::filesystem::directory_entry>();
   std::vector<Hash*> temp_hashes;
   // iterate over the given path and write every file to entries_, return directories
   for ( boost::filesystem::directory_iterator i = boost::filesystem::directory_iterator(document_root); 
@@ -46,7 +46,7 @@ std::vector<boost::filesystem::directory_entry> Directory::fillDirectory(boost::
         ++i )
   {
     if (is_directory(*i))
-      dirs.push_back(*i);
+      dirs->push_back(*i);
 
     else if (is_regular_file(*i))
     {

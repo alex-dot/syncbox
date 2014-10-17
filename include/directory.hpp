@@ -20,12 +20,12 @@ class Directory
 {
   public: 
     Directory();
-    Directory(boost::filesystem::path);
+    Directory(const boost::filesystem::path&);
     ~Directory();
 
-    std::vector<boost::filesystem::directory_entry> fillDirectory(boost::filesystem::path);
+    std::vector<boost::filesystem::directory_entry>* fillDirectory(const boost::filesystem::path&);
 
-    HashTree* getHashTree() const { return hash_tree_; }
+    HashTree* const getHashTree() const { return hash_tree_; }
 
     void printPath() const;
     void printHashTree() const;

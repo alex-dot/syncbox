@@ -29,7 +29,7 @@ class Box
     HashTree* const getHashTree() const { return hash_tree_; }
 
   private:
-    void recursiveDirectoryFill(std::vector<boost::filesystem::directory_entry> dir);
+    void recursiveDirectoryFill(std::vector<boost::filesystem::directory_entry>* dir);
 
     boost::filesystem::path path_;
     std::vector<Directory*> entries_;
