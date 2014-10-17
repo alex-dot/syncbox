@@ -18,7 +18,7 @@ HashTree::~HashTree()
   }*/
 }
 
-void HashTree::makeHashTree(std::vector<Hash*> temp_hashes)
+void HashTree::makeHashTree(const std::vector<Hash*>& temp_hashes)
 {
   // if this object already has a tree, clean up
   hashes_.clear();
@@ -83,15 +83,16 @@ void HashTree::makeHashTree(std::vector<Hash*> temp_hashes)
   }
   hashes.shrink_to_fit();
   hashes_.swap(hashes);
+  std::cout << "size of hashes_ " << hashes_.size() << std::endl;
 }
-void HashTree::makeHashTree(std::vector<Directory*> dirs)
+void HashTree::makeHashTree(const std::vector<Directory*>& dirs)
 {
   std::vector<Hash*> hashes;
   hashes.reserve(dirs.size());
-  for (std::vector<Directory*>::iterator i = dirs.begin(); i != dirs.end(); ++i)
+  for (std::vector<Directory*>::const_iterator i = dirs.begin(); i != dirs.end(); ++i)
   {
-    Directory* dir = *i;
-    Hash* hash = dir->getHashTree()->getHashes().back();
+    Hash* hash = (*i)->getHashTree()->getHashes()->back();
+    // need to change this to include the dir's path and mode
     hashes.push_back(hash);
   }
   this->makeHashTree(hashes);
@@ -99,15 +100,15 @@ void HashTree::makeHashTree(std::vector<Directory*> dirs)
 void HashTree::makeHashTreeFromSelf()
 {
   // we copy the internal hash vector to circumvent race conditions
-  std::vector<Hash*> temp_hashes(hashes_);
-  makeHashTree(hashes_);
+  std::vector<Hash*> temp_hashes = hashes_;
+  this->makeHashTree(temp_hashes);
 }
 
-std::vector<Hash*> const HashTree::getHashes() const { return hashes_; }
+const std::vector<Hash*>* HashTree::getHashes() const { return &hashes_; }
 
-bool HashTree::compareHashTree(HashTree& lhs) const
+bool HashTree::compareHashTree(const HashTree& lhs)
 {
-  if ( lhs.getHashes().back()->getHash() != hashes_.back()->getHash() )
+  if ( lhs.getHashes()->back()->getHash() != hashes_.back()->getHash() )
     return false;
   else 
     return true;

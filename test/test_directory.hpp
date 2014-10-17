@@ -7,7 +7,7 @@ BOOST_AUTO_TEST_CASE(directory_manual)
   boost::filesystem::path p = boost::filesystem::current_path().string() + "/../../test/testdir";
   dir.fillDirectory(p);
   HashTree* ht = dir.getHashTree();
-  std::vector<Hash*> hashes = ht->getHashes();
+  std::vector<Hash*> hashes = *(ht->getHashes());
   if (hashes.size() == 6)
   {
     std::cout << "Note that these tests very likely fail, because the Dir Object "
@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(directory_auto)
   boost::filesystem::path p = boost::filesystem::current_path().string() + "/../../test/testdir";
   Directory dir(p);
   HashTree* ht = dir.getHashTree();
-  std::vector<Hash*> hashes = ht->getHashes();
+  std::vector<Hash*> hashes = *(ht->getHashes());
   if (hashes.size() == 6)
   {
     std::cout << "Note that these tests very likely fail, because the Dir Object "

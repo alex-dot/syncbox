@@ -5,7 +5,7 @@ BOOST_AUTO_TEST_CASE(box_test)
   boost::filesystem::path p = boost::filesystem::current_path().string() + "/../../test/testdir";
   Box* box = new Box(p);
   HashTree* ht = box->getHashTree();
-  std::vector<Hash*> hashes = ht->getHashes();
+  std::vector<Hash*> hashes = *(ht->getHashes());
   if (hashes.size() == 3)
   {
     std::cout << "Note that these tests very likely fail, because the Dir Object "

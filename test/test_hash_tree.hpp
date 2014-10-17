@@ -18,7 +18,7 @@ bool hash_tree_compare_helper(int x)
   { (*i) = hash_orig; }
   ht_orig->makeHashTree(hashes_orig);
   hashes_orig.clear();
-  hashes_orig = ht_orig->getHashes();
+  hashes_orig = *(ht_orig->getHashes());
   int rounds = (x>100) ? 100 : x;
   std::vector<int> list_of_culprits(10000);   // a list of differing hashes
   for (int i = 0; i < rounds; ++i)
@@ -39,8 +39,8 @@ bool hash_tree_compare_helper(int x)
     }
 
     ht_diff->makeHashTree(hashes_diff);
-    hashes_temp = ht_diff->getHashes();
-    elp = ht_diff->getElementsPerLevel();
+    hashes_temp = *(ht_diff->getHashes());
+    elp = *(ht_diff->getElementsPerLevel());
     // compare sizes
     if (hashes_orig.size() != hashes_temp.size())
     {
@@ -109,44 +109,44 @@ BOOST_AUTO_TEST_CASE(hash_tree_size_compare)
   hashes.push_back(hash);
   HashTree* ht = new HashTree(hashes);
   ht->makeHashTreeFromSelf();
-  BOOST_CHECK_EQUAL(1, ht->getHashes().size());
+  BOOST_CHECK_EQUAL(1, ht->getHashes()->size());
   // 2 nodes
   hashes.push_back(hash);
   ht->makeHashTree(hashes);
-  BOOST_CHECK_EQUAL(3, ht->getHashes().size());
+  BOOST_CHECK_EQUAL(3, ht->getHashes()->size());
   // 3 nodes
   hashes.push_back(hash);
   ht->makeHashTree(hashes);
-  BOOST_CHECK_EQUAL(6, ht->getHashes().size());
+  BOOST_CHECK_EQUAL(6, ht->getHashes()->size());
   // 4 nodes
   hashes.push_back(hash);
   ht->makeHashTree(hashes);
-  BOOST_CHECK_EQUAL(7, ht->getHashes().size());
+  BOOST_CHECK_EQUAL(7, ht->getHashes()->size());
   // 5 nodes
   hashes.push_back(hash);
   ht->makeHashTree(hashes);
-  BOOST_CHECK_EQUAL(11, ht->getHashes().size());
+  BOOST_CHECK_EQUAL(11, ht->getHashes()->size());
   // 7 nodes
   hashes.push_back(hash);
   hashes.push_back(hash);
   ht->makeHashTree(hashes);
-  BOOST_CHECK_EQUAL(14, ht->getHashes().size());
+  BOOST_CHECK_EQUAL(14, ht->getHashes()->size());
   // 9 nodes
   hashes.push_back(hash);
   hashes.push_back(hash);
   ht->makeHashTree(hashes);
-  BOOST_CHECK_EQUAL(20, ht->getHashes().size());
+  BOOST_CHECK_EQUAL(20, ht->getHashes()->size());
   // 16 nodes
   for (int i = 0; i < 7; ++i)
   {
     hashes.push_back(hash);
   }
   ht->makeHashTree(hashes);
-  BOOST_CHECK_EQUAL(31, ht->getHashes().size());
+  BOOST_CHECK_EQUAL(31, ht->getHashes()->size());
   // 17 nodes
   hashes.push_back(hash);
   ht->makeHashTree(hashes);
-  BOOST_CHECK_EQUAL(37, ht->getHashes().size());
+  BOOST_CHECK_EQUAL(37, ht->getHashes()->size());
 
   delete hash;
   delete ht;
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE(hash_tree_size_compare_random)
       divident = (divident % 2 == 0) ? (divident / 2) : ((divident+1) / 2);
       size += divident;
     }
-    BOOST_CHECK_EQUAL(size, ht->getHashes().size());
+    BOOST_CHECK_EQUAL(size, ht->getHashes()->size());
   }
 
   delete hash;
