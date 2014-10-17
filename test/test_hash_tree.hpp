@@ -1,6 +1,6 @@
 #include "hash_tree.hpp"
 
-bool hash_tree_compare_helper(int x)
+bool hash_tree_compare_helper(unsigned int x)
 {
   std::cout << "Testing Tree with " << x << " values." << std::endl;
 
@@ -25,7 +25,7 @@ bool hash_tree_compare_helper(int x)
   {
     for (std::vector<Hash*>::iterator j = hashes_diff.begin(); j != hashes_diff.end(); ++j)
     { (*j) = hash_orig; }
-    int diff_node_nr = rand() % x;
+    unsigned int diff_node_nr = rand() % x;
     hashes_diff[diff_node_nr] = hash_diff;
 
     // getting a map of the changed hashes
@@ -50,7 +50,7 @@ bool hash_tree_compare_helper(int x)
     }
     // compare values
     list_of_culprits.clear();
-    for (int j = 0; j < hashes_orig.size(); ++j)
+    for (unsigned int j = 0; j < hashes_orig.size(); ++j)
     {
       if (j == diff_node_nr)
       {
@@ -79,7 +79,7 @@ bool hash_tree_compare_helper(int x)
       break;
     } else {
       int node_count = 0;
-      for (int j = 0; j < elp.size(); ++j)
+      for (unsigned int j = 0; j < elp.size(); ++j)
       {
         node_count += elp[j];
         if (list_of_culprits[j] > node_count)

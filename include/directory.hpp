@@ -25,7 +25,7 @@ class Directory
 
     std::vector<boost::filesystem::directory_entry>* fillDirectory(const boost::filesystem::path&);
 
-    HashTree* const getHashTree() const { return hash_tree_; }
+    HashTree* getHashTree() const { return hash_tree_; }
 
     void printPath() const;
     void printHashTree() const;

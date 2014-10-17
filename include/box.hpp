@@ -26,7 +26,7 @@ class Box
     void printDirectories() const;
 
     // test method
-    HashTree* const getHashTree() const { return hash_tree_; }
+    HashTree* getHashTree() const { return hash_tree_; }
 
   private:
     void recursiveDirectoryFill(std::vector<boost::filesystem::directory_entry>* dir);
