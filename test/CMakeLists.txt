@@ -1,5 +1,6 @@
 add_test(NAME hash_structors COMMAND syncboxTest -t hash_structors)
 add_test(NAME hash_makeHash COMMAND syncboxTest -t hash_makeHash)
+add_test(NAME hash_compare COMMAND syncboxTest -t hash_compare)
 add_test(NAME hash_tree_size_compare COMMAND syncboxTest -t hash_tree_size_compare)
 # add_test(NAME hash_tree_size_compare_random COMMAND syncboxTest -t hash_tree_size_compare_random)
 # add_test(NAME hash_tree_compare COMMAND syncboxTest -t hash_tree_compare)
