@@ -12,7 +12,7 @@
 #include "cryptopp/tiger.h"
 typedef char unsigned byte;
 
-// convenience struct which allow for easy transformation
+// convenience struct which allows for easy transformation
 // between unsigned chars (bytes) and (signed) chars. 
 // original code courtesy of http://stackoverflow.com/a/673389/876584
 struct HexCharStruct
@@ -44,5 +44,18 @@ class Hash
   private:
     std::string hash_;
 };
+
+inline bool operator<  (const Hash& lhs, const Hash& rhs)
+{
+  return (lhs.getHash() < rhs.getHash()) ? true : false;
+}
+inline bool operator>  (const Hash& lhs, const Hash& rhs) { return rhs < lhs; }
+inline bool operator<= (const Hash& lhs, const Hash& rhs) { return !(lhs > rhs); }
+inline bool operator>= (const Hash& lhs, const Hash& rhs) { return !(lhs < rhs); }
+inline bool operator== (const Hash& lhs, const Hash& rhs)
+{
+  return (lhs.getHash() == rhs.getHash()) ? true : false;
+}
+inline bool operator!= (const Hash& lhs, const Hash& rhs) { return !(lhs == rhs); }
 
 #endif
