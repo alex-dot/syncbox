@@ -28,7 +28,7 @@ class HashTree
     void makeHashTreeFromSelf();
 
     const std::vector<Hash*>* getHashes() const;
-    bool compareHashTree(const HashTree& left) const;
+    bool checkHashTreeChange(const HashTree& left) const;
     bool getChangedHashes(std::vector<Hash*>& changed_hashes, const HashTree& lhs) const;
 
     const std::vector<int>* getElementsPerLevel() const { return &elements_per_level_; }
@@ -38,15 +38,15 @@ class HashTree
     std::vector<int> elements_per_level_;
 };
 
-bool inline compareHashTrees(const HashTree& lhs, const HashTree& rhs)
+bool inline checkHashTreeChange(const HashTree& lhs, const HashTree& rhs)
 {
   if ( lhs.getHashes()->back()->getHash() != rhs.getHashes()->back()->getHash() )
     return false;
   else 
     return true;
 }
-bool inline operator==(HashTree& lhs, HashTree& rhs) { return compareHashTrees(lhs, rhs); }
-bool inline operator!=(HashTree& lhs, HashTree& rhs) { return !compareHashTrees(lhs, rhs); }
+bool inline operator==(HashTree& lhs, HashTree& rhs) { return checkHashTreeChange(lhs, rhs); }
+bool inline operator!=(HashTree& lhs, HashTree& rhs) { return !checkHashTreeChange(lhs, rhs); }
 
 
 #endif

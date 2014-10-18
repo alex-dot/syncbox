@@ -71,7 +71,6 @@ void HashTree::makeHashTree(const std::vector<Hash*>& temp_hashes)
   }
   hashes.shrink_to_fit();
   hashes_.swap(hashes);
-  std::cout << "size of hashes_ " << hashes_.size() << std::endl;
 }
 void HashTree::makeHashTree(const std::vector<Directory*>& dirs)
 {
@@ -94,18 +93,18 @@ void HashTree::makeHashTreeFromSelf()
 
 const std::vector<Hash*>* HashTree::getHashes() const { return &hashes_; }
 
-bool HashTree::compareHashTree(const HashTree& lhs) const
+bool HashTree::checkHashTreeChange(const HashTree& lhs) const
 {
   if ( lhs.getHashes()->back()->getHash() != hashes_.back()->getHash() )
-    return false;
-  else 
     return true;
+  else 
+    return false;
 }
 
 bool HashTree::getChangedHashes(std::vector<Hash*>& changed_hashes, 
                                 const HashTree& lhs) const
 {
-  if (this->compareHashTree(lhs))
+  if (this->checkHashTreeChange(lhs))
   {
     changed_hashes.reserve(elements_per_level_[0]);
     std::vector<Hash*> left_hashes = *(lhs.getHashes());
