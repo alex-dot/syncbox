@@ -6,8 +6,6 @@
 #ifndef SB_HASH_HPP
 #define SB_HASH_HPP
 
-#include <iostream>
-
 #include <string>
 #include <sstream>
 #include <iomanip>
