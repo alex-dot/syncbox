@@ -84,6 +84,23 @@ std::vector<boost::filesystem::directory_entry>* Directory::fillDirectory(const 
   return dirs;
 }
 
+HashTree* Directory::getHashTree() const { return hash_tree_; }
+bool Directory::checkDirectoryChange(const Directory& left) const
+{
+  return (left.getHashTree() == this->getHashTree()) ? false : true;
+}
+bool Directory::getChangedEntries(std::vector<boost::filesystem::directory_entry> changed_entries,
+                       const Directory& left) const
+{
+  if (this->checkDirectoryChange(left))
+  {
+    //std::vector<boost::filesystem::directory_entry> changed_entries.reserve();
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void Directory::printPath() const
 {
   std::cout << path_.filename() << std::endl;

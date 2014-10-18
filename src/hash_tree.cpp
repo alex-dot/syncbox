@@ -5,6 +5,7 @@
 
 #include "hash_tree.hpp"
 
+#include <algorithm>
 #include <string>
 #include <sstream>
 
@@ -106,16 +107,30 @@ bool HashTree::getChangedHashes(std::vector<Hash*>& changed_hashes,
 {
   if (this->checkHashTreeChange(lhs))
   {
-    changed_hashes.reserve(elements_per_level_[0]);
-    std::vector<Hash*> left_hashes = *(lhs.getHashes());
-    for (int i = 0; i < elements_per_level_[0]; ++i)
-    {
-      if (left_hashes[i]->getHash() != hashes_[i]->getHash())
-      {
-        changed_hashes.push_back(hashes_[i]);
-      }
-    }
-    changed_hashes.shrink_to_fit();
+    int max_elements_size = lhs.getElementsPerLevel()->front() + elements_per_level_.front();
+    changed_hashes.resize(max_elements_size);
+
+    std::vector<Hash*> left_hashes(lhs.getElementsPerLevel()->front());
+    std::vector<Hash*> left_hashes_unique(lhs.getElementsPerLevel()->front());
+    std::copy_n (lhs.getHashes()->begin(), lhs.getElementsPerLevel()->front(), left_hashes.begin());
+    std::vector<Hash*> right_hashes(elements_per_level_.front());
+    std::vector<Hash*> right_hashes_unique(elements_per_level_.front());
+    std::copy_n (hashes_.begin(), elements_per_level_.front(), right_hashes.begin());
+
+    std::sort (left_hashes.begin(), left_hashes.end(), hashPointerLessThanFunctor());
+    std::sort (right_hashes.begin(), right_hashes.end(), hashPointerLessThanFunctor());
+
+    std::vector<Hash*>::iterator it;
+    it = std::unique_copy (left_hashes.begin(), left_hashes.end(), left_hashes_unique.begin(), hashPointerEqualsFunctor());
+    left_hashes_unique.resize(std::distance(left_hashes_unique.begin(),it));
+    it = std::unique_copy (right_hashes.begin(), right_hashes.end(), right_hashes_unique.begin(), hashPointerEqualsFunctor());
+    right_hashes_unique.resize(std::distance(right_hashes_unique.begin(),it));
+
+    it = set_symmetric_difference(left_hashes_unique.begin(), left_hashes_unique.end(), 
+                                  right_hashes_unique.begin(), right_hashes_unique.end(), 
+                                  changed_hashes.begin(), hashPointerLessThanFunctor());
+
+    changed_hashes.resize(std::distance(changed_hashes.begin(),it));
     return true;
   } else {
     return false;

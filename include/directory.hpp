@@ -25,7 +25,11 @@ class Directory
 
     std::vector<boost::filesystem::directory_entry>* fillDirectory(const boost::filesystem::path&);
 
-    HashTree* getHashTree() const { return hash_tree_; }
+    HashTree* getHashTree() const;
+
+    bool checkDirectoryChange(const Directory& left) const;
+    bool getChangedEntries(std::vector<boost::filesystem::directory_entry> changed_entries,
+                           const Directory& left) const;
 
     void printPath() const;
     void printHashTree() const;

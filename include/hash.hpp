@@ -6,6 +6,8 @@
 #ifndef SB_HASH_HPP
 #define SB_HASH_HPP
 
+#include <iostream>
+
 #include <string>
 #include <sstream>
 #include <iomanip>
@@ -57,5 +59,14 @@ inline bool operator== (const Hash& lhs, const Hash& rhs)
   return (lhs.getHash() == rhs.getHash()) ? true : false;
 }
 inline bool operator!= (const Hash& lhs, const Hash& rhs) { return !(lhs == rhs); }
+
+struct hashPointerLessThanFunctor
+{
+  bool operator()(const Hash* lhs, const Hash* rhs) { return (*lhs < *rhs); }
+};
+struct hashPointerEqualsFunctor
+{
+  bool operator()(const Hash* lhs, const Hash* rhs) { return ((*lhs) == (*rhs)); }
+};
 
 #endif

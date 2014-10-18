@@ -11,7 +11,7 @@ BOOST_AUTO_TEST_CASE(directory_manual)
   if (hashes.size() == 6)
   {
     std::cout << "Note that these tests very likely fail, because the Dir Object "
-              << "will take the timestamp into account. " << std::endl;
+              << "will take the timestamp into account for hash creation. " << std::endl;
     // These values are taken from: http://asecuritysite.com/encryption/tiger
     std::string hash1 = "2FF23AD4B825575D10DD8022943E3B25284D70365A03B25C";
     std::transform(hash1.begin(), hash1.end(), hash1.begin(), ::tolower);
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(directory_auto)
   if (hashes.size() == 6)
   {
     std::cout << "Note that these tests very likely fail, because the Dir Object "
-              << "will take the timestamp into account. " << std::endl;
+              << "will take the timestamp into account for hash creation. " << std::endl;
     // These values are taken from: http://asecuritysite.com/encryption/tiger
     std::string hash1 = "2FF23AD4B825575D10DD8022943E3B25284D70365A03B25C";
     std::transform(hash1.begin(), hash1.end(), hash1.begin(), ::tolower);
@@ -72,3 +72,7 @@ BOOST_AUTO_TEST_CASE(directory_auto)
     BOOST_CHECK(false);
   }
 }
+/*BOOST_AUTO_TEST_CASE(directory_compare_diff)
+{
+
+}*/

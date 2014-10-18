@@ -1,5 +1,6 @@
 #include "hash_tree.hpp"
 #include "test_hash_tree_helper.hpp"
+#include <algorithm>
 
 BOOST_AUTO_TEST_CASE(hash_tree_size_compare)
 {
@@ -123,4 +124,22 @@ BOOST_AUTO_TEST_CASE(hash_tree_compare_diff)
     BOOST_CHECK_EQUAL(1, changed_hashes.size());
     BOOST_CHECK(changed_hashes[0] == hashes_diff[i]);
   }
+}
+BOOST_AUTO_TEST_CASE(hash_tree_sort)
+{
+  Hash* hash1 = new Hash("test1"); // C099BBD00FAF33027AB55BFB4C3A67F19ECD8EB950078ED2
+  Hash* hash2 = new Hash("test2"); // 3B1B47A309A5F1BE449E3719E5160C8572C4425685830D2B
+  Hash* hash3 = new Hash("test3"); // B8B9F8AB7E7B617ABD37E86B89DEE671F6332AF9A4088497
+  Hash* hash4 = new Hash("test4"); // 7A8CFACA415DFD2ACB4930F4D8EA4D7477D0622B61736CB7
+  Hash* hash5 = new Hash("test5"); // 550F59F87EFA94C8A9E04D7238064BBE29D221097CEBD9B3
+  // therefore the correct order would be:
+  // hash2, hash5, hash4, hash3, hash1
+  std::vector<Hash*> hashes = {hash1, hash2, hash3, hash4, hash5};
+  std::sort (hashes.begin(), hashes.end(), hashPointerLessThanFunctor());
+  BOOST_CHECK_EQUAL(hash2->getHash(), hashes[0]->getHash());
+  BOOST_CHECK_EQUAL(hash5->getHash(), hashes[1]->getHash());
+  BOOST_CHECK_EQUAL(hash4->getHash(), hashes[2]->getHash());
+  BOOST_CHECK_EQUAL(hash3->getHash(), hashes[3]->getHash());
+  BOOST_CHECK_EQUAL(hash1->getHash(), hashes[4]->getHash());
+  BOOST_CHECK_EQUAL(hash2->getHash(), hashes[0]->getHash());
 }
