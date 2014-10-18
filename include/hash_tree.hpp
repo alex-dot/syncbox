@@ -21,15 +21,15 @@ class HashTree
     // a HashTree. We therefore stick to say that it is a HashTree
     // and let the programmer call makeHashTreeFromSelf() otherwise.
     HashTree(const std::vector<Hash*>& hashes) : hashes_(hashes){}
-    ~HashTree();
+    ~HashTree(){};
 
     void makeHashTree(const std::vector<Hash*>& temp_hashes);
     void makeHashTree(const std::vector<Directory*>& dirs);
     void makeHashTreeFromSelf();
 
     const std::vector<Hash*>* getHashes() const;
-    bool compareHashTree(const HashTree& left);
-    const std::vector<Hash*> getChangedHashes() const;
+    bool compareHashTree(const HashTree& left) const;
+    bool getChangedHashes(std::vector<Hash*>& changed_hashes, const HashTree& lhs) const;
 
     const std::vector<int>* getElementsPerLevel() const { return &elements_per_level_; }
 

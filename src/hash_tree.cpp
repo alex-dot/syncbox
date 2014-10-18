@@ -8,16 +8,6 @@
 #include <string>
 #include <sstream>
 
-HashTree::~HashTree()
-{
-  /*for ( std::vector<Hash*>::iterator i = hashes_.begin();
-        i != hashes_.end();
-        ++i )
-  {
-    delete *i;
-  }*/
-}
-
 void HashTree::makeHashTree(const std::vector<Hash*>& temp_hashes)
 {
   // if this object already has a tree, clean up
@@ -29,7 +19,6 @@ void HashTree::makeHashTree(const std::vector<Hash*>& temp_hashes)
   int tree_leaf_count = 1;                // the amount of leaf-nodes of the tree
   int tree_size = 1;                      // the complete amount of nodes
                                           // not counting empty leaves!
-  //int tree_parents_count;                 // the amount of non-leaf-nodes
   // this needs to be exception handled
   // e.g. directories with more than 65535 files will fail
   // this check is optimised so that the result gets
@@ -40,7 +29,6 @@ void HashTree::makeHashTree(const std::vector<Hash*>& temp_hashes)
     tree_size += tree_leaf_count;
     ++tree_depth;
   }
-  //tree_parents_count = tree_size - tree_leaf_count;
 
   std::vector<Hash*> hashes;
   hashes.reserve(tree_size+1);
@@ -106,10 +94,31 @@ void HashTree::makeHashTreeFromSelf()
 
 const std::vector<Hash*>* HashTree::getHashes() const { return &hashes_; }
 
-bool HashTree::compareHashTree(const HashTree& lhs)
+bool HashTree::compareHashTree(const HashTree& lhs) const
 {
   if ( lhs.getHashes()->back()->getHash() != hashes_.back()->getHash() )
     return false;
   else 
     return true;
+}
+
+bool HashTree::getChangedHashes(std::vector<Hash*>& changed_hashes, 
+                                const HashTree& lhs) const
+{
+  if (this->compareHashTree(lhs))
+  {
+    changed_hashes.reserve(elements_per_level_[0]);
+    std::vector<Hash*> left_hashes = *(lhs.getHashes());
+    for (int i = 0; i < elements_per_level_[0]; ++i)
+    {
+      if (left_hashes[i]->getHash() != hashes_[i]->getHash())
+      {
+        changed_hashes.push_back(hashes_[i]);
+      }
+    }
+    changed_hashes.shrink_to_fit();
+    return true;
+  } else {
+    return false;
+  }
 }
