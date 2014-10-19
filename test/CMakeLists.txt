@@ -11,6 +11,7 @@ add_test(NAME directory_manual COMMAND syncboxTest -t directory_manual)
 add_test(NAME directory_auto COMMAND syncboxTest -t directory_auto)
 add_test(NAME directory_compare COMMAND syncboxTest -t directory_compare)
 # add_test(NAME box_test COMMAND syncboxTest -t box_test)
+add_test(NAME box_compare COMMAND syncboxTest -t box_compare)
 
 
 include_directories(../include)

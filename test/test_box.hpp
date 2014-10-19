@@ -26,3 +26,20 @@ BOOST_AUTO_TEST_CASE(box_test)
     BOOST_CHECK(false);
   }
 }
+BOOST_AUTO_TEST_CASE(box_compare)
+{
+  boost::filesystem::path p1 = boost::filesystem::current_path().string() + "/../../test/testdir/testdir";
+  boost::filesystem::path p2 = boost::filesystem::current_path().string() + "/../../test/testdir/testdir2";
+  std::vector<Hash*> hashes;
+  Box box1(p1);
+  // compare same/unchanged dir
+  Box box2(p1);
+  box1.getChangedDirHashes(hashes, box2);
+  BOOST_CHECK_EQUAL(0,hashes.size());
+  // compare different dirs (one item extra)
+  // this makes testdir and testdir2 completely different
+  // therefore we expect two hashes, one for testdir and one for testdir2
+  box2 = Box(p2);
+  box1.getChangedDirHashes(hashes, box2);
+  BOOST_CHECK_EQUAL(2,hashes.size());
+}

@@ -20,13 +20,16 @@ class Box
   public:
     Box();
     Box(boost::filesystem::path);
-    ~Box();
+    ~Box() {}
+
+    HashTree* getHashTree() const;
+
+    bool checkBoxChange(const Box& left) const;
+    bool getChangedDirHashes(std::vector<Hash*>& changed_hashes, 
+                             const Box& left) const;
 
     void recursivePrint() const;
     void printDirectories() const;
-
-    // test method
-    HashTree* getHashTree() const { return hash_tree_; }
 
   private:
     void recursiveDirectoryFill(std::vector<boost::filesystem::directory_entry>* dir);

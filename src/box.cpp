@@ -35,16 +35,6 @@ Box::Box(boost::filesystem::path p) :
     hash_tree_ = temp_ht;
   }
 
-Box::~Box()
-{
-  for ( std::vector<Directory*>::iterator i = entries_.begin();
-        i != entries_.end();
-        ++i )
-  {
-    delete *i;
-  }
-}
-
 void Box::recursiveDirectoryFill(std::vector<boost::filesystem::directory_entry>* dirs)
 {
   for ( std::vector<boost::filesystem::directory_entry>::iterator i = dirs->begin();
@@ -59,6 +49,18 @@ void Box::recursiveDirectoryFill(std::vector<boost::filesystem::directory_entry>
     delete sub_dirs;
   }
 }
+
+HashTree* Box::getHashTree() const { return hash_tree_; }
+bool Box::checkBoxChange(const Box& left) const
+{
+  return (left.getHashTree()->getTopHash() == hash_tree_->getTopHash()) ? false : true;
+}
+bool Box::getChangedDirHashes(std::vector<Hash*>& changed_hashes, 
+                              const Box& left) const
+{
+  return hash_tree_->getChangedHashes(changed_hashes, *(left.getHashTree()));
+}
+
 
 void Box::recursivePrint() const
 {
