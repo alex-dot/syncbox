@@ -79,7 +79,9 @@ void HashTree::makeHashTree(const std::vector<Directory*>& dirs)
   hashes.reserve(dirs.size());
   for (std::vector<Directory*>::const_iterator i = dirs.begin(); i != dirs.end(); ++i)
   {
-    Hash* hash = (*i)->getHashTree()->getTopHash();
+    std::string hash_string = (*i)->getHashTree()->getTopHash()->getHash();
+    hash_string += (*i)->getPath();
+    Hash* hash = new Hash(hash_string);
     // need to change this to include the dir's path and mode
     hashes.push_back(hash);
   }

@@ -31,7 +31,8 @@ class Directory
     bool getChangedEntryHashes(std::vector<Hash*>& changed_hashes,
                                const Directory& left) const;
 
-    void printPath() const;
+    const std::string getPath() const;
+
     void printHashTree() const;
     void printEntries() const;
 

@@ -95,10 +95,8 @@ bool Directory::getChangedEntryHashes(std::vector<Hash*>& changed_hashes,
   return this->getHashTree()->getChangedHashes(changed_hashes, *(left.getHashTree()));
 }
 
-void Directory::printPath() const
-{
-  std::cout << path_.filename() << std::endl;
-}
+const std::string Directory::getPath() const { return path_.filename().c_str(); }
+
 void Directory::printHashTree() const
 {
   std::vector<Hash*> hashes = *(hash_tree_->getHashes());
@@ -109,7 +107,7 @@ void Directory::printHashTree() const
 }
 void Directory::printEntries() const
 {
-  printPath();
+  std::cout << getPath() << std::endl;
   for ( std::map<Hash*, boost::filesystem::directory_entry>::const_iterator i = entries_.begin();
         i != entries_.end();
         ++i )

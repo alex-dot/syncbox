@@ -72,6 +72,6 @@ void Box::printDirectories() const
         i != entries_.end();
         ++i )
   {
-    (*i)->printPath();
+    std::cout << (*i)->getPath() << std::endl;
   }
 }
