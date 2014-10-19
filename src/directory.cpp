@@ -89,7 +89,7 @@ bool Directory::checkDirectoryChange(const Directory& left) const
 {
   return (left.getHashTree() == this->getHashTree()) ? false : true;
 }
-bool Directory::getChangedHashes(std::vector<Hash*>& changed_hashes,
+bool Directory::getChangedEntryHashes(std::vector<Hash*>& changed_hashes,
                        const Directory& left) const
 {
   return this->getHashTree()->getChangedHashes(changed_hashes, *(left.getHashTree()));

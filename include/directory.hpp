@@ -28,8 +28,8 @@ class Directory
     HashTree* getHashTree() const;
 
     bool checkDirectoryChange(const Directory& left) const;
-    bool getChangedHashes(std::vector<Hash*>& changed_hashes,
-                           const Directory& left) const;
+    bool getChangedEntryHashes(std::vector<Hash*>& changed_hashes,
+                               const Directory& left) const;
 
     void printPath() const;
     void printHashTree() const;

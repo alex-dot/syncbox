@@ -80,10 +80,10 @@ BOOST_AUTO_TEST_CASE(directory_compare)
   Directory dir1(p1);
   // compare same/unchanged dir
   Directory dir2(p1);
-  dir1.getChangedHashes(hashes, dir2);
+  dir1.getChangedEntryHashes(hashes, dir2);
   BOOST_CHECK_EQUAL(0,hashes.size());
   // compare different dirs (one item extra)
   dir2 = Directory(p2);
-  dir1.getChangedHashes(hashes, dir2);
+  dir1.getChangedEntryHashes(hashes, dir2);
   BOOST_CHECK_EQUAL(1,hashes.size());
 }
