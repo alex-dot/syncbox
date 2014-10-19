@@ -89,16 +89,10 @@ bool Directory::checkDirectoryChange(const Directory& left) const
 {
   return (left.getHashTree() == this->getHashTree()) ? false : true;
 }
-bool Directory::getChangedEntries(std::vector<boost::filesystem::directory_entry> changed_entries,
+bool Directory::getChangedHashes(std::vector<Hash*>& changed_hashes,
                        const Directory& left) const
 {
-  if (this->checkDirectoryChange(left))
-  {
-    //std::vector<boost::filesystem::directory_entry> changed_entries.reserve();
-    return true;
-  } else {
-    return false;
-  }
+  return this->getHashTree()->getChangedHashes(changed_hashes, *(left.getHashTree()));
 }
 
 void Directory::printPath() const

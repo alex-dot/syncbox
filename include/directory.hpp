@@ -28,7 +28,7 @@ class Directory
     HashTree* getHashTree() const;
 
     bool checkDirectoryChange(const Directory& left) const;
-    bool getChangedEntries(std::vector<boost::filesystem::directory_entry> changed_entries,
+    bool getChangedHashes(std::vector<Hash*>& changed_hashes,
                            const Directory& left) const;
 
     void printPath() const;

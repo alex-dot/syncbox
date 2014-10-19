@@ -72,7 +72,18 @@ BOOST_AUTO_TEST_CASE(directory_auto)
     BOOST_CHECK(false);
   }
 }
-/*BOOST_AUTO_TEST_CASE(directory_compare_diff)
+BOOST_AUTO_TEST_CASE(directory_compare)
 {
-
-}*/
+  boost::filesystem::path p1 = boost::filesystem::current_path().string() + "/../../test/testdir/testdir";
+  boost::filesystem::path p2 = boost::filesystem::current_path().string() + "/../../test/testdir/testdir2";
+  std::vector<Hash*> hashes;
+  Directory dir1(p1);
+  // compare same/unchanged dir
+  Directory dir2(p1);
+  dir1.getChangedHashes(hashes, dir2);
+  BOOST_CHECK_EQUAL(0,hashes.size());
+  // compare different dirs (one item extra)
+  dir2 = Directory(p2);
+  dir1.getChangedHashes(hashes, dir2);
+  BOOST_CHECK_EQUAL(1,hashes.size());
+}
