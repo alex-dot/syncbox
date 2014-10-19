@@ -28,6 +28,9 @@ class HashTree
     void makeHashTreeFromSelf();
 
     const std::vector<Hash*>* getHashes() const;
+    Hash* getTopHash() const;
+
+
     bool checkHashTreeChange(const HashTree& left) const;
     bool getChangedHashes(std::vector<Hash*>& changed_hashes, const HashTree& lhs) const;
 
@@ -40,7 +43,7 @@ class HashTree
 
 bool inline checkHashTreeChange(const HashTree& lhs, const HashTree& rhs)
 {
-  if ( lhs.getHashes()->back()->getHash() != rhs.getHashes()->back()->getHash() )
+  if ( lhs.getTopHash()->getHash() != rhs.getTopHash()->getHash() )
     return false;
   else 
     return true;

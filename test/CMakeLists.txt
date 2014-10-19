@@ -6,6 +6,7 @@ add_test(NAME hash_tree_size_compare COMMAND syncboxTest -t hash_tree_size_compa
 # add_test(NAME hash_tree_compare COMMAND syncboxTest -t hash_tree_compare)
 add_test(NAME hash_tree_compare_diff COMMAND syncboxTest -t hash_tree_compare_diff)
 add_test(NAME hash_tree_sort COMMAND syncboxTest -t hash_tree_sort)
+add_test(NAME hash_tree_top_hash COMMAND syncboxTest -t hash_tree_top_hash)
 add_test(NAME directory_manual COMMAND syncboxTest -t directory_manual)
 add_test(NAME directory_auto COMMAND syncboxTest -t directory_auto)
 add_test(NAME directory_compare COMMAND syncboxTest -t directory_compare)

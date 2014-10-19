@@ -143,3 +143,14 @@ BOOST_AUTO_TEST_CASE(hash_tree_sort)
   BOOST_CHECK_EQUAL(hash1->getHash(), hashes[4]->getHash());
   BOOST_CHECK_EQUAL(hash2->getHash(), hashes[0]->getHash());
 }
+BOOST_AUTO_TEST_CASE(hash_tree_top_hash)
+{
+  Hash* hash = new Hash("test");
+  std::vector<Hash*> hashes = {hash, hash, hash};
+  HashTree* ht = new HashTree(hashes);
+  ht->makeHashTreeFromSelf();
+  // Value taken from: http://asecuritysite.com/encryption/tiger
+  std::string hash_string = "2FB13E2BC6157D929F28B44E51F563D9812787CD6BAAB82E";
+  std::transform(hash_string.begin(), hash_string.end(), hash_string.begin(), ::tolower);
+  BOOST_CHECK_EQUAL(hash_string, ht->getTopHash()->getHash());
+}

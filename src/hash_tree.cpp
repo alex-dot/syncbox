@@ -79,7 +79,7 @@ void HashTree::makeHashTree(const std::vector<Directory*>& dirs)
   hashes.reserve(dirs.size());
   for (std::vector<Directory*>::const_iterator i = dirs.begin(); i != dirs.end(); ++i)
   {
-    Hash* hash = (*i)->getHashTree()->getHashes()->back();
+    Hash* hash = (*i)->getHashTree()->getTopHash();
     // need to change this to include the dir's path and mode
     hashes.push_back(hash);
   }
@@ -93,10 +93,12 @@ void HashTree::makeHashTreeFromSelf()
 }
 
 const std::vector<Hash*>* HashTree::getHashes() const { return &hashes_; }
+Hash* HashTree::getTopHash() const { return hashes_.back(); }
+
 
 bool HashTree::checkHashTreeChange(const HashTree& lhs) const
 {
-  if ( lhs.getHashes()->back()->getHash() != hashes_.back()->getHash() )
+  if ( lhs.getTopHash()->getHash() != hashes_.back()->getHash() )
     return true;
   else 
     return false;
