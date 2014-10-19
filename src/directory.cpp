@@ -101,8 +101,8 @@ void Directory::printPath() const
 }
 void Directory::printHashTree() const
 {
-  std::vector<Hash*> hash_tree = *(hash_tree_->getHashes());
-  for (std::vector<Hash*>::iterator i = hash_tree.begin(); i != hash_tree.end(); ++i)
+  std::vector<Hash*> hashes = *(hash_tree_->getHashes());
+  for (std::vector<Hash*>::iterator i = hashes.begin(); i != hashes.end(); ++i)
   {
     std::cout << (*i)->getHash() << std::endl;
   }
