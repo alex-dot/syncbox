@@ -22,13 +22,10 @@ Box::Box(boost::filesystem::path p) :
   path_(p),
   entries_()
   {
-    std::vector<boost::filesystem::directory_entry>* dirs;
     Directory* baseDir = new Directory(p);
     entries_.push_back(baseDir);
     // fill base and iterate over found subdirs
-    dirs = baseDir->fillDirectory(path_);
-    recursiveDirectoryFill(dirs);
-    delete dirs;
+    recursiveDirectoryFill(baseDir->fillDirectory(path_));
 
     HashTree* temp_ht = new HashTree();
     temp_ht->makeHashTree(entries_);
@@ -43,10 +40,7 @@ void Box::recursiveDirectoryFill(std::vector<boost::filesystem::directory_entry>
   {
     Directory* directory = new Directory(*i);
     entries_.push_back(directory);
-    std::vector<boost::filesystem::directory_entry>* sub_dirs;
-    sub_dirs = directory->fillDirectory(*i);
-    recursiveDirectoryFill(sub_dirs);
-    delete sub_dirs;
+    recursiveDirectoryFill(directory->fillDirectory(*i));
   }
 }
 
