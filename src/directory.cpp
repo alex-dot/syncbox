@@ -115,7 +115,7 @@ void Directory::printHashTree() const
 void Directory::printEntries() const
 {
   std::cout << getPath() << std::endl;
-  for ( std::map<std::string, boost::filesystem::directory_entry>::const_iterator i = entries_.begin();
+  for ( std::unordered_map<std::string, boost::filesystem::directory_entry>::const_iterator i = entries_.begin();
         i != entries_.end();
         ++i )
   {

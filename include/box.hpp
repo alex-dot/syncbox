@@ -11,6 +11,7 @@
 
 #include <boost/filesystem.hpp>
 #include <vector>
+#include <unordered_map>
 
 #include "directory.hpp"
 #include "hash_tree.hpp"
@@ -35,7 +36,7 @@ class Box
     void recursiveDirectoryFill(std::vector<Hash*>& hashes, std::vector<boost::filesystem::directory_entry>* dir);
 
     boost::filesystem::path path_;
-    std::map<std::string,Directory*> entries_;
+    std::unordered_map<std::string,Directory*> entries_;
     HashTree* hash_tree_;
 };
 

@@ -68,7 +68,7 @@ bool Box::getChangedDirHashes(std::vector<Hash*>& changed_hashes,
 
 void Box::recursivePrint() const
 {
-  for ( std::map<std::string,Directory*>::const_iterator i = entries_.begin();
+  for ( std::unordered_map<std::string,Directory*>::const_iterator i = entries_.begin();
         i != entries_.end();
         ++i )
   {
@@ -78,7 +78,7 @@ void Box::recursivePrint() const
 
 void Box::printDirectories() const
 {
-  for ( std::map<std::string,Directory*>::const_iterator i = entries_.begin();
+  for ( std::unordered_map<std::string,Directory*>::const_iterator i = entries_.begin();
         i != entries_.end();
         ++i )
   {

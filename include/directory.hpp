@@ -38,7 +38,7 @@ class Directory
 
   private:
     boost::filesystem::path path_;
-    std::map<std::string,boost::filesystem::directory_entry> entries_;
+    std::unordered_map<std::string,boost::filesystem::directory_entry> entries_;
     HashTree* hash_tree_;
     Hash* directory_hash_;
 };
