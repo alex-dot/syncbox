@@ -73,7 +73,7 @@ std::vector<boost::filesystem::directory_entry>* Directory::fillDirectory(const 
       temp_hashes.push_back(hash);
 
       // insert into entries_
-      entries_[hash] = *i;
+      entries_[hash->getHash()] = *i;
     }
 
     else
@@ -115,12 +115,12 @@ void Directory::printHashTree() const
 void Directory::printEntries() const
 {
   std::cout << getPath() << std::endl;
-  for ( std::map<Hash*, boost::filesystem::directory_entry>::const_iterator i = entries_.begin();
+  for ( std::map<std::string, boost::filesystem::directory_entry>::const_iterator i = entries_.begin();
         i != entries_.end();
         ++i )
   {
     std::cout << i->second << std::endl;
-    std::cout << i->first->getHash() << std::endl;
+    std::cout << i->first << std::endl;
     std::cout << i->second.status().permissions() << std::endl;
   }
 }
