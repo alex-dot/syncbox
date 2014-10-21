@@ -9,8 +9,6 @@
 #include <vector>
 
 #include "hash.hpp"
-#include "directory.hpp"
-//class Directory;
 
 class HashTree
 {
@@ -24,7 +22,6 @@ class HashTree
     ~HashTree(){};
 
     void makeHashTree(const std::vector<Hash*>& temp_hashes);
-    void makeHashTree(const std::vector<Directory*>& dirs);
     void makeHashTreeFromSelf();
 
     const std::vector<Hash*>* getHashes() const;

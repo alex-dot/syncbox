@@ -32,10 +32,10 @@ class Box
     void printDirectories() const;
 
   private:
-    void recursiveDirectoryFill(std::vector<boost::filesystem::directory_entry>* dir);
+    void recursiveDirectoryFill(std::vector<Hash*>& hashes, std::vector<boost::filesystem::directory_entry>* dir);
 
     boost::filesystem::path path_;
-    std::vector<Directory*> entries_;
+    std::map<std::string,Directory*> entries_;
     HashTree* hash_tree_;
 };
 

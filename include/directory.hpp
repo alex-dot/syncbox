@@ -13,8 +13,7 @@
 #include <string>
 
 #include "hash.hpp"
-
-class HashTree; // forward declaration
+#include "hash_tree.hpp"
 
 class Directory
 {
@@ -24,6 +23,7 @@ class Directory
     ~Directory();
 
     std::vector<boost::filesystem::directory_entry>* fillDirectory(const boost::filesystem::path&);
+    void makeDirectoryHash(Hash* hash);
 
     HashTree* getHashTree() const;
 

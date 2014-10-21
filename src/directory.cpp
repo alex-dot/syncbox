@@ -38,6 +38,7 @@ Directory::~Directory()
 
 std::vector<boost::filesystem::directory_entry>* Directory::fillDirectory(const boost::filesystem::path& document_root)
 {
+  // need EXCEPTION handling for empty hash
   std::vector<boost::filesystem::directory_entry>* dirs = new std::vector<boost::filesystem::directory_entry>();
   std::vector<Hash*> temp_hashes;
   // iterate over the given path and write every file to entries_, return directories
@@ -82,6 +83,12 @@ std::vector<boost::filesystem::directory_entry>* Directory::fillDirectory(const 
   temp_ht->makeHashTree(temp_hashes);
   hash_tree_ = temp_ht;
   return dirs;
+}
+void Directory::makeDirectoryHash(Hash* hash)
+{
+  std::string hash_string = hash_tree_->getTopHash()->getHash();
+  hash_string += this->getPath();
+  hash->makeHash(hash_string);
 }
 
 HashTree* Directory::getHashTree() const { return hash_tree_; }

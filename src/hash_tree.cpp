@@ -73,20 +73,6 @@ void HashTree::makeHashTree(const std::vector<Hash*>& temp_hashes)
   hashes.shrink_to_fit();
   hashes_.swap(hashes);
 }
-void HashTree::makeHashTree(const std::vector<Directory*>& dirs)
-{
-  std::vector<Hash*> hashes;
-  hashes.reserve(dirs.size());
-  for (std::vector<Directory*>::const_iterator i = dirs.begin(); i != dirs.end(); ++i)
-  {
-    std::string hash_string = (*i)->getHashTree()->getTopHash()->getHash();
-    hash_string += (*i)->getPath();
-    Hash* hash = new Hash(hash_string);
-    // need to change this to include the dir's path and mode
-    hashes.push_back(hash);
-  }
-  this->makeHashTree(hashes);
-}
 void HashTree::makeHashTreeFromSelf()
 {
   // we copy the internal hash vector to circumvent race conditions

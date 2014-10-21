@@ -15,32 +15,42 @@
 
 Box::Box() :
   path_(),
-  entries_()
+  entries_(),
+  hash_tree_()
   {}
 
 Box::Box(boost::filesystem::path p) :
   path_(p),
-  entries_()
+  entries_(),
+  hash_tree_()
   {
     Directory* baseDir = new Directory(p);
-    entries_.push_back(baseDir);
-    // fill base and iterate over found subdirs
-    recursiveDirectoryFill(baseDir->fillDirectory(path_));
+    std::vector<Hash*> hashes;
+
+    Hash* hash = new Hash();
+    baseDir->makeDirectoryHash(hash);
+    entries_[hash->getHash()] = baseDir;
+    hashes.push_back(hash);
+
+    recursiveDirectoryFill(hashes, baseDir->fillDirectory(path_));
 
     HashTree* temp_ht = new HashTree();
-    temp_ht->makeHashTree(entries_);
+    temp_ht->makeHashTree(hashes);
     hash_tree_ = temp_ht;
   }
 
-void Box::recursiveDirectoryFill(std::vector<boost::filesystem::directory_entry>* dirs)
+void Box::recursiveDirectoryFill(std::vector<Hash*>& hashes, std::vector<boost::filesystem::directory_entry>* dirs)
 {
   for ( std::vector<boost::filesystem::directory_entry>::iterator i = dirs->begin();
         i != dirs->end();
         ++i )
   {
     Directory* directory = new Directory(*i);
-    entries_.push_back(directory);
-    recursiveDirectoryFill(directory->fillDirectory(*i));
+    Hash* hash = new Hash();
+    directory->makeDirectoryHash(hash);
+    entries_[hash->getHash()] = directory;
+    hashes.push_back(hash);
+    recursiveDirectoryFill(hashes, directory->fillDirectory(*i));
   }
 }
 
@@ -58,20 +68,20 @@ bool Box::getChangedDirHashes(std::vector<Hash*>& changed_hashes,
 
 void Box::recursivePrint() const
 {
-  for ( std::vector<Directory*>::const_iterator i = entries_.begin();
+  for ( std::map<std::string,Directory*>::const_iterator i = entries_.begin();
         i != entries_.end();
         ++i )
   {
-    (*i)->printEntries();
+    (*i).second->printEntries();
   }
 }
 
 void Box::printDirectories() const
 {
-  for ( std::vector<Directory*>::const_iterator i = entries_.begin();
+  for ( std::map<std::string,Directory*>::const_iterator i = entries_.begin();
         i != entries_.end();
         ++i )
   {
-    std::cout << (*i)->getPath() << std::endl;
+    std::cout << (*i).second->getPath() << std::endl;
   }
 }
