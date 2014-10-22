@@ -1,3 +1,4 @@
+#include <boost/test/unit_test.hpp>
 #include "hash_tree.hpp"
 #include "test_hash_tree_helper.hpp"
 #include <algorithm>

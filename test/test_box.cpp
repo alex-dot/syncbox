@@ -1,3 +1,4 @@
+#include <boost/test/unit_test.hpp>
 #include "box.hpp"
 
 BOOST_AUTO_TEST_CASE(box_test)

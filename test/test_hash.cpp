@@ -1,3 +1,4 @@
+#include <boost/test/unit_test.hpp>
 #include "hash.hpp"
 
 BOOST_AUTO_TEST_CASE(hash_structors)
