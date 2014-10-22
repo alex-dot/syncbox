@@ -21,7 +21,7 @@ class HashTree
     HashTree(const std::vector<Hash*>& hashes) : hashes_(hashes){}
     ~HashTree(){};
 
-    void makeHashTree(const std::vector<Hash*>& temp_hashes);
+    void makeHashTree(std::vector<Hash*>& temp_hashes);
     void makeHashTreeFromSelf();
 
     const std::vector<Hash*>* getHashes() const;

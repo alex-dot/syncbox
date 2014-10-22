@@ -9,11 +9,22 @@
 #include <string>
 #include <sstream>
 
-void HashTree::makeHashTree(const std::vector<Hash*>& temp_hashes)
+ #include <iostream>
+
+void HashTree::makeHashTree(std::vector<Hash*>& temp_hashes)
 {
   // if this object already has a tree, clean up
   hashes_.clear();
   elements_per_level_.clear();
+
+  std::cout << "unsorted: " << std::endl;
+  for (std::vector<Hash*>::iterator i = temp_hashes.begin(); i != temp_hashes.end(); ++i)
+    std::cout << (*i)->getHash() << std::endl;
+  std::sort (temp_hashes.begin(), temp_hashes.end(), hashPointerLessThanFunctor());
+  std::cout << "sorted: " << std::endl;
+  for (std::vector<Hash*>::iterator i = temp_hashes.begin(); i != temp_hashes.end(); ++i)
+    std::cout << (*i)->getHash() << std::endl;
+  std::cout << std::endl;
 
   int hash_count = temp_hashes.size();
   int tree_depth = 0;                     // the depth of the tree

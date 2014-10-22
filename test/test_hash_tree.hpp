@@ -98,8 +98,8 @@ BOOST_AUTO_TEST_CASE(hash_tree_compare)
 }
 BOOST_AUTO_TEST_CASE(hash_tree_compare_diff)
 {
-  Hash* hash_orig = new Hash("test");
-  Hash* hash_diff = new Hash("test2");
+  Hash* hash_orig = new Hash("test");  // 7ab383fc29d81f8d0d68e87c69bae5f1f18266d730c48b1d
+  Hash* hash_diff = new Hash("test2"); // 3b1b47a309a5f1be449e3719e5160c8572c4425685830d2b
   std::vector<Hash*> hashes_orig(8);
   std::vector<Hash*> hashes_diff(8);
   std::vector<Hash*> changed_hashes;
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(hash_tree_compare_diff)
 
     BOOST_CHECK(ht_diff->getChangedHashes(changed_hashes, *ht_orig));
     BOOST_CHECK_EQUAL(1, changed_hashes.size());
-    BOOST_CHECK(changed_hashes[0] == hashes_diff[i]);
+    BOOST_CHECK_EQUAL(changed_hashes[0], hashes_diff[0]);
   }
 }
 BOOST_AUTO_TEST_CASE(hash_tree_sort)
