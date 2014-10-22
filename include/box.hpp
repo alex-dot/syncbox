@@ -1,9 +1,10 @@
 /*
  * A Box is a collection of a base directory and its sub-directories
- * contained in a vector with the base dir as the first vector item. 
- * Iterating over the vector is a pre-order depth-first tree traversal.
+ * contained in an unordered map with the hash of a directory as the key. 
  * The Box gets defined and added by the user. It is the base files
- * class through which sync-box handles all files in a given directory.
+ * class through which syncbox handles all files in a given directory.
+ *
+ * 
  */
 
 #ifndef SB_BOX_HPP
