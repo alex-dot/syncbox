@@ -18,12 +18,12 @@ include_directories(../include)
 #                                  ${CRYPTO++_LIBRARIES}
 #                                  ${ZEROMQ_LIBRARY})
 
-add_executable(syncbox_sub  main.cpp
-                            directory.cpp
-                            box.cpp
-                            hash_tree.cpp
-                            hash.cpp)
-target_link_libraries(syncbox_sub ${CMAKE_THREAD_LIBS_INIT}
-                                  ${Boost_LIBRARIES}
-                                  ${CRYPTO++_LIBRARIES}
-                                  ${ZEROMQ_LIBRARY})
+add_executable(syncbox  main.cpp
+                        directory.cpp
+                        box.cpp
+                        hash_tree.cpp
+                        hash.cpp)
+target_link_libraries(syncbox ${CMAKE_THREAD_LIBS_INIT}
+                              ${Boost_LIBRARIES}
+                              ${CRYPTO++_LIBRARIES}
+                              ${ZEROMQ_LIBRARY})
