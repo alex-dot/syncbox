@@ -51,6 +51,25 @@ else(CRYPTO++_INCLUDE_DIR AND CRYPTO++_LIBRARIES)
 
 endif(CRYPTO++_INCLUDE_DIR AND CRYPTO++_LIBRARIES)
 
+# - Find ZMQ
+# courtesy of: 
+# http://pastebin.com/fLsm9SYf
+FIND_PATH ( ZEROMQ_INCLUDE_DIR NAMES zmq.h PATHS /usr/include/ /usr/local/include/ )
+FIND_LIBRARY ( ZEROMQ_LIBRARY NAMES zmq PATHS /usr/lib /usr/local/lib )
+IF ( ZEROMQ_INCLUDE_DIR AND ZEROMQ_LIBRARY )
+    SET ( ZEROMQ_FOUND TRUE )
+ENDIF ( ZEROMQ_INCLUDE_DIR AND ZEROMQ_LIBRARY )
+
+IF ( ZEROMQ_FOUND )
+  IF ( NOT ZEROMQ_FIND_QUIETLY )
+    MESSAGE ( STATUS "Found ZeroMQ:" )
+    MESSAGE ( STATUS "  (Headers)       ${ZEROMQ_INCLUDE_DIR}" )
+    MESSAGE ( STATUS "  (Library)       ${ZEROMQ_LIBRARY}" )
+  ENDIF ( NOT ZEROMQ_FIND_QUIETLY )
+ELSE ( ZEROMQ_FOUND )
+  MESSAGE ( FATAL_ERROR "Could not find ZeroMQ" )
+ENDIF ( ZEROMQ_FOUND )
+
 
 
 # enable testing
