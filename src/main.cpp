@@ -34,7 +34,7 @@ void *publisher(void *arg)
   zmq::socket_t z_publisher(*z_context, ZMQ_PUB);
   z_publisher.bind("ipc://syncbox.ipc");
 
-  for (int i = 0; i < 15; ++i)
+  for (int i = 0; i < 5; ++i)
   {
     std::string message = "this is message: " + std::to_string(i);
     std::cout << "pub: " << message << std::endl;
@@ -43,6 +43,12 @@ void *publisher(void *arg)
     z_publisher.send(z_msg);
     sleep(1);
   }
+
+  std::cout << "pub: all messages sent, sending own signal..." << std::endl;
+  zmq::message_t z_msg_close;
+  snprintf((char*) z_msg_close.data(), 4, "%d %d", 0, 0);
+  z_main_sender.send(z_msg_close);
+  std::cout << "pub: exit signal sent, exiting." << std::endl;
 
   return (NULL);
 }
@@ -53,12 +59,15 @@ void *publisher(void *arg)
 void *subscriber(void *arg)
 {
   zmq::context_t *z_context = static_cast<zmq::context_t*>(arg);
+  // open PAIR sender to main thread
+  zmq::socket_t z_main_sender(*z_context, ZMQ_PAIR);
+  z_main_sender.connect("inproc://sb_sub_main_pair");
   // open PAIR sender to publisher thread
-  zmq::socket_t z_pubsub_sender(*z_context, ZMQ_PAIR);
-  z_pubsub_sender.connect("inproc://sb_sub_to_pub");
+  zmq::socket_t z_subpub_sender(*z_context, ZMQ_PAIR);
+  z_subpub_sender.connect("inproc://sb_sub_to_pub");
   // bind to PAIR receiver from publisher thread
-  zmq::socket_t z_pubsub_receiver(*z_context, ZMQ_PAIR);
-  z_pubsub_receiver.bind("inproc://sb_pub_to_sub");
+  zmq::socket_t z_subpub_receiver(*z_context, ZMQ_PAIR);
+  z_subpub_receiver.bind("inproc://sb_pub_to_sub");
 
   std::cout << "sub: receiving from publisher..." << std::endl;
 
@@ -67,7 +76,7 @@ void *subscriber(void *arg)
   const char *sub_filter = "";
   z_subscriber.setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
 
-  for (int i = 0; i < 10; ++i)
+  for (int i = 0; i < 3; ++i)
   {
     zmq::message_t z_message;
     z_subscriber.recv(&z_message);
@@ -75,6 +84,12 @@ void *subscriber(void *arg)
     std::istringstream iss(static_cast<char*>(z_message.data()));
     std::cout << "sub:" << iss.str() << std::endl;
   }
+
+  std::cout << "sub: all messages received, sending signal..." << std::endl;
+  zmq::message_t z_msg_close(3);
+  snprintf((char*) z_msg_close.data(), 4, "%d %d", 0, 0);
+  z_main_sender.send(z_msg_close);
+  std::cout << "sub: exit signal sent, exiting." << std::endl;
 
   return (NULL);
 }
@@ -104,8 +119,11 @@ int main(int argc, char* argv[])
 
     zmq::context_t z_context(1);
     // bind to publisher endpoint
-    zmq::socket_t z_receiver(z_context, ZMQ_PAIR);
-    z_receiver.bind("inproc://sb_pub_main_pair");
+    zmq::socket_t z_pub_receiver(z_context, ZMQ_PAIR);
+    z_pub_receiver.bind("inproc://sb_pub_main_pair");
+    // bind to subscriber endpoint
+    zmq::socket_t z_sub_receiver(z_context, ZMQ_PAIR);
+    z_sub_receiver.bind("inproc://sb_sub_main_pair");
 
     // open publisher thread
     std::cout << "main: opening publisher thread" << std::endl;
@@ -117,9 +135,23 @@ int main(int argc, char* argv[])
     pthread_t sub_thread;
     pthread_create(&sub_thread, NULL, subscriber, &z_context);
 
+    // wait for signals from threads
+    zmq::message_t z_msg_close;
+    int msg_type, msg_signal;
+    msg_type = 99;
+    msg_signal = 111;
     // wait for signal from publisher
-    zmq::message_t pub_msg;
-    z_receiver.recv(&pub_msg);
+    std::cout << "main: waiting for subscriber to send exit signal" << std::endl;
+    z_pub_receiver.recv(&z_msg_close);
+    std::istringstream iss_pub(static_cast<char*>(z_msg_close.data()));
+    iss_pub >> msg_type >> msg_signal;
+    // wait for signal from subscriber
+    std::cout << "main: waiting for subscriber to send exit signal" << std::endl;
+    z_sub_receiver.recv(&z_msg_close);
+    std::istringstream iss_sub(static_cast<char*>(z_msg_close.data()));
+    iss_sub >> msg_type >> msg_signal;
+
+    std::cout << "main: received message: " << msg_type << msg_signal << std::endl;
 
     return 0;
 
