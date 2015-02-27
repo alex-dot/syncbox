@@ -53,9 +53,6 @@ void *publisher(void *arg)
   return (NULL);
 }
 
-// because ZMQ_PAIR is messaging only between pairs, we understand subscriber
-// as a child of publisher, so we can cleanly exit; for code cleanliness we
-// open the subscriber thread still in the main thread
 void *subscriber(void *arg)
 {
   zmq::context_t *z_context = static_cast<zmq::context_t*>(arg);
