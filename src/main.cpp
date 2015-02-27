@@ -16,22 +16,18 @@
 #include <sstream>
 #include <pthread.h>
 
+#include "boxoffice.hpp"
+
 void *publisher(void *arg)
 {
-  zmq::context_t *z_context = static_cast<zmq::context_t*>(arg);
-  // open PAIR sender to main thread
-  zmq::socket_t z_main_sender(*z_context, ZMQ_PAIR);
-  z_main_sender.connect("inproc://sb_pub_main_pair");
-  // open PAIR sender to subscriber thread
-  zmq::socket_t z_pubsub_sender(*z_context, ZMQ_PAIR);
-  z_pubsub_sender.connect("inproc://sb_pub_to_sub");
-  // bind to PAIR receiver from subscriber thread
-  zmq::socket_t z_pubsub_receiver(*z_context, ZMQ_PAIR);
-  z_pubsub_receiver.bind("inproc://sb_sub_to_pub");
-
   std::cout << "pub: starting pubsub sockets and sending..." << std::endl;
 
+  zmq::context_t *z_context = static_cast<zmq::context_t*>(arg);
+
+  zmq::socket_t z_boxoffice(*z_context, ZMQ_REP);
   zmq::socket_t z_publisher(*z_context, ZMQ_PUB);
+
+  z_boxoffice.connect("inproc://sb_boxoffice_rep");
   z_publisher.bind("ipc://syncbox.ipc");
 
   for (int i = 0; i < 5; ++i)
@@ -44,31 +40,41 @@ void *publisher(void *arg)
     sleep(1);
   }
 
-  std::cout << "pub: all messages sent, sending own signal..." << std::endl;
-  zmq::message_t z_msg_close;
-  snprintf((char*) z_msg_close.data(), 4, "%d %d", 0, 0);
-  z_main_sender.send(z_msg_close);
-  std::cout << "pub: exit signal sent, exiting." << std::endl;
+  std::cout << "pub: all messages sent, waiting for close signal..." << std::endl;
+  while(1)
+  {
+    int msg_type, msg_signal;
+    zmq::message_t z_msg_close;
+    z_boxoffice.recv(&z_msg_close);
+    std::istringstream iss(static_cast<char*>(z_msg_close.data()));
+    iss >> msg_type >> msg_signal;
+    std::cout << "pub: boxoffice sent: " << msg_type << " " << msg_signal << std::endl;
+    if ( msg_type == 0 && msg_signal == 0 )
+    {
+      std::cout << "pub: received exit code, sending signal..." << std::endl;
+      snprintf((char*) z_msg_close.data(), 4, "%d %d", 0, 0);
+      z_boxoffice.send(z_msg_close);
+      std::cout << "pub: exit signal sent, exiting." << std::endl; 
+      break;
+    } else {
+      snprintf((char*) z_msg_close.data(), 4, "%d %d", 0, 1);
+      z_boxoffice.send(z_msg_close);
+    }
+  }
 
   return (NULL);
 }
 
 void *subscriber(void *arg)
 {
-  zmq::context_t *z_context = static_cast<zmq::context_t*>(arg);
-  // open PAIR sender to main thread
-  zmq::socket_t z_main_sender(*z_context, ZMQ_PAIR);
-  z_main_sender.connect("inproc://sb_sub_main_pair");
-  // open PAIR sender to publisher thread
-  zmq::socket_t z_subpub_sender(*z_context, ZMQ_PAIR);
-  z_subpub_sender.connect("inproc://sb_sub_to_pub");
-  // bind to PAIR receiver from publisher thread
-  zmq::socket_t z_subpub_receiver(*z_context, ZMQ_PAIR);
-  z_subpub_receiver.bind("inproc://sb_pub_to_sub");
-
   std::cout << "sub: receiving from publisher..." << std::endl;
 
+  zmq::context_t *z_context = static_cast<zmq::context_t*>(arg);
+
+  zmq::socket_t z_boxoffice(*z_context, ZMQ_REQ);
   zmq::socket_t z_subscriber(*z_context, ZMQ_SUB);
+
+  z_boxoffice.connect("inproc://sb_boxoffice_req");
   z_subscriber.connect("ipc://syncbox.ipc");
   const char *sub_filter = "";
   z_subscriber.setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
@@ -85,9 +91,16 @@ void *subscriber(void *arg)
   std::cout << "sub: all messages received, sending signal..." << std::endl;
   zmq::message_t z_msg_close(3);
   snprintf((char*) z_msg_close.data(), 4, "%d %d", 0, 0);
-  z_main_sender.send(z_msg_close);
-  std::cout << "sub: exit signal sent, exiting." << std::endl;
+  z_boxoffice.send(z_msg_close);
+  std::cout << "sub: signal sent, exiting..." << std::endl;
 
+  return (NULL);
+}
+
+void *boxoffice_thread(void *arg)
+{
+  Boxoffice* bo;
+  bo = Boxoffice::initialize(static_cast<zmq::context_t*>(arg));
   return (NULL);
 }
 
@@ -115,12 +128,25 @@ int main(int argc, char* argv[])
 */
 
     zmq::context_t z_context(1);
+
+    Boxoffice* bo;
+    // we eagerly initialize the Boxoffice-singleton here, for thread-safety
+    bo = Boxoffice::getInstance();
+    std::cout << "main: opening boxoffice thread" << std::endl;
+    pthread_t bo_thread;
+    pthread_create(&bo_thread, NULL, boxoffice_thread, &z_context);
+//    bo = Boxoffice::initialize(&z_context);
+
+    // bind to boxoffice endpoint
+    zmq::socket_t z_boxoffice(z_context, ZMQ_PAIR);
+    z_boxoffice.bind("inproc://sb_bo_main_pair");
+
     // bind to publisher endpoint
-    zmq::socket_t z_pub_receiver(z_context, ZMQ_PAIR);
-    z_pub_receiver.bind("inproc://sb_pub_main_pair");
+//    zmq::socket_t z_pub_receiver(z_context, ZMQ_PAIR);
+//    z_pub_receiver.bind("inproc://sb_pub_main_pair");
     // bind to subscriber endpoint
-    zmq::socket_t z_sub_receiver(z_context, ZMQ_PAIR);
-    z_sub_receiver.bind("inproc://sb_sub_main_pair");
+//    zmq::socket_t z_sub_receiver(z_context, ZMQ_PAIR);
+//    z_sub_receiver.bind("inproc://sb_sub_main_pair");
 
     // open publisher thread
     std::cout << "main: opening publisher thread" << std::endl;
@@ -137,18 +163,26 @@ int main(int argc, char* argv[])
     int msg_type, msg_signal;
     msg_type = 99;
     msg_signal = 111;
-    // wait for signal from publisher
-    std::cout << "main: waiting for subscriber to send exit signal" << std::endl;
-    z_pub_receiver.recv(&z_msg_close);
+    // wait for signal from boxoffice
+    std::cout << "main: waiting for boxoffice to send exit signal" << std::endl;
+    z_boxoffice.recv(&z_msg_close);
     std::istringstream iss_pub(static_cast<char*>(z_msg_close.data()));
     iss_pub >> msg_type >> msg_signal;
+    // wait for signal from publisher
+//    std::cout << "main: waiting for subscriber to send exit signal" << std::endl;
+//    z_pub_receiver.recv(&z_msg_close);
+//    std::istringstream iss_pub(static_cast<char*>(z_msg_close.data()));
+//    iss_pub >> msg_type >> msg_signal;
     // wait for signal from subscriber
-    std::cout << "main: waiting for subscriber to send exit signal" << std::endl;
-    z_sub_receiver.recv(&z_msg_close);
-    std::istringstream iss_sub(static_cast<char*>(z_msg_close.data()));
-    iss_sub >> msg_type >> msg_signal;
+//    std::cout << "main: waiting for subscriber to send exit signal" << std::endl;
+//    z_sub_receiver.recv(&z_msg_close);
+//    std::istringstream iss_sub(static_cast<char*>(z_msg_close.data()));
+//    iss_sub >> msg_type >> msg_signal;
 
-    std::cout << "main: received message: " << msg_type << msg_signal << std::endl;
+    std::cout << "main: received message: " << msg_type << " " << msg_signal << std::endl;
+
+//    z_boxoffice.close();
+//    z_context.close();
 
     return 0;
 
