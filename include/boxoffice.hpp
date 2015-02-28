@@ -25,12 +25,32 @@ class Boxoffice
     }
 
     static Boxoffice* initialize(zmq::context_t* z_ctx);
+    int setContext(zmq::context_t* z_ctx_)
+    {
+      z_ctx = z_ctx_;
+      if ( z_ctx == nullptr )
+        return 0;
+      else
+        return 1;
+
+      return -1;
+    }
 
   private:
-    Boxoffice() {};
+    Boxoffice() :
+      z_ctx(nullptr)
+      {};
     ~Boxoffice() {};
 
-    int connectToPubsAndSubs(zmq::context_t* z_ctx);
+    int connectToMain();
+    int connectToPub();
+    int runRouter();
+    int closeConnections();
+
+    zmq::context_t* z_ctx;
+    zmq::socket_t* z_bo_main;
+    zmq::socket_t* z_pub_to_bo;
+    zmq::socket_t* z_router;
 };
 
 #endif
