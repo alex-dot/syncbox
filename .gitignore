@@ -2,6 +2,7 @@
 sync-box.sublime-workspace
 sync-box.sublime-project
 build.sh
+vg.supp
 bin/
 build/
 bib/

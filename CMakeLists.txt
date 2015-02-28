@@ -7,6 +7,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 # print all Warnings
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+# enable debugging
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG -g -O0")
 
 # Threads
 find_package(Threads)
@@ -15,7 +17,7 @@ find_package(Threads)
 set(Boost_USE_STATIC_LIBS OFF) 
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
-find_package(Boost 1.49.0 COMPONENTS system filesystem unit_test_framework) 
+find_package(Boost 1.55.0 COMPONENTS system filesystem thread unit_test_framework) 
 
 # - Find Crypto++
 # courtesy of: 
