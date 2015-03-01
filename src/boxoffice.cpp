@@ -19,6 +19,8 @@ void *subscriber_thread(void *arg);
 
 Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
 {
+  int return_val = 0;
+
   Boxoffice* bo = getInstance();
 
   // TODO: serialize settings -> subscribers
@@ -28,12 +30,15 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
     "ipc://syncbox.ipc",SB_SUBTYPE_TCP_BIDIR));
 
   // setting up
-  bo->setContext(z_ctx);
-  bo->connectToMain();
+  return_val = bo->setContext(z_ctx);
+  return_val = bo->connectToMain();
+  if (return_val != 0) return bo;
 
   // setting up the publisher
-  bo->setupPublisher();
-  bo->connectToPub();
+  return_val = bo->setupPublisher();
+  if (return_val != 0) return bo;
+  return_val = bo->connectToPub();
+  if (return_val != 0) return bo;
 
   // setting up the subscribers, the router and aggregate the subs
   // note that the Watchers are all subscribers too!
@@ -69,6 +74,7 @@ int Boxoffice::connectToPub()
   zmq::message_t z_msg;
   int msg_type, msg_signal;
   std::stringstream sstream;
+  std::string return_string;
 
   // since the publisher is a singleton, we can simply use a ZMQ_PAIR
   z_pub_pair = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
@@ -76,11 +82,20 @@ int Boxoffice::connectToPub()
 
   // wait for heartbeat from publisher
   std::cout << "bo: waiting for publisher to send heartbeat" << std::endl;
-  z_pub_pair->recv(&z_msg);
-  sstream.clear();
-  sstream << static_cast<char*>(z_msg.data());
-  sstream >> msg_type >> msg_signal;
-  if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) return 1;
+  while(true)
+  {
+    //int ret_sig;
+    //return_string = s_recv(*z_pub_pair);
+    //if (ret_sig != 0) break;
+
+    z_pub_pair->recv(&z_msg);
+    sstream << static_cast<char*>(z_msg.data());;
+    sstream >> msg_type >> msg_signal;
+    sstream.str(std::string());
+    std::cout << "bo: received message: " << msg_type << " " << msg_signal << std::endl;
+    if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) return 1;
+    else break;
+  }
 
   // sending publisher channel list
   std::cout << "bo: waiting to send publisher channel list" << std::endl;

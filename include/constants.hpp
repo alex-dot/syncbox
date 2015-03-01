@@ -5,6 +5,9 @@
 #ifndef SB_CONSTANTS_HPP
 #define SB_CONSTANTS_HPP
 
+#include <string>
+#include <iostream>
+#include <zmq.hpp>
 #include <signal.h>
 
 enum SB_SIGTYPE {
@@ -27,5 +30,24 @@ enum SB_SUB_TYPE {
   SB_SUBTYPE_TCP_BIDIR,
   SB_SUBTYPE_TCP_UNIDIR
 };
+
+
+static int s_interrupted = 0;
+static void s_signal_handler (int signal_value)
+{
+    s_interrupted = 1;
+}
+
+static void s_catch_signals ()
+{
+#if (!defined(WIN32))
+    struct sigaction action;
+    action.sa_handler = s_signal_handler;
+    action.sa_flags = 0;
+    sigemptyset (&action.sa_mask);
+    sigaction (SIGINT, &action, NULL);
+    sigaction (SIGTERM, &action, NULL);
+#endif
+}
 
 #endif

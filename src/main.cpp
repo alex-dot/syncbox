@@ -50,33 +50,49 @@ int main(int argc, char* argv[])
       exit(EXIT_FAILURE);
     }
 */
-
+    // opening zeromq context
     zmq::context_t z_context(1);
 
     // we eagerly initialize the Boxoffice- and Publisher-singleton here, 
     // for thread-safety
-    Boxoffice* bo;
-    bo = Boxoffice::getInstance();
-    Publisher* pub;
-    pub = Publisher::getInstance();
+    Boxoffice::getInstance();
+    Publisher::getInstance();
+
+    // catch signals
+    s_catch_signals();
 
     // bind to boxoffice endpoint
     zmq::socket_t z_boxoffice(z_context, ZMQ_PAIR);
     z_boxoffice.bind("inproc://sb_bo_main_pair");
 
+    // opening boxoffice thread
     std::cout << "main: opening boxoffice thread" << std::endl;
     boost::thread bo_thread(boxoffice_thread, &z_context);
 
     // wait for signal from boxoffice
-    zmq::message_t z_msg_close;
-    int msg_type, msg_signal;
     std::cout << "main: waiting for boxoffice to send exit signal" << std::endl;
-    z_boxoffice.recv(&z_msg_close);
-    std::istringstream iss_pub(static_cast<char*>(z_msg_close.data()));
-    iss_pub >> msg_type >> msg_signal;
-    iss_pub.clear();
+    while(true)
+    {
+      zmq::message_t z_msg;
+      std::stringstream sstream;
+      try {
+        z_boxoffice.recv(&z_msg);
+        sstream << static_cast<char*>(z_msg.data());
+      } catch(const zmq::error_t &e) {
+        std::cout << "error happened" << std::endl;
+      }
+      if (s_interrupted)
+      {
+        std::cout << "interrupted!" << std::endl;
+        break;
+      }
 
-    std::cout << "main: received message: " << msg_type << " " << msg_signal << std::endl;
+      int msg_type, msg_signal;
+      sstream >> msg_type >> msg_signal;
+      std::cout << "main: received message: " << msg_type << " " << msg_signal << std::endl;
+      if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
+      else break;
+    }
 
     bo_thread.join();
 
