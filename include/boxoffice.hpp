@@ -11,6 +11,9 @@
 #define SB_BOXOFFICE_HPP
 
 #include <zmq.hpp>
+#include <boost/thread.hpp>
+#include <vector>
+#include <utility>
 
 class Boxoffice
 {
@@ -38,19 +41,31 @@ class Boxoffice
 
   private:
     Boxoffice() :
-      z_ctx(nullptr)
+      pub_thread(nullptr),
+      z_ctx(nullptr),
+      z_bo_main(nullptr),
+      z_pub_pair(nullptr),
+      z_router(nullptr)
       {};
     ~Boxoffice() {};
 
     int connectToMain();
+    int setupPublisher();
     int connectToPub();
+    int setupSubscribers();
     int runRouter();
     int closeConnections();
 
+    boost::thread* pub_thread;
     zmq::context_t* z_ctx;
     zmq::socket_t* z_bo_main;
-    zmq::socket_t* z_pub_to_bo;
+    zmq::socket_t* z_pub_pair;
     zmq::socket_t* z_router;
+    //std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
+    std::vector<boost::thread*> sub_threads;
+
+  public: // TODO: settings-serialization -> make private again
+    std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
 };
 
 #endif

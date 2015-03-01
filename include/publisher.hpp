@@ -40,14 +40,10 @@ class Publisher
   private:
     Publisher() :
       z_ctx(nullptr),
-      z_pub_to_bo(nullptr),
-      z_bo_to_pub(nullptr)
+      z_pub_pair(nullptr),
+      channel_list()
       {};
-    ~Publisher()
-    {
-      z_pub_to_bo->close();
-      z_bo_to_pub->close();
-    }
+    ~Publisher() {};
 
     int connectToBoxoffice();
     int startPubChannel(std::string channel_name);
@@ -55,8 +51,7 @@ class Publisher
     int listenOnChannels();
 
     zmq::context_t* z_ctx;
-    zmq::socket_t* z_pub_to_bo;
-    zmq::socket_t* z_bo_to_pub;
+    zmq::socket_t* z_pub_pair;
     std::vector<zmq::socket_t*> channel_list;
 };
 

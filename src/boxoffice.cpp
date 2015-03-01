@@ -2,24 +2,42 @@
  * Boxoffice
  */
 
-#include "constants.hpp"
-#include "boxoffice.hpp"
-
 #include <zmq.hpp>
+#include <boost/thread.hpp>
 #include <sstream>
 #include <iostream>
+#include <vector>
+#include <utility>
+
+#include "constants.hpp"
+#include "boxoffice.hpp"
+#include "publisher.hpp"
+#include "subscriber.hpp"
+
+void *publisher_thread(void *arg);
+void *subscriber_thread(void *arg);
 
 Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
 {
   Boxoffice* bo = getInstance();
 
+  // TODO: serialize settings -> subscribers
+  bo->subscribers.push_back(std::make_pair(
+    "ipc://syncbox.ipc",SB_SUBTYPE_TCP_BIDIR));
+  bo->subscribers.push_back(std::make_pair(
+    "ipc://syncbox.ipc",SB_SUBTYPE_TCP_BIDIR));
+
   // setting up
   bo->setContext(z_ctx);
   bo->connectToMain();
+
+  // setting up the publisher
+  bo->setupPublisher();
   bo->connectToPub();
 
-  // setting up the router and listen to all subscriber threads
+  // setting up the subscribers, the router and aggregate the subs
   // note that the Watchers are all subscribers too!
+  bo->setupSubscribers();
   bo->runRouter();
 
   // closing
@@ -33,8 +51,18 @@ int Boxoffice::connectToMain()
   // open PAIR sender to main thread
   z_bo_main = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
   z_bo_main->connect("inproc://sb_bo_main_pair");
+
+  return 0;
 }
 
+int Boxoffice::setupPublisher()
+{
+  // open publisher thread
+  std::cout << "bo: opening publisher thread" << std::endl;
+  pub_thread = new boost::thread(publisher_thread, z_ctx);
+
+  return 0;
+}
 int Boxoffice::connectToPub()
 {
   // standard variables
@@ -43,12 +71,12 @@ int Boxoffice::connectToPub()
   std::stringstream sstream;
 
   // since the publisher is a singleton, we can simply use a ZMQ_PAIR
-  z_pub_to_bo = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
-  z_pub_to_bo->bind("inproc://sb_pub_to_bo_pair");
+  z_pub_pair = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
+  z_pub_pair->connect("inproc://sb_pub_bo_pair");
 
   // wait for heartbeat from publisher
   std::cout << "bo: waiting for publisher to send heartbeat" << std::endl;
-  z_pub_to_bo->recv(&z_msg);
+  z_pub_pair->recv(&z_msg);
   sstream.clear();
   sstream << static_cast<char*>(z_msg.data());
   sstream >> msg_type >> msg_signal;
@@ -56,7 +84,7 @@ int Boxoffice::connectToPub()
 
   // sending publisher channel list
   std::cout << "bo: waiting to send publisher channel list" << std::endl;
-  z_pub_to_bo->recv(&z_msg);
+  z_pub_pair->recv(&z_msg);
   sstream.clear();
   sstream << static_cast<char*>(z_msg.data());
   sstream >> msg_type >> msg_signal;
@@ -69,11 +97,26 @@ int Boxoffice::connectToPub()
     {
       memcpy(z_msg.data(), i->data(), i->size()+1);
       if ( (*i) != channel_list.back() )
-        z_pub_to_bo->send(z_msg, ZMQ_SNDMORE);
+        z_pub_pair->send(z_msg, ZMQ_SNDMORE);
       else
-        z_pub_to_bo->send(z_msg, 0); 
+        z_pub_pair->send(z_msg, 0); 
     }
   }
+
+  return 0;
+}
+
+int Boxoffice::setupSubscribers()
+{
+  // opening subscriber threads
+  std::cout << "bo: opening subscriber threads" << std::endl;
+  for (unsigned int i = 0; i < subscribers.size(); ++i)
+  {
+    boost::thread* sub_thread = new boost::thread(subscriber_thread, z_ctx);
+    sub_threads.push_back(sub_thread);
+  }
+
+  return 0;
 }
 
 int Boxoffice::runRouter()
@@ -84,52 +127,34 @@ int Boxoffice::runRouter()
   std::stringstream sstream;
 
   // connect to subscribers
-  z_router = new zmq::socket_t(*z_ctx, ZMQ_ROUTER);
-  z_router->bind("inproc://sb_boxoffice_req");
+  z_router = new zmq::socket_t(*z_ctx, ZMQ_PULL);
+  z_router->bind("inproc://sb_boxoffice_subs");
 
   std::cout << "bo: starting to listen to subs..." << std::endl;
 
-  zmq::pollitem_t z_items[] = {
-    { *z_router, 0, ZMQ_POLLIN, 0 }
-  };
+  // wait for heartbeat
+  for (unsigned int i = 0; i < subscribers.size(); ++i)
+  {
+    z_router->recv(&z_msg);
+    sstream.str(std::string());
+    sstream << static_cast<char*>(z_msg.data());
+    std::cout << "bo: pull: " << sstream.str() << std::endl;
+    z_msg.rebuild();
+  }
 
-  bool exit_signal = false;
-  while(true) {
-    int more;
-
-    zmq::poll(&z_items[0], 1, -1);
-
-    if (z_items[0].revents & ZMQ_POLLIN) {
-      while(true) {
-        int msg_type, msg_signal;
-        zmq::message_t z_msg;
-
-        std::cout << "bo: waiting for subscriber to send exit signal" << std::endl;
-        z_router->recv(&z_msg);
-        size_t more_size = sizeof(more);
-        z_router->getsockopt(ZMQ_RCVMORE, &more, &more_size);
-
-        std::istringstream iss_sub(static_cast<char*>(z_msg.data()));
-        iss_sub >> msg_type >> msg_signal;
-        std::cout << "bo: sub sent: " << msg_type << " " << msg_signal << std::endl;
-        if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_EXIT )
-        {
-          snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
-          z_router->send(z_msg, more? ZMQ_SNDMORE: 0);
-          exit_signal = true;
-          break;
-        } else {
-          snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_ERROR);
-          z_router->send(z_msg);
-        }
-      }
-    }
-    if (exit_signal) break;
+  // wait for exit signal
+  for (unsigned int i = 0; i < subscribers.size(); ++i)
+  {
+    z_router->recv(&z_msg);
+    sstream.str(std::string());
+    sstream << static_cast<char*>(z_msg.data());
+    std::cout << "bo: pull: " << sstream.str() << std::endl;
+    z_msg.rebuild();
   }
 
   // wait for exit signal from publisher
   std::cout << "bo: waiting for publisher to send exit signal" << std::endl;
-  z_pub_to_bo->recv(&z_msg);
+  z_pub_pair->recv(&z_msg);
   sstream.clear();
   sstream << static_cast<char*>(z_msg.data());
   sstream >> msg_type >> msg_signal;
@@ -139,14 +164,48 @@ int Boxoffice::runRouter()
 
 int Boxoffice::closeConnections()
 {
-  z_pub_to_bo->close();
+  // closing PAIR to pub
+  z_pub_pair->close();
 
+  // sending exit signal to the main thread...
   std::cout << "bo: sending exit signal..." << std::endl;
   zmq::message_t z_msg_close(3);
   snprintf((char*) z_msg_close.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
   z_bo_main->send(z_msg_close);
-
+  // ...and exiting
   z_bo_main->close();
 
+  // closing publisher and subscriber threads
+  pub_thread->join();
+  for (std::vector<boost::thread*>::iterator i = sub_threads.begin(); i != sub_threads.end(); ++i)
+    (*i)->join();
+
   std::cout << "bo: exit signal sent, exiting..." << std::endl;
+
+  return 0;
+}
+
+
+void *publisher_thread(void* arg)
+{
+  Publisher* pub;
+  pub = Publisher::initialize(static_cast<zmq::context_t*>(arg));
+
+  pub->run();
+  pub->sendExitSignal();
+
+  return (NULL);
+}
+
+void *subscriber_thread(void *arg)
+{
+  // actually, since Subscriber is not a singleton, we could use the ctor,
+  // but to have consistency we still implement initialize()
+  Subscriber* sub;
+  sub = Subscriber::initialize(static_cast<zmq::context_t*>(arg));
+
+  sub->run();
+  sub->sendExitSignal();
+
+  return (NULL);
 }

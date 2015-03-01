@@ -25,15 +25,13 @@ Publisher* Publisher::initialize(zmq::context_t* z_ctx_)
 int Publisher::connectToBoxoffice()
 {
   // since the publisher is a singleton, we can simply use two ZMQ_PAIRs
-  z_pub_to_bo = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
-  z_bo_to_pub = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
-  z_pub_to_bo->connect("inproc://sb_pub_to_bo_pair");
-  z_bo_to_pub->bind("inproc://sb_bo_to_pub_pair");
+  z_pub_pair = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
+  z_pub_pair->bind("inproc://sb_pub_bo_pair");
 
   // send a heartbeat to boxoffice, so it knows the publisher is ready
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_ALIVE);
-  z_pub_to_bo->send(z_msg);
+  z_pub_pair->send(z_msg);
 
   return 0;
 }
@@ -44,9 +42,9 @@ int Publisher::sendExitSignal()
   std::cout << "pub: sending exit signal" << std::endl;
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
-  z_pub_to_bo->send(z_msg);
+  z_pub_pair->send(z_msg);
 
-  z_pub_to_bo->close();
+  z_pub_pair->close();
 
   std::cout << "pub: exit signal sent, exiting..." << std::endl;
 
@@ -62,14 +60,14 @@ int Publisher::run()
   // query pub channels from boxoffice
   std::cout << "pub: querying channels." << std::endl;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_PUB, SB_SIGPUB_GET_CHANNELS);
-  z_pub_to_bo->send(z_msg);
+  z_pub_pair->send(z_msg);
 
   // receiving channels and starting them
   std::cout << "pub: getting channels." << std::endl;
   while(true)
   {
     std::string channel_name;
-    z_pub_to_bo->recv(&z_msg, 0);
+    z_pub_pair->recv(&z_msg, 0);
     sstream.clear();
     sstream << static_cast<char*>(z_msg.data());
     sstream >> channel_name;

@@ -5,7 +5,8 @@ add_executable(syncbox  main.cpp
                         hash_tree.cpp
                         hash.cpp
                         boxoffice.cpp
-                        publisher.cpp)
+                        publisher.cpp
+                        subscriber.cpp)
 target_link_libraries(syncbox ${CMAKE_THREAD_LIBS_INIT}
                               ${Boost_LIBRARIES}
                               ${CRYPTO++_LIBRARIES}

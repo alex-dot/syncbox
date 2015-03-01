@@ -1,9 +1,11 @@
 /*
- * generic constants for application
+ * generic constants and globals for application
  */
 
 #ifndef SB_CONSTANTS_HPP
 #define SB_CONSTANTS_HPP
+
+#include <signal.h>
 
 enum SB_SIGTYPE {
   SB_SIGTYPE_LIFE,
@@ -20,6 +22,10 @@ enum SB_SIGPUB {
 };
 enum SB_SIGSUB {
   SB_SIGSUB_GET_CHANNELS
+};
+enum SB_SUB_TYPE {
+  SB_SUBTYPE_TCP_BIDIR,
+  SB_SUBTYPE_TCP_UNIDIR
 };
 
 #endif
