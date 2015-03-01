@@ -15,7 +15,7 @@
 #include "subscriber.hpp"
 
 void *publisher_thread(void *arg);
-void *subscriber_thread(void *arg);
+void *subscriber_thread(zmq::context_t*, std::string, int);
 
 Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
 {
@@ -125,9 +125,10 @@ int Boxoffice::setupSubscribers()
 {
   // opening subscriber threads
   std::cout << "bo: opening subscriber threads" << std::endl;
-  for (unsigned int i = 0; i < subscribers.size(); ++i)
+  for (std::vector< std::pair<std::string,int> >::iterator i = subscribers.begin(); 
+        i != subscribers.end(); ++i)
   {
-    boost::thread* sub_thread = new boost::thread(subscriber_thread, z_ctx);
+    boost::thread* sub_thread = new boost::thread(subscriber_thread, z_ctx, i->first, i->second);
     sub_threads.push_back(sub_thread);
   }
 
@@ -212,12 +213,12 @@ void *publisher_thread(void* arg)
   return (NULL);
 }
 
-void *subscriber_thread(void *arg)
+void *subscriber_thread(zmq::context_t* z_ctx, std::string endpoint, int sb_subtype)
 {
   // actually, since Subscriber is not a singleton, we could use the ctor,
   // but to have consistency we still implement initialize()
   Subscriber* sub;
-  sub = Subscriber::initialize(static_cast<zmq::context_t*>(arg));
+  sub = Subscriber::initialize(z_ctx, endpoint, sb_subtype);
 
   sub->run();
   sub->sendExitSignal();

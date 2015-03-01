@@ -16,12 +16,23 @@ class Subscriber
     Subscriber() :
       z_ctx(nullptr),
       z_boxoffice(nullptr),
-      z_subscriber(nullptr)
+      z_subscriber(nullptr),
+      endpoint(""),
+      sb_subtype(-1)
+      {};
+    Subscriber(zmq::context_t* z_ctx_, std::string endpoint_, int sb_subtype_) :
+      z_ctx(z_ctx_),
+      z_boxoffice(nullptr),
+      z_subscriber(nullptr),
+      endpoint(endpoint_),
+      sb_subtype(sb_subtype_)
       {};
     Subscriber(const Subscriber&);
     ~Subscriber() {};
 
-    static Subscriber* initialize(zmq::context_t* z_ctx_);
+    static Subscriber* initialize(zmq::context_t* z_ctx_, 
+                                  std::string endpoint_, 
+                                  int sb_subtype_);
     int setContext(zmq::context_t* z_ctx_)
     {
       z_ctx = z_ctx_;
@@ -41,6 +52,8 @@ class Subscriber
     zmq::context_t* z_ctx;
     zmq::socket_t* z_boxoffice;
     zmq::socket_t* z_subscriber;
+    std::string endpoint;
+    int sb_subtype;
 };
 
 #endif
