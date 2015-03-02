@@ -25,6 +25,7 @@ void *boxoffice_thread(void *arg)
 {
   Boxoffice* bo;
   bo = Boxoffice::initialize(static_cast<zmq::context_t*>(arg));
+
   return (NULL);
 }
 
@@ -89,6 +90,8 @@ int main(int argc, char* argv[])
       {
         std::cout << "main: received interrupt, broadcasting signal..." << std::endl;
         snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_INTERRUPT);
+        //z_broadcast.send("", ZMQ_SNDMORE);
+        //z_broadcast.send(z_msg, ZMQ_SNDMORE);
         z_broadcast.send(z_msg);
         break;
       }

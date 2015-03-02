@@ -11,6 +11,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <boost/thread.hpp>
 
 Publisher* Publisher::initialize(zmq::context_t* z_ctx_)
 {
@@ -120,8 +121,11 @@ int Publisher::stopPubChannel(zmq::socket_t* channel)
 int Publisher::listenOnChannels()
 {
   zmq::socket_t* channel = channel_list.back();
-  for (int i = 0; i < 2; ++i)
+  for (int i = 0; i < 5; ++i)
   {
+    if (boost::this_thread::interruption_requested()) 
+      break;
+
     std::string message = "this is message: " + std::to_string(i);
     if (SB_MSG_DEBUG) printf("pub: %s\n", message.c_str());
     zmq::message_t z_msg(message.length()+1);

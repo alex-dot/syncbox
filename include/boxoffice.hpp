@@ -47,7 +47,7 @@ class Boxoffice
     int connectToPub();
     int setupSubscribers();
     int runRouter();
-    int closeConnections();
+    int closeConnections(int return_value);
 
     boost::thread* pub_thread;
     zmq::context_t* z_ctx;

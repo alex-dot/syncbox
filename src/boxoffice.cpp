@@ -19,7 +19,7 @@ void *subscriber_thread(zmq::context_t*, std::string, int);
 
 Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
 {
-  int return_val = 0;
+  int return_value = 0;
 
   Boxoffice* bo = getInstance();
 
@@ -28,21 +28,21 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
     "ipc://syncbox.ipc",SB_SUBTYPE_TCP_BIDIR));
 
   // setting up
-  return_val = bo->setContext(z_ctx);
-  if (return_val == 0) return_val = bo->connectToBroadcast();
-  if (return_val == 0) return_val = bo->connectToMain();
+  return_value = bo->setContext(z_ctx);
+  if (return_value == 0) return_value = bo->connectToBroadcast();
+  if (return_value == 0) return_value = bo->connectToMain();
 
   // setting up the publisher
-  if (return_val == 0) return_val = bo->setupPublisher();
-  if (return_val == 0) return_val = bo->connectToPub();
+  if (return_value == 0) return_value = bo->setupPublisher();
+  if (return_value == 0) return_value = bo->connectToPub();
 
   // setting up the subscribers, the router and aggregate the subs
   // note that the Watchers are all subscribers too!
-  if (return_val == 0) return_val = bo->setupSubscribers();
-  if (return_val == 0) return_val = bo->runRouter();
+  if (return_value == 0) return_value = bo->setupSubscribers();
+  if (return_value == 0) return_value = bo->runRouter();
 
   // closing
-  bo->closeConnections();
+  bo->closeConnections(return_value);
 
   return bo;
 }
@@ -189,14 +189,27 @@ int Boxoffice::runRouter()
   *isstream >> msg_type >> msg_signal;
   if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
   delete isstream;
-
-  z_router->close();
+std::cout << "bo: received signal from pub" << std::endl;
 
   return 0;
 }
 
-int Boxoffice::closeConnections()
+int Boxoffice::closeConnections(int return_value)
 {
+  // if return_val != 1, we want to interrupt the publisher and catch the exit signal
+  if ( return_value != 0 ) 
+  {
+    pub_thread->interrupt();
+
+    // query again for exit signal
+    if (SB_MSG_DEBUG) printf("bo: waiting for publisher to send exit signal\n");
+    std::istringstream* isstream = new std::istringstream();
+    int msg_type, msg_signal;
+    isstream->str(std::string(s_recv(*z_pub_pair, *z_broadcast)));
+    *isstream >> msg_type >> msg_signal;
+    if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
+    delete isstream;
+  }
   // closing broadcast socket
   // we check if the sockets are nullptrs, but z_broadcast is never
   z_broadcast->close();
@@ -208,8 +221,12 @@ int Boxoffice::closeConnections()
   // closing publisher and subscriber threads
   if ( pub_thread != nullptr )
     pub_thread->join();
+
   for (std::vector<boost::thread*>::iterator i = sub_threads.begin(); i != sub_threads.end(); ++i)
     (*i)->join();
+
+  if ( z_router != nullptr )
+    z_router->close();
 
   // sending exit signal to the main thread...
   if ( z_bo_main != nullptr )

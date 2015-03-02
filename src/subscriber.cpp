@@ -11,6 +11,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <boost/thread.hpp>
 
 Subscriber* Subscriber::initialize(zmq::context_t* z_ctx_, 
                                    std::string endpoint_, 
@@ -81,7 +82,7 @@ int Subscriber::run()
   const char *sub_filter = "";
   z_subscriber->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
 
-  for (int i = 0; i < 1; ++i)
+  for (int i = 0; i < 3; ++i)
   {
     std::istringstream* isstream = new std::istringstream();
     int msg_type, msg_signal;
@@ -89,7 +90,7 @@ int Subscriber::run()
     if (*isstream >> msg_type >> msg_signal) {
       if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) { return 1; }
         else { return -1; } }
-    std::cout << "sub:" << isstream->str() << std::endl;
+    std::cout << isstream->str() << std::endl;
     delete isstream;
   }
 

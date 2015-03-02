@@ -33,7 +33,7 @@ enum SB_SUB_TYPE {
   SB_SUBTYPE_TCP_UNIDIR
 };
 
-static bool SB_MSG_DEBUG = true;
+static bool SB_MSG_DEBUG = false;
 
 
 static int s_interrupted = 0;
@@ -73,13 +73,13 @@ static std::string s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast)
     if ( z_items[1].revents & ZMQ_POLLIN )
     {
       // since broadcast is a publisher, we may receive garbage upfront
-      //std::stringstream sstream;
+      //std::istringstream isstream;
       //int msg_type = -1;
       //int msg_signal;
       broadcast.recv(&z_msg);
-      //sstream << static_cast<char*>(z_msg.data());
-      //sstream >> msg_type >> msg_signal;
-      //std::cout << msg_type << " " << msg_signal << std::endl;
+      //isstream.str(std::string(static_cast<char*>(z_msg.data())));
+      //isstream >> msg_type >> msg_signal;
+      //std::cout << "msg: " << msg_type << " " << msg_signal << std::endl;
       //if ( msg_type == SB_SIGTYPE_LIFE )
         break;
     }
