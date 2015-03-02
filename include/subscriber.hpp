@@ -17,6 +17,7 @@ class Subscriber
       z_ctx(nullptr),
       z_boxoffice(nullptr),
       z_subscriber(nullptr),
+      z_broadcast(nullptr),
       endpoint(""),
       sb_subtype(-1)
       {};
@@ -24,6 +25,7 @@ class Subscriber
       z_ctx(z_ctx_),
       z_boxoffice(nullptr),
       z_subscriber(nullptr),
+      z_broadcast(nullptr),
       endpoint(endpoint_),
       sb_subtype(sb_subtype_)
       {};
@@ -47,11 +49,13 @@ class Subscriber
     int run();
 
   private:
+    int connectToBroadcast();
     int connectToBoxoffice();
 
     zmq::context_t* z_ctx;
     zmq::socket_t* z_boxoffice;
     zmq::socket_t* z_subscriber;
+    zmq::socket_t* z_broadcast;
     std::string endpoint;
     int sb_subtype;
 };

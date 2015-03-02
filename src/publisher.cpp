@@ -17,9 +17,21 @@ Publisher* Publisher::initialize(zmq::context_t* z_ctx_)
   Publisher* pub = getInstance();
 
   pub->setContext(z_ctx_);
+  pub->connectToBroadcast();
   pub->connectToBoxoffice();
 
   return pub;
+}
+
+int Publisher::connectToBroadcast()
+{
+  // connect to process broadcast
+  z_broadcast = new zmq::socket_t(*z_ctx, ZMQ_SUB);
+  z_broadcast->connect("inproc://sb_broadcast");
+  const char *sub_filter = "";
+  z_broadcast->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
+
+  return 0;
 }
 
 int Publisher::connectToBoxoffice()
@@ -39,14 +51,16 @@ int Publisher::connectToBoxoffice()
 int Publisher::sendExitSignal()
 {
   // send exit signal to boxoffice
-  std::cout << "pub: sending exit signal" << std::endl;
+  if (SB_MSG_DEBUG) printf("pub: sending exit signal\n");
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
   z_pub_pair->send(z_msg);
 
   z_pub_pair->close();
 
-  std::cout << "pub: exit signal sent, exiting..." << std::endl;
+  z_broadcast->close();
+
+  if (SB_MSG_DEBUG) printf("pub: exit signal sent, exiting...\n");
 
   return 0;
 }
@@ -55,23 +69,25 @@ int Publisher::run()
 {
   zmq::message_t z_msg;
   int msg_type, msg_signal;
-  std::stringstream sstream;
+  std::istringstream* isstream;
 
   // query pub channels from boxoffice
-  std::cout << "pub: querying channels." << std::endl;
+  if (SB_MSG_DEBUG) printf("pub: querying channels.\n");
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_PUB, SB_SIGPUB_GET_CHANNELS);
   z_pub_pair->send(z_msg);
 
   // receiving channels and starting them
-  std::cout << "pub: getting channels." << std::endl;
+  if (SB_MSG_DEBUG) printf("pub: getting channels.\n");
   while(true)
   {
-    std::string channel_name;
-    z_pub_pair->recv(&z_msg, 0);
-    sstream.clear();
-    sstream << static_cast<char*>(z_msg.data());
-    sstream >> channel_name;
-    std::cout << "pub: channel name: " << channel_name.c_str() << std::endl;
+    isstream = new std::istringstream();
+    isstream->str(std::string(s_recv(*z_pub_pair, *z_broadcast)));
+    if (*isstream >> msg_type >> msg_signal) {
+      if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) { return 1; }
+        else { return -1; } }
+    std::string channel_name = isstream->str();
+    delete isstream;
+    if (SB_MSG_DEBUG) printf("pub: channel name: %s\n", channel_name.c_str());
 
     startPubChannel(channel_name);
 
@@ -89,7 +105,7 @@ int Publisher::run()
 
 int Publisher::startPubChannel(std::string channel_name)
 {
-  std::cout << "pub: starting pubsub sockets and sending..." << std::endl;
+  if (SB_MSG_DEBUG) printf("pub: starting pubsub sockets and sending...\n");
 
   zmq::socket_t* z_publisher = new zmq::socket_t(*z_ctx, ZMQ_PUB);
   z_publisher->bind(channel_name.c_str());
@@ -99,18 +115,19 @@ int Publisher::startPubChannel(std::string channel_name)
 }
 
 int Publisher::stopPubChannel(zmq::socket_t* channel)
-  { channel->close(); }
+  { channel->close(); return 0; }
 
 int Publisher::listenOnChannels()
 {
   zmq::socket_t* channel = channel_list.back();
-  for (int i = 0; i < 5; ++i)
+  for (int i = 0; i < 2; ++i)
   {
     std::string message = "this is message: " + std::to_string(i);
-    std::cout << "pub: " << message << std::endl;
+    if (SB_MSG_DEBUG) printf("pub: %s\n", message.c_str());
     zmq::message_t z_msg(message.length()+1);
     snprintf((char*) z_msg.data(), message.length()+1, "%s", message.c_str());
     channel->send(z_msg);
     sleep(1);
   }
+  return 0;
 }

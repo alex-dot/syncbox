@@ -41,10 +41,12 @@ class Publisher
     Publisher() :
       z_ctx(nullptr),
       z_pub_pair(nullptr),
+      z_broadcast(nullptr),
       channel_list()
       {};
     ~Publisher() {};
 
+    int connectToBroadcast();
     int connectToBoxoffice();
     int startPubChannel(std::string channel_name);
     int stopPubChannel(zmq::socket_t* channel);
@@ -52,6 +54,7 @@ class Publisher
 
     zmq::context_t* z_ctx;
     zmq::socket_t* z_pub_pair;
+    zmq::socket_t* z_broadcast;
     std::vector<zmq::socket_t*> channel_list;
 };
 

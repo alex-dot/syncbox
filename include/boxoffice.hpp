@@ -28,16 +28,7 @@ class Boxoffice
     }
 
     static Boxoffice* initialize(zmq::context_t* z_ctx);
-    int setContext(zmq::context_t* z_ctx_)
-    {
-      z_ctx = z_ctx_;
-      if ( z_ctx == nullptr )
-        return 0;
-      else
-        return 1;
-
-      return -1;
-    }
+    int setContext(zmq::context_t* z_ctx_);
 
   private:
     Boxoffice() :
@@ -45,10 +36,12 @@ class Boxoffice
       z_ctx(nullptr),
       z_bo_main(nullptr),
       z_pub_pair(nullptr),
-      z_router(nullptr)
+      z_router(nullptr),
+      z_broadcast(nullptr)
       {};
     ~Boxoffice() {};
 
+    int connectToBroadcast();
     int connectToMain();
     int setupPublisher();
     int connectToPub();
@@ -61,6 +54,7 @@ class Boxoffice
     zmq::socket_t* z_bo_main;
     zmq::socket_t* z_pub_pair;
     zmq::socket_t* z_router;
+    zmq::socket_t* z_broadcast;
     //std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
     std::vector<boost::thread*> sub_threads;
 
