@@ -92,7 +92,7 @@ int Boxoffice::connectToPub()
 {
   // standard variables
   zmq::message_t z_msg;
-  std::istringstream* isstream; // to reuse the same name, we have to use pointers
+  std::stringstream* sstream; // to reuse the same name, we have to use pointers
   int msg_type, msg_signal;
 
   // since the publisher is a singleton, we can simply use a ZMQ_PAIR
@@ -101,17 +101,17 @@ int Boxoffice::connectToPub()
 
   // wait for heartbeat from publisher
   if (SB_MSG_DEBUG) printf("bo: waiting for publisher to send heartbeat\n");
-  isstream = new std::istringstream();
-  isstream->str(std::string(s_recv(*z_pub_pair, *z_broadcast)));
-  *isstream >> msg_type >> msg_signal;
+  sstream = new std::stringstream();
+  s_recv(*z_pub_pair, *z_broadcast, *sstream);
+  *sstream >> msg_type >> msg_signal;
   if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) return 1;
-  delete isstream;
+  delete sstream;
 
   // sending publisher channel list
   if (SB_MSG_DEBUG) printf("bo: waiting to send publisher channel list\n");
-  isstream = new std::istringstream();
-  isstream->str(std::string(s_recv(*z_pub_pair, *z_broadcast)));
-  *isstream >> msg_type >> msg_signal;
+  sstream = new std::stringstream();
+  s_recv(*z_pub_pair, *z_broadcast, *sstream);
+  *sstream >> msg_type >> msg_signal;
   if ( msg_type != SB_SIGTYPE_PUB || msg_signal != SB_SIGPUB_GET_CHANNELS ) return 1;
   else {
     if (SB_MSG_DEBUG) printf("bo: sending publisher channel list\n");
@@ -126,7 +126,7 @@ int Boxoffice::connectToPub()
         z_pub_pair->send(z_msg, 0); 
     }
   }
-  delete isstream;
+  delete sstream;
 
   return 0;
 }
@@ -150,7 +150,7 @@ int Boxoffice::runRouter()
   // standard variables
   zmq::message_t z_msg;
   int msg_type, msg_signal;
-  std::istringstream* isstream;
+  std::stringstream* sstream;
 
   // connect to subscribers
   z_router = new zmq::socket_t(*z_ctx, ZMQ_PULL);
@@ -161,11 +161,11 @@ int Boxoffice::runRouter()
   // wait for heartbeat
   for (unsigned int i = 0; i < subscribers.size(); ++i)
   {
-    isstream = new std::istringstream();
-    isstream->str(std::string(s_recv(*z_router, *z_broadcast)));
-    *isstream >> msg_type >> msg_signal;
+    sstream = new std::stringstream();
+    s_recv(*z_router, *z_broadcast, *sstream);
+    *sstream >> msg_type >> msg_signal;
     if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) return 1;
-    delete isstream;
+    delete sstream;
   }
 
   if (SB_MSG_DEBUG) printf("bo: all subscribers connected\n");
@@ -173,22 +173,22 @@ int Boxoffice::runRouter()
   // wait for exit signal
   for (unsigned int i = 0; i < subscribers.size(); ++i)
   {
-    isstream = new std::istringstream();
-    isstream->str(std::string(s_recv(*z_router, *z_broadcast)));
-    *isstream >> msg_type >> msg_signal;
+    sstream = new std::stringstream();
+    s_recv(*z_router, *z_broadcast, *sstream);
+    *sstream >> msg_type >> msg_signal;
     if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
-    delete isstream;
+    delete sstream;
   }
 
   if (SB_MSG_DEBUG) printf("bo: all subscribers exited\n");
 
   // wait for exit signal from publisher
   if (SB_MSG_DEBUG) printf("bo: waiting for publisher to send exit signal\n");
-  isstream = new std::istringstream();
-  isstream->str(std::string(s_recv(*z_pub_pair, *z_broadcast)));
-  *isstream >> msg_type >> msg_signal;
+  sstream = new std::stringstream();
+  s_recv(*z_pub_pair, *z_broadcast, *sstream);
+  *sstream >> msg_type >> msg_signal;
   if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
-  delete isstream;
+  delete sstream;
 std::cout << "bo: received signal from pub" << std::endl;
 
   return 0;
@@ -203,12 +203,12 @@ int Boxoffice::closeConnections(int return_value)
 
     // query again for exit signal
     if (SB_MSG_DEBUG) printf("bo: waiting for publisher to send exit signal\n");
-    std::istringstream* isstream = new std::istringstream();
+    std::stringstream* sstream = new std::stringstream();
     int msg_type, msg_signal;
-    isstream->str(std::string(s_recv(*z_pub_pair, *z_broadcast)));
-    *isstream >> msg_type >> msg_signal;
+    s_recv(*z_pub_pair, *z_broadcast, *sstream);
+    *sstream >> msg_type >> msg_signal;
     if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
-    delete isstream;
+    delete sstream;
   }
   // closing broadcast socket
   // we check if the sockets are nullptrs, but z_broadcast is never

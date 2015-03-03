@@ -70,7 +70,7 @@ int Publisher::run()
 {
   zmq::message_t z_msg;
   int msg_type, msg_signal;
-  std::istringstream* isstream;
+  std::stringstream* sstream;
 
   // query pub channels from boxoffice
   if (SB_MSG_DEBUG) printf("pub: querying channels.\n");
@@ -81,13 +81,13 @@ int Publisher::run()
   if (SB_MSG_DEBUG) printf("pub: getting channels.\n");
   while(true)
   {
-    isstream = new std::istringstream();
-    isstream->str(std::string(s_recv(*z_pub_pair, *z_broadcast)));
-    if (*isstream >> msg_type >> msg_signal) {
+    sstream = new std::stringstream();
+    s_recv(*z_pub_pair, *z_broadcast, *sstream);
+    if (*sstream >> msg_type >> msg_signal) {
       if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) { return 1; }
         else { return -1; } }
-    std::string channel_name = isstream->str();
-    delete isstream;
+    std::string channel_name = sstream->str();
+    delete sstream;
     if (SB_MSG_DEBUG) printf("pub: channel name: %s\n", channel_name.c_str());
 
     startPubChannel(channel_name);
@@ -130,6 +130,8 @@ int Publisher::listenOnChannels()
     if (SB_MSG_DEBUG) printf("pub: %s\n", message.c_str());
     zmq::message_t z_msg(message.length()+1);
     snprintf((char*) z_msg.data(), message.length()+1, "%s", message.c_str());
+    channel->send(z_msg, ZMQ_SNDMORE);
+    channel->send(z_msg, ZMQ_SNDMORE);
     channel->send(z_msg);
     sleep(1);
   }

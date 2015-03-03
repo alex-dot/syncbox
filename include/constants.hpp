@@ -54,38 +54,38 @@ static void s_catch_signals ()
 #endif
 }
 
-static std::string s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast)
+static void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream)
 {
   zmq::message_t z_msg;
   zmq::pollitem_t z_items[] {
     { socket,    0, ZMQ_POLLIN, 0 },
     { broadcast, 0, ZMQ_POLLIN, 0 }
   };
+  int more;
   while(true)
   {
     zmq::poll(&z_items[0], 2, -1);
 
     if ( z_items[0].revents & ZMQ_POLLIN )
     {
-      socket.recv(&z_msg);
+      while(true)
+      {
+        socket.recv(&z_msg);
+        sstream << std::string(static_cast<char*>(z_msg.data()));
+        size_t more_size = sizeof(more);
+        socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+        if (!more)
+          break;
+      }
       break;
     }
     if ( z_items[1].revents & ZMQ_POLLIN )
     {
-      // since broadcast is a publisher, we may receive garbage upfront
-      //std::istringstream isstream;
-      //int msg_type = -1;
-      //int msg_signal;
       broadcast.recv(&z_msg);
-      //isstream.str(std::string(static_cast<char*>(z_msg.data())));
-      //isstream >> msg_type >> msg_signal;
-      //std::cout << "msg: " << msg_type << " " << msg_signal << std::endl;
-      //if ( msg_type == SB_SIGTYPE_LIFE )
-        break;
+      sstream << std::string(static_cast<char*>(z_msg.data()));
+      break;
     }
   }
-
-  return static_cast<char*>(z_msg.data());
 }
 
 #endif
