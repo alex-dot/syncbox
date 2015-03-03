@@ -82,7 +82,7 @@ int Subscriber::run()
   const char *sub_filter = "";
   z_subscriber->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
 
-  for (int i = 0; i < 3; ++i)
+  for (int i = 0; i < 1; ++i)
   {
     std::stringstream* sstream = new std::stringstream();
     int msg_type, msg_signal;

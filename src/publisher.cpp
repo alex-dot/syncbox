@@ -121,7 +121,7 @@ int Publisher::stopPubChannel(zmq::socket_t* channel)
 int Publisher::listenOnChannels()
 {
   zmq::socket_t* channel = channel_list.back();
-  for (int i = 0; i < 5; ++i)
+  for (int i = 0; i < 2; ++i)
   {
     if (boost::this_thread::interruption_requested()) 
       break;
