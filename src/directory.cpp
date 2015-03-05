@@ -104,7 +104,7 @@ bool Directory::getChangedEntryHashes(std::vector<Hash*>& changed_hashes,
 
 const std::string Directory::getPath() const { return path_.filename().c_str(); }
 const std::string Directory::getAbsolutePath() const { return path_.c_str(); }
-const int         Directory::getNumberOfEntries() const { return entries_.size(); }
+      int         Directory::getNumberOfEntries() const { return entries_.size(); }
 
 void Directory::printHashTree() const
 {

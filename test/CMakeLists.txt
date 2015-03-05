@@ -16,6 +16,7 @@ add_test(NAME box_compare COMMAND syncboxTest -t box_compare)
 
 include_directories(../include)
 add_executable(syncboxTest testMain.cpp
+                           ../src/constants.cpp
                            ../src/hash.cpp
                            ../src/hash_tree.cpp
                            ../src/directory.cpp

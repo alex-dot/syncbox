@@ -116,7 +116,6 @@ int Box::watch()
 {
   // defining fd 
   int fd, wd;
-  char buffer[SB_IN_BUF_LEN];
 
   fd = inotify_init();
   if ( fd < 0 ) return 1;

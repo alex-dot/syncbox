@@ -52,7 +52,7 @@ class Boxoffice
     int connectToPub();
     int setupSubscribers();
     int runRouter();
-    int closeConnections(int return_value);
+    int closeConnections();
 
     int setupBoxes();
 

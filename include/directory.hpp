@@ -33,7 +33,7 @@ class Directory
 
     const std::string getPath() const;
     const std::string getAbsolutePath() const;
-    const int         getNumberOfEntries() const;
+          int         getNumberOfEntries() const;
 
     void printHashTree() const;
     void printEntries() const;

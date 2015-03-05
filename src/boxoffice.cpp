@@ -44,7 +44,7 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
   if (return_value == 0) return_value = bo->runRouter();
 
   // closing
-  bo->closeConnections(return_value);
+  bo->closeConnections();
 
   return bo;
 }
@@ -135,6 +135,11 @@ int Boxoffice::connectToPub()
 
 int Boxoffice::setupSubscribers()
 {
+  // standard variables
+  zmq::message_t z_msg;
+  int msg_type, msg_signal;
+  std::stringstream* sstream;
+
   // opening subscriber threads
   if (SB_MSG_DEBUG) printf("bo: opening subscriber threads\n");
   for (std::vector< std::pair<std::string,int> >::iterator i = subscribers.begin(); 
@@ -144,17 +149,6 @@ int Boxoffice::setupSubscribers()
     sub_threads.push_back(sub_thread);
   }
 
-  return 0;
-}
-
-int Boxoffice::runRouter()
-{
-  // standard variables
-  zmq::message_t z_msg;
-  int msg_type, msg_signal;
-  std::stringstream* sstream;
-  int return_value;
-
   // connect to subscribers and boxes
   z_router = new zmq::socket_t(*z_ctx, ZMQ_PULL);
   z_router->bind("inproc://sb_boxoffice_pull_in");
@@ -162,7 +156,7 @@ int Boxoffice::runRouter()
 
   // wait for heartbeat
   int heartbeats = sub_threads.size() + box_threads.size();
-  for (unsigned int i = 0; i < heartbeats; ++i)
+  for (int i = 0; i < heartbeats; ++i)
   {
     sstream = new std::stringstream();
     s_recv(*z_router, *z_broadcast, *sstream);
@@ -172,6 +166,15 @@ int Boxoffice::runRouter()
   }
   if (SB_MSG_DEBUG) printf("bo: all subscribers and boxes connected\n");
 
+  return 0;
+}
+
+int Boxoffice::runRouter()
+{ 
+  // standard variables
+  zmq::message_t z_msg;
+  int msg_type, msg_signal;
+  std::stringstream* sstream;
 
   while(true)
   {
@@ -201,14 +204,24 @@ int Boxoffice::runRouter()
     delete sstream;
   }
 
+  return 0;
+}
 
-  // wait for exit signal
+int Boxoffice::closeConnections()
+{
+  // standard variables
+  int msg_type, msg_signal;
+  std::stringstream* sstream;
+  int return_value = 0;
+
+  // wait for exit/interrupt signal
   for (unsigned int i = 0; i < subscribers.size(); ++i)
   {
     sstream = new std::stringstream();
     s_recv(*z_router, *z_broadcast, *sstream);
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
+    if ( msg_type != SB_SIGTYPE_LIFE || (   msg_signal != SB_SIGLIFE_EXIT
+                                         && msg_signal != SB_SIGLIFE_INTERRUPT ) ) return_value = 1;
     delete sstream;
   }
   if (SB_MSG_DEBUG) printf("bo: all subscribers exited\n");
@@ -218,19 +231,16 @@ int Boxoffice::runRouter()
   sstream = new std::stringstream();
   s_recv(*z_pub_pair, *z_broadcast, *sstream);
   *sstream >> msg_type >> msg_signal;
-  if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
+  if ( msg_type != SB_SIGTYPE_LIFE || (msg_signal != SB_SIGLIFE_EXIT
+                                       && msg_signal != SB_SIGLIFE_INTERRUPT ) ) return_value = 1;
   delete sstream;
 
-  return 0;
-}
+  // now close pub socket
+  pub_thread->interrupt();
 
-int Boxoffice::closeConnections(int return_value)
-{
-  // if return_val != 1, we want to interrupt the publisher and catch the exit signal
+/*  // if return_val != 0, the pub got interrupted, so it will sent the exit signal again
   if ( return_value != 0 ) 
   {
-    pub_thread->interrupt();
-
     // query again for exit signal
     if (SB_MSG_DEBUG) printf("bo: waiting for publisher to send exit signal\n");
     std::stringstream* sstream = new std::stringstream();
@@ -239,7 +249,8 @@ int Boxoffice::closeConnections(int return_value)
     *sstream >> msg_type >> msg_signal;
     if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
     delete sstream;
-  }
+  }*/
+
   // closing broadcast socket
   // we check if the sockets are nullptrs, but z_broadcast is never
   z_broadcast->close();

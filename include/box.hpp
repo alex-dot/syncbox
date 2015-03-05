@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <zmq.hpp>
 
+#include "constants.hpp"
 #include "directory.hpp"
 #include "hash_tree.hpp"
 
