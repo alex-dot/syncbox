@@ -24,5 +24,7 @@ add_executable(syncboxTest testMain.cpp
                            test_hash_tree.cpp
                            test_directory.cpp
                            test_box.cpp)
-target_link_libraries(syncboxTest ${Boost_LIBRARIES}
-                                  ${CRYPTO++_LIBRARIES})
+target_link_libraries(syncboxTest ${CMAKE_THREAD_LIBS_INIT}
+                                  ${Boost_LIBRARIES}
+                                  ${CRYPTO++_LIBRARIES}
+                                  ${ZEROMQ_LIBRARY})

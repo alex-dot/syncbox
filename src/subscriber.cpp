@@ -41,7 +41,7 @@ int Subscriber::connectToBroadcast()
 int Subscriber::connectToBoxoffice()
 {
   z_boxoffice = new zmq::socket_t(*z_ctx, ZMQ_PUSH);
-  z_boxoffice->connect("inproc://sb_boxoffice_subs");
+  z_boxoffice->connect("inproc://sb_boxoffice_pull_in");
 
   // send a heartbeat to boxoffice, so it knows the subscriber is ready
   if (SB_MSG_DEBUG) printf("sub: sending heartbeat...\n");

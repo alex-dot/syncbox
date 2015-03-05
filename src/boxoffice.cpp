@@ -16,6 +16,7 @@
 
 void *publisher_thread(void *arg);
 void *subscriber_thread(zmq::context_t*, std::string, int);
+void *box_thread(zmq::context_t* z_ctx, Box* box);
 
 Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
 {
@@ -39,6 +40,7 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
   // setting up the subscribers, the router and aggregate the subs
   // note that the Watchers are all subscribers too!
   if (return_value == 0) return_value = bo->setupSubscribers();
+  if (return_value == 0) return_value = bo->setupBoxes();
   if (return_value == 0) return_value = bo->runRouter();
 
   // closing
@@ -151,15 +153,16 @@ int Boxoffice::runRouter()
   zmq::message_t z_msg;
   int msg_type, msg_signal;
   std::stringstream* sstream;
+  int return_value;
 
-  // connect to subscribers
+  // connect to subscribers and boxes
   z_router = new zmq::socket_t(*z_ctx, ZMQ_PULL);
-  z_router->bind("inproc://sb_boxoffice_subs");
-
+  z_router->bind("inproc://sb_boxoffice_pull_in");
   if (SB_MSG_DEBUG) printf("bo: starting to listen to subs...\n");
 
   // wait for heartbeat
-  for (unsigned int i = 0; i < subscribers.size(); ++i)
+  int heartbeats = sub_threads.size() + box_threads.size();
+  for (unsigned int i = 0; i < heartbeats; ++i)
   {
     sstream = new std::stringstream();
     s_recv(*z_router, *z_broadcast, *sstream);
@@ -167,8 +170,37 @@ int Boxoffice::runRouter()
     if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) return 1;
     delete sstream;
   }
+  if (SB_MSG_DEBUG) printf("bo: all subscribers and boxes connected\n");
 
-  if (SB_MSG_DEBUG) printf("bo: all subscribers connected\n");
+
+  while(true)
+  {
+    // waiting for subscriber or inotify input
+    sstream = new std::stringstream();
+    s_recv(*z_router, *z_broadcast, *sstream);
+    *sstream >> msg_type >> msg_signal;
+    if ( msg_type == SB_SIGTYPE_LIFE    || msg_signal == SB_SIGLIFE_INTERRUPT ) break;
+    if ( msg_type != SB_SIGTYPE_INOTIFY || msg_signal != SB_SIGIN_EVENT ) 
+      perror("[E] bo: received garbage while waiting for inotify event");
+
+
+    int wd, cookie;
+    uint32_t mask;
+    std::string filename, line;
+    std::stringstream* sstream_line;
+
+    std::getline(*sstream, line);      // signal frame
+    std::getline(*sstream, line);      // info frame
+    sstream_line = new std::stringstream(line);
+    *sstream_line >> wd >> mask >> cookie;
+    delete sstream_line;
+    std::getline(*sstream, filename);  // filename frame
+
+    std::cout << filename << std::endl;
+
+    delete sstream;
+  }
+
 
   // wait for exit signal
   for (unsigned int i = 0; i < subscribers.size(); ++i)
@@ -179,7 +211,6 @@ int Boxoffice::runRouter()
     if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
     delete sstream;
   }
-
   if (SB_MSG_DEBUG) printf("bo: all subscribers exited\n");
 
   // wait for exit signal from publisher
@@ -189,7 +220,6 @@ int Boxoffice::runRouter()
   *sstream >> msg_type >> msg_signal;
   if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
   delete sstream;
-std::cout << "bo: received signal from pub" << std::endl;
 
   return 0;
 }
@@ -218,11 +248,14 @@ int Boxoffice::closeConnections(int return_value)
   if ( z_pub_pair != nullptr )
     z_pub_pair->close();
 
-  // closing publisher and subscriber threads
+  // closing publisher, subscriber and box threads
   if ( pub_thread != nullptr )
     pub_thread->join();
 
   for (std::vector<boost::thread*>::iterator i = sub_threads.begin(); i != sub_threads.end(); ++i)
+    (*i)->join();
+
+  for (std::vector<boost::thread*>::iterator i = box_threads.begin(); i != box_threads.end(); ++i)
     (*i)->join();
 
   if ( z_router != nullptr )
@@ -245,6 +278,31 @@ int Boxoffice::closeConnections(int return_value)
 }
 
 
+int Boxoffice::setupBoxes()
+{
+  std::vector<std::string> box_dirs;
+  std::string box_dir = "/home/alex/bin/syncbox/test/testdir_watch";
+  box_dirs.push_back(box_dir);
+//  box_dirs.push_back(box_dir);
+
+  box_threads.reserve(box_dirs.size());
+  boxes.reserve(box_dirs.size());
+  for (std::vector<std::string>::iterator i = box_dirs.begin(); i != box_dirs.end(); ++i)
+  {
+    // initializing the boxes here, so we can use file IO while it's thread 
+    // still listens to inotify events
+    Box* box = new Box(*i);
+    boxes.push_back(box);
+    // opening box thread
+    boost::thread* bt = new boost::thread(box_thread, z_ctx, box);
+    box_threads.push_back(bt);
+  }
+
+  return 0;
+}
+
+
+
 void *publisher_thread(void* arg)
 {
   Publisher* pub;
@@ -265,6 +323,19 @@ void *subscriber_thread(zmq::context_t* z_ctx, std::string endpoint, int sb_subt
 
   sub->run();
   sub->sendExitSignal();
+
+  return (NULL);
+}
+
+void *box_thread(zmq::context_t* z_ctx, Box* box)
+{
+  // although boxes have their own thread, it is only used for catching inotify
+  // signals
+  box->setContext(z_ctx);
+  box->connectToBroadcast();
+  box->connectToBoxoffice();
+  box->watch();
+  box->sendExitSignal();
 
   return (NULL);
 }

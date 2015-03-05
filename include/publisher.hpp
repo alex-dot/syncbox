@@ -40,7 +40,7 @@ class Publisher
   private:
     Publisher() :
       z_ctx(nullptr),
-      z_pub_pair(nullptr),
+      z_bo_pair(nullptr),
       z_broadcast(nullptr),
       channel_list()
       {};
@@ -53,7 +53,7 @@ class Publisher
     int listenOnChannels();
 
     zmq::context_t* z_ctx;
-    zmq::socket_t* z_pub_pair;
+    zmq::socket_t* z_bo_pair;
     zmq::socket_t* z_broadcast;
     std::vector<zmq::socket_t*> channel_list;
 };

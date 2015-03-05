@@ -15,6 +15,8 @@
 #include <vector>
 #include <utility>
 
+#include "box.hpp"
+
 class Boxoffice
 {
   public:
@@ -32,12 +34,15 @@ class Boxoffice
 
   private:
     Boxoffice() :
-      pub_thread(nullptr),
       z_ctx(nullptr),
       z_bo_main(nullptr),
       z_pub_pair(nullptr),
       z_router(nullptr),
-      z_broadcast(nullptr)
+      z_broadcast(nullptr),
+      pub_thread(nullptr),
+      sub_threads(),
+      box_threads(),
+      boxes()
       {};
     ~Boxoffice() {};
 
@@ -49,14 +54,18 @@ class Boxoffice
     int runRouter();
     int closeConnections(int return_value);
 
-    boost::thread* pub_thread;
+    int setupBoxes();
+
     zmq::context_t* z_ctx;
     zmq::socket_t* z_bo_main;
     zmq::socket_t* z_pub_pair;
     zmq::socket_t* z_router;
     zmq::socket_t* z_broadcast;
     //std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
+    boost::thread* pub_thread;
     std::vector<boost::thread*> sub_threads;
+    std::vector<boost::thread*> box_threads;
+    std::vector<Box*> boxes;
 
   public: // TODO: settings-serialization -> make private again
     std::vector< std::pair<std::string,int> > subscribers; // endpoint and type

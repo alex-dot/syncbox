@@ -14,8 +14,9 @@
 #include <cstring>
 #include <sstream>
 #include <boost/thread.hpp>
-
 #include <signal.h>
+#include <sys/inotify.h>
+#include <poll.h>
 
 #include "constants.hpp"
 #include "boxoffice.hpp"
@@ -39,10 +40,43 @@ static void s_catch_signals ()
 #endif
 }
 
+
 void *boxoffice_thread(void *arg)
+//void *boxoffice_thread(void *arg, void *ctx_)
 {
   Boxoffice* bo;
   bo = Boxoffice::initialize(static_cast<zmq::context_t*>(arg));
+
+/*
+  zmq::context_t* z_context(static_cast<zmq::context_t*>(ctx_));
+
+    int* fd = static_cast<int*>(arg); 
+
+    zmq::socket_t test(*z_context, ZMQ_SUB);
+    test.connect("inproc://sb_broadcast");
+  const char *sub_filter = "";
+  test.setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
+
+std::cout << "receiving msg" << std::endl;
+  std::stringstream* sstream = new std::stringstream();
+  s_recv_in(test, *fd, *sstream);
+  std::cout << sstream->str() << std::endl;
+  delete sstream;
+
+  test.close();
+*/
+/*
+    pollfd pollfd = {*fd, POLLIN, 0};
+    poll(&pollfd, 1, -1);
+    std::cout << "blub" << std::endl;
+    length = read( *fd, buffer, SB_IN_BUF_LEN );
+    if ( length < 0 ) perror("inotify poll");
+    std::cout << "blub" << std::endl;
+
+    struct inotify_event* event;
+    event = (struct inotify_event*) &buffer[0];
+    std::cout << event->mask << std::endl;
+*/
 
   return (NULL);
 }
@@ -80,6 +114,50 @@ int main(int argc, char* argv[])
     // catch signals
     s_catch_signals();
 
+
+/*
+    // bind process broadcast pub
+    zmq::socket_t test(z_context, ZMQ_PUB);
+    test.bind("inproc://sb_broadcast");
+
+    int length, i = 0;
+    int fd; 
+    int wd;
+    char buffer[SB_IN_BUF_LEN];
+
+    fd = inotify_init();
+    if ( fd < 0 ) perror("inotify_init");
+    wd = inotify_add_watch( fd, "/home/alex/bin/syncbox/test/testdir2", SB_IN_EVENT_MASK );
+
+    if (SB_MSG_DEBUG) printf("main: opening boxoffice thread\n");
+    boost::thread bo_thread(boxoffice_thread, &fd, &z_context);
+*/
+
+/*
+    std::cout << IN_ACCESS << std::endl;
+    std::cout << IN_ATTRIB << std::endl;
+    std::cout << IN_CLOSE_WRITE << std::endl;
+    std::cout << IN_CLOSE_NOWRITE << std::endl;
+    std::cout << IN_CREATE << std::endl;
+    std::cout << IN_DELETE << std::endl;
+    std::cout << IN_DELETE_SELF << std::endl;
+    std::cout << IN_MODIFY << std::endl;
+    std::cout << IN_MOVE_SELF << std::endl;
+    std::cout << IN_MOVED_FROM << std::endl;
+    std::cout << IN_MOVED_TO << std::endl;
+    std::cout << IN_OPEN << std::endl;
+    std::cout << IN_MOVE << std::endl;
+    std::cout << IN_CLOSE << std::endl;
+    std::cout << IN_DONT_FOLLOW << std::endl;
+    std::cout << IN_EXCL_UNLINK << std::endl;
+    std::cout << IN_MASK_ADD << std::endl;
+    std::cout << IN_ONESHOT << std::endl;
+    std::cout << IN_IGNORED << std::endl;
+    std::cout << IN_ISDIR << std::endl;
+    std::cout << IN_Q_OVERFLOW << std::endl;
+    std::cout << IN_UNMOUNT << std::endl;
+*/
+
     // bind process broadcast pub
     zmq::socket_t z_broadcast(z_context, ZMQ_PUB);
     z_broadcast.bind("inproc://sb_broadcast");
@@ -108,8 +186,6 @@ int main(int argc, char* argv[])
       {
         std::cout << "main: received interrupt, broadcasting signal..." << std::endl;
         snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_INTERRUPT);
-        //z_broadcast.send("", ZMQ_SNDMORE);
-        //z_broadcast.send(z_msg, ZMQ_SNDMORE);
         z_broadcast.send(z_msg);
         break;
       }
@@ -126,7 +202,28 @@ int main(int argc, char* argv[])
     z_boxoffice.close();
     z_broadcast.close();
 
+
+/*
+    sleep(4);
+    std::cout << "closing thread" << std::endl;
+
+
+      zmq::message_t z_msg;
+        snprintf((char*) z_msg.data(), 7, "blabla");
+        test.send(z_msg);
+
+
+//    bo_thread.interrupt();
+    std::cout << "closed" << std::endl;
+    sleep(1);
+
+    inotify_rm_watch(fd, wd);
+    close(fd);
+
+test.close();
+*/
     z_context.close();
+
 
     return 0;
 
