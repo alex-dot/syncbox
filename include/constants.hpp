@@ -12,6 +12,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/inotify.h>
+#include <ctime>
+#include <msgpack.hpp>
 
 enum SB_SIGTYPE {
   SB_SIGTYPE_LIFE,
@@ -47,6 +49,15 @@ enum SB_SIGIN {
 #define SB_IN_BUF_LEN    (1024 * (SB_IN_EVENT_SIZE + 16))
 #define SB_IN_EVENT_MASK  IN_ATTRIB|IN_CREATE|IN_DELETE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE|IN_MOVE_SELF
 
+
+// file message struct
+struct file_msg_string
+{
+  std::string tag;
+  std::time_t time;
+  std::string text;
+  MSGPACK_DEFINE(tag, time, text)
+};
 
 // wrapper for polling on one socket while simultaneously polling the broadcast
 void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream);

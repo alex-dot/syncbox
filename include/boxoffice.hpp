@@ -14,6 +14,7 @@
 #include <boost/thread.hpp>
 #include <vector>
 #include <utility>
+#include <unordered_map>
 
 #include "box.hpp"
 
@@ -65,7 +66,7 @@ class Boxoffice
     boost::thread* pub_thread;
     std::vector<boost::thread*> sub_threads;
     std::vector<boost::thread*> box_threads;
-    std::vector<Box*> boxes;
+    std::unordered_map<int,Box*> boxes;
 
   public: // TODO: settings-serialization -> make private again
     std::vector< std::pair<std::string,int> > subscribers; // endpoint and type

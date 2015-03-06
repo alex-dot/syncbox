@@ -7,6 +7,7 @@
 
 #include <boost/filesystem.hpp>
 #include <vector>
+#include <utility>
 
 #include "constants.hpp"
 #include "directory.hpp"
@@ -20,16 +21,18 @@ Box::Box() :
   z_boxoffice_(nullptr),
   path_(),
   entries_(),
-  hash_tree_()
+  hash_tree_(),
+  box_num_()
   {}
 
-Box::Box(boost::filesystem::path p) :
+Box::Box(boost::filesystem::path p, int box_num) :
   z_ctx_(nullptr),
   z_broadcast_(nullptr),
   z_boxoffice_(nullptr),
   path_(p),
   entries_(),
-  hash_tree_()
+  hash_tree_(),
+  box_num_(box_num)
   {
     Directory* baseDir = new Directory(p);
     std::vector<Hash*> hashes;
@@ -121,12 +124,11 @@ int Box::watch()
   if ( fd < 0 ) return 1;
 
   // for each directory, add a watch
-  watch_descriptors_.reserve(entries_.size());
-  for (std::unordered_map<std::string,Directory*>::const_iterator i = 
+  for (std::unordered_map<std::string,Directory*>::iterator i = 
        entries_.begin(); i != entries_.end(); ++i)
   {
     wd = inotify_add_watch( fd, i->second->getAbsolutePath().c_str(), SB_IN_EVENT_MASK );
-    watch_descriptors_.push_back(wd);
+    watch_descriptors_.insert(std::make_pair(wd,i->second));
   }
 
   std::stringstream* sstream;
@@ -141,8 +143,8 @@ int Box::watch()
     // sending inotify event
     std::string message = sstream->str();
     zmq::message_t* z_msg;
-    z_msg = new zmq::message_t(5);
-    snprintf((char*) z_msg->data(), 5, "%d %d\n", SB_SIGTYPE_INOTIFY, SB_SIGIN_EVENT);
+    z_msg = new zmq::message_t(7);
+    snprintf((char*) z_msg->data(), 7, "%d %d %d\n", SB_SIGTYPE_INOTIFY, SB_SIGIN_EVENT, box_num_);
     z_boxoffice_->send(*z_msg, ZMQ_SNDMORE);
     delete z_msg;
     z_msg = new zmq::message_t(message.length()+1);
@@ -160,6 +162,24 @@ int Box::watch()
   return 0;
 }
 
+const std::string Box::getBaseDir() const
+  { return path_.c_str(); }
+const std::string Box::getPathOfDirectory(int wd) const
+{
+  Directory* dir = watch_descriptors_.at(wd);
+  std::string path_string = dir->getAbsolutePath();
+//  std::cout << "new path" << std::endl;
+//  std::cout << path_string.length() << std::endl;
+//  std::cout << path_string << std::endl;
+  path_string = path_string.substr(this->getBaseDir().length());
+//  std::cout << path_string.length() << std::endl;
+//  std::cout << path_string << std::endl;
+//  std::cout << this->getBaseDir() << std::endl;
+//  std::cout << this->getBaseDir().length() << std::endl << std::endl;
+  return path_string;
+}
+const std::string Box::getAbsolutePathOfDirectory(int wd) const
+  { return watch_descriptors_.at(wd)->getAbsolutePath(); }
 
 void Box::recursivePrint() const
 {

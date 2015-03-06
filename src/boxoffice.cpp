@@ -8,6 +8,9 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <msgpack.hpp>
+#include <fstream>
+#include "cryptopp/aes.h"
 
 #include "constants.hpp"
 #include "boxoffice.hpp"
@@ -39,8 +42,8 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
 
   // setting up the subscribers, the router and aggregate the subs
   // note that the Watchers are all subscribers too!
-  if (return_value == 0) return_value = bo->setupSubscribers();
   if (return_value == 0) return_value = bo->setupBoxes();
+  if (return_value == 0) return_value = bo->setupSubscribers();
   if (return_value == 0) return_value = bo->runRouter();
 
   // closing
@@ -133,6 +136,30 @@ int Boxoffice::connectToPub()
   return 0;
 }
 
+int Boxoffice::setupBoxes()
+{
+  std::vector<std::string> box_dirs;
+  std::string box_dir = "/home/alex/bin/syncbox/test/testdir_watch";
+  box_dirs.push_back(box_dir);
+//  box_dirs.push_back(box_dir);
+
+  int box_num = 0;
+  box_threads.reserve(box_dirs.size());
+  for (std::vector<std::string>::iterator i = box_dirs.begin(); i != box_dirs.end(); ++i)
+  {
+    // initializing the boxes here, so we can use file IO while it's thread 
+    // still listens to inotify events
+    Box* box = new Box(*i, box_num);
+    boxes[box_num] = box;
+    ++box_num;
+    // opening box thread
+    boost::thread* bt = new boost::thread(box_thread, z_ctx, box);
+    box_threads.push_back(bt);
+  }
+
+  return 0;
+}
+
 int Boxoffice::setupSubscribers()
 {
   // standard variables
@@ -165,6 +192,7 @@ int Boxoffice::setupSubscribers()
     delete sstream;
   }
   if (SB_MSG_DEBUG) printf("bo: all subscribers and boxes connected\n");
+  if (SB_MSG_DEBUG) printf("bo: counted %d subs and boxes\n", heartbeats);
 
   return 0;
 }
@@ -176,6 +204,7 @@ int Boxoffice::runRouter()
   int msg_type, msg_signal;
   std::stringstream* sstream;
 
+  if (SB_MSG_DEBUG) printf("bo: waiting for input from subscribers and watchers\n");
   while(true)
   {
     // waiting for subscriber or inotify input
@@ -187,19 +216,46 @@ int Boxoffice::runRouter()
       perror("[E] bo: received garbage while waiting for inotify event");
 
 
-    int wd, cookie;
+    // helper variables
+    int box_num, wd, cookie, len;
     uint32_t mask;
     std::string filename, line;
     std::stringstream* sstream_line;
+    std::string path;
 
+    // reading inotify message
+    sstream->seekg(0, std::stringstream::beg);
     std::getline(*sstream, line);      // signal frame
+    sstream_line = new std::stringstream(line);
+    *sstream_line >> msg_type >> msg_signal >> box_num;
+    delete sstream_line;
     std::getline(*sstream, line);      // info frame
     sstream_line = new std::stringstream(line);
     *sstream_line >> wd >> mask >> cookie;
     delete sstream_line;
     std::getline(*sstream, filename);  // filename frame
 
-    std::cout << filename << std::endl;
+    // getting the path
+    Box* box = boxes[box_num];
+    std::string file_path = box->getBaseDir();
+    file_path += box->getPathOfDirectory(wd);
+    file_path += "/" + filename;
+std::cout << file_path << std::endl;
+/*
+    std::ifstream file(file_path, std::ifstream::binary);
+    file.seekg(0, std::ifstream::beg);
+    std::ofstream outfile("/home/alex/bin/syncbox/test/testdir_drop/"+filename);
+    outfile.seekp(0, std::ofstream::beg);
+    while(file.tellg() != -1)
+    {
+      char* p = new char[CryptoPP::AES::BLOCKSIZE];
+      bzero(p, CryptoPP::AES::BLOCKSIZE);
+      file.read(p, CryptoPP::AES::BLOCKSIZE);
+      outfile.write(p, CryptoPP::AES::BLOCKSIZE);
+    }
+    file.close();
+    outfile.close();
+*/
 
     delete sstream;
   }
@@ -284,30 +340,6 @@ int Boxoffice::closeConnections()
   }
 
   if (SB_MSG_DEBUG) printf("bo: exit signal sent, exiting...\n");
-
-  return 0;
-}
-
-
-int Boxoffice::setupBoxes()
-{
-  std::vector<std::string> box_dirs;
-  std::string box_dir = "/home/alex/bin/syncbox/test/testdir_watch";
-  box_dirs.push_back(box_dir);
-//  box_dirs.push_back(box_dir);
-
-  box_threads.reserve(box_dirs.size());
-  boxes.reserve(box_dirs.size());
-  for (std::vector<std::string>::iterator i = box_dirs.begin(); i != box_dirs.end(); ++i)
-  {
-    // initializing the boxes here, so we can use file IO while it's thread 
-    // still listens to inotify events
-    Box* box = new Box(*i);
-    boxes.push_back(box);
-    // opening box thread
-    boost::thread* bt = new boost::thread(box_thread, z_ctx, box);
-    box_threads.push_back(bt);
-  }
 
   return 0;
 }

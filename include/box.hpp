@@ -23,7 +23,7 @@ class Box
 {
   public:
     Box();
-    Box(boost::filesystem::path);
+    Box(boost::filesystem::path, int box_num);
     ~Box() {}
 
     HashTree* getHashTree() const;
@@ -48,6 +48,10 @@ class Box
 
     int watch();
 
+    const std::string getBaseDir() const;
+    const std::string getPathOfDirectory(int wd) const;
+    const std::string getAbsolutePathOfDirectory(int wd) const;
+
     void recursivePrint() const;
     void printDirectories() const;
 
@@ -60,7 +64,8 @@ class Box
     boost::filesystem::path path_;
     std::unordered_map<std::string,Directory*> entries_;
     HashTree* hash_tree_;
-    std::vector<int> watch_descriptors_;
+    std::unordered_map<int,Directory*> watch_descriptors_;
+    int box_num_;
 };
 
 #endif

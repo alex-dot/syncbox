@@ -4,7 +4,7 @@
 BOOST_AUTO_TEST_CASE(box_test)
 {
   boost::filesystem::path p = boost::filesystem::current_path().string() + "/../../test/testdir";
-  Box* box = new Box(p);
+  Box* box = new Box(p, 0);
   HashTree* ht = box->getHashTree();
   std::vector<Hash*> hashes = *(ht->getHashes());
   if (hashes.size() == 3)
@@ -32,15 +32,15 @@ BOOST_AUTO_TEST_CASE(box_compare)
   boost::filesystem::path p1 = boost::filesystem::current_path().string() + "/../../test/testdir/testdir";
   boost::filesystem::path p2 = boost::filesystem::current_path().string() + "/../../test/testdir/testdir2";
   std::vector<Hash*> hashes;
-  Box box1(p1);
+  Box box1(p1, 0);
   // compare same/unchanged dir
-  Box box2(p1);
+  Box box2(p1, 1);
   box1.getChangedDirHashes(hashes, box2);
   BOOST_CHECK_EQUAL(0,hashes.size());
   // compare different dirs (one item extra)
   // this makes testdir and testdir2 completely different
   // therefore we expect two hashes, one for testdir and one for testdir2
-  box2 = Box(p2);
+  box2 = Box(p2, 2);
   box1.getChangedDirHashes(hashes, box2);
   BOOST_CHECK_EQUAL(2,hashes.size());
 }
