@@ -75,7 +75,28 @@ ELSE ( ZEROMQ_FOUND )
   MESSAGE ( FATAL_ERROR "Could not find ZeroMQ" )
 ENDIF ( ZEROMQ_FOUND )
 
+# - Find msgpack
+if(MSGPACK_INCLUDE_DIR AND MSGPACK_LIBRARIES)
+  set(MSGPACK_FOUND TRUE)
 
+else(MSGPACK_INCLUDE_DIR AND MSGPACK_LIBRARIES)
+  find_path ( MSGPACK_INCLUDE_DIR NAMES msgpack.hpp PATHS /usr/include/ /usr/local/include/ )
+  find_library ( MSGPACK_LIBRARY NAMES msgpack PATHS /usr/lib /usr/local/lib )
+  if ( MSGPACK_INCLUDE_DIR AND MSGPACK_LIBRARY )
+    set ( MSGPACK_FOUND TRUE )
+  endif ( MSGPACK_INCLUDE_DIR AND MSGPACK_LIBRARY )
+
+  if ( MSGPACK_FOUND )
+    if ( NOT MSGPACK_FIND_QUIETLY )
+      message ( STATUS "Found MessagePack:" )
+      message ( STATUS "  (Headers)       ${MSGPACK_INCLUDE_DIR}" )
+      message ( STATUS "  (Library)       ${MSGPACK_LIBRARY}" )
+    endif ( NOT MSGPACK_FIND_QUIETLY )
+  else ( MSGPACK_FOUND )
+    message ( FATAL_ERROR "Could not find MessagePack" )
+  endif ( MSGPACK_FOUND )
+
+endif(MSGPACK_INCLUDE_DIR AND MSGPACK_LIBRARIES)
 
 # enable testing
 enable_testing()

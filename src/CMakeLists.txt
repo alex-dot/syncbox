@@ -11,4 +11,5 @@ add_executable(syncbox  main.cpp
 target_link_libraries(syncbox ${CMAKE_THREAD_LIBS_INIT}
                               ${Boost_LIBRARIES}
                               ${CRYPTO++_LIBRARIES}
-                              ${ZEROMQ_LIBRARY})
+                              ${ZEROMQ_LIBRARY}
+                              ${MSGPACK_LIBRARY})
