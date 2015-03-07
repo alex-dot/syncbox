@@ -6,9 +6,11 @@ BOOST_AUTO_TEST_CASE(directory_manual)
 {
   Directory dir;
   boost::filesystem::path p = boost::filesystem::current_path().string() + "/../../test/testdir";
-  dir.fillDirectory(p);
+
+  std::vector<boost::filesystem::directory_entry> dirs;
+  dir.fillDirectory(p, dirs);
   HashTree* ht = dir.getHashTree();
-  std::vector<Hash*> hashes = *(ht->getHashes());
+  std::vector< std::shared_ptr<Hash> > hashes = *(ht->getHashes());
   if (hashes.size() == 6)
   {
     std::cout << "Note that these tests very likely fail, because the Dir Object "
@@ -43,7 +45,7 @@ BOOST_AUTO_TEST_CASE(directory_auto)
   boost::filesystem::path p = boost::filesystem::current_path().string() + "/../../test/testdir";
   Directory dir(p);
   HashTree* ht = dir.getHashTree();
-  std::vector<Hash*> hashes = *(ht->getHashes());
+  std::vector< std::shared_ptr<Hash> > hashes = *(ht->getHashes());
   if (hashes.size() == 6)
   {
     std::cout << "Note that these tests very likely fail, because the Dir Object "
@@ -77,14 +79,14 @@ BOOST_AUTO_TEST_CASE(directory_compare)
 {
   boost::filesystem::path p1 = boost::filesystem::current_path().string() + "/../../test/testdir/testdir";
   boost::filesystem::path p2 = boost::filesystem::current_path().string() + "/../../test/testdir/testdir2";
-  std::vector<Hash*> hashes;
+  std::vector< std::shared_ptr<Hash> > hashes;
   Directory dir1(p1);
   // compare same/unchanged dir
   Directory dir2(p1);
   dir1.getChangedEntryHashes(hashes, dir2);
   BOOST_CHECK_EQUAL(0,hashes.size());
   // compare different dirs (one item extra)
-  dir2 = Directory(p2);
-  dir1.getChangedEntryHashes(hashes, dir2);
+  Directory dir3(p2);
+  dir1.getChangedEntryHashes(hashes, dir3);
   BOOST_CHECK_EQUAL(1,hashes.size());
 }

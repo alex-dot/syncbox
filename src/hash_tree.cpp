@@ -9,15 +9,27 @@
 #include <string>
 #include <sstream>
 
- #include <iostream>
+#include <iostream>
 
-void HashTree::makeHashTree(std::vector<Hash*>& temp_hashes)
+HashTree::~HashTree()
+{/*
+  for (std::vector<Hash*>::iterator i = hashes_.begin(); i != hashes_.end(); ++i)
+  {
+    if (*i != nullptr)
+    {
+      delete *i;
+      *i = nullptr;
+    }
+  }*/
+}
+
+void HashTree::makeHashTree(std::vector< std::shared_ptr<Hash> >& temp_hashes)
 {
   // if this object already has a tree, clean up
   hashes_.clear();
   elements_per_level_.clear();
 
-  std::sort (temp_hashes.begin(), temp_hashes.end(), hashPointerLessThanFunctor());
+  std::sort (temp_hashes.begin(), temp_hashes.end(), hashSharedPointerLessThanFunctor());
 
   int hash_count = temp_hashes.size();
   int tree_depth = 0;                     // the depth of the tree
@@ -35,7 +47,7 @@ void HashTree::makeHashTree(std::vector<Hash*>& temp_hashes)
     ++tree_depth;
   }
 
-  std::vector<Hash*> hashes;
+  std::vector< std::shared_ptr<Hash> > hashes;
   hashes.reserve(tree_size+1);
   int node_count = 0;
   for ( int i = tree_depth; i >= 0; --i )
@@ -60,12 +72,12 @@ void HashTree::makeHashTree(std::vector<Hash*>& temp_hashes)
         {
           std::string string = hashes[curr_item]->getHash();
           string += hashes[curr_item+1]->getHash();
-          Hash* hash = new Hash(string);
+          std::shared_ptr<Hash> hash(new Hash(string));
           hashes.push_back(hash);
           ++temp_node_count;
         } else if ( ((offset+2) - elements_per_level_.back() == 1) ) {
           std::string string = hashes[curr_item]->getHash();
-          Hash* hash = new Hash(string+string);
+          std::shared_ptr<Hash> hash(new Hash(string+string));
           hashes.push_back(hash);
           ++temp_node_count;
         }
@@ -80,12 +92,12 @@ void HashTree::makeHashTree(std::vector<Hash*>& temp_hashes)
 void HashTree::makeHashTreeFromSelf()
 {
   // we copy the internal hash vector to circumvent race conditions
-  std::vector<Hash*> temp_hashes = hashes_;
+  std::vector< std::shared_ptr<Hash> > temp_hashes = hashes_;
   this->makeHashTree(temp_hashes);
 }
 
-const std::vector<Hash*>* HashTree::getHashes() const { return &hashes_; }
-Hash* HashTree::getTopHash() const { return hashes_.back(); }
+const std::vector< std::shared_ptr<Hash> >* HashTree::getHashes() const { return &hashes_; }
+std::shared_ptr<Hash> HashTree::getTopHash() const { return hashes_.back(); }
 
 
 bool HashTree::checkHashTreeChange(const HashTree& lhs) const
@@ -96,7 +108,7 @@ bool HashTree::checkHashTreeChange(const HashTree& lhs) const
     return false;
 }
 
-bool HashTree::getChangedHashes(std::vector<Hash*>& changed_hashes, 
+bool HashTree::getChangedHashes(std::vector< std::shared_ptr<Hash> >& changed_hashes, 
                                 const HashTree& lhs) const
 {
   if (this->checkHashTreeChange(lhs))
@@ -104,25 +116,25 @@ bool HashTree::getChangedHashes(std::vector<Hash*>& changed_hashes,
     int max_elements_size = lhs.getElementsPerLevel()->front() + elements_per_level_.front();
     changed_hashes.resize(max_elements_size);
 
-    std::vector<Hash*> left_hashes(lhs.getElementsPerLevel()->front());
-    std::vector<Hash*> left_hashes_unique(lhs.getElementsPerLevel()->front());
+    std::vector< std::shared_ptr<Hash> > left_hashes(lhs.getElementsPerLevel()->front());
+    std::vector< std::shared_ptr<Hash> > left_hashes_unique(lhs.getElementsPerLevel()->front());
     std::copy_n (lhs.getHashes()->begin(), lhs.getElementsPerLevel()->front(), left_hashes.begin());
-    std::vector<Hash*> right_hashes(elements_per_level_.front());
-    std::vector<Hash*> right_hashes_unique(elements_per_level_.front());
+    std::vector< std::shared_ptr<Hash> > right_hashes(elements_per_level_.front());
+    std::vector< std::shared_ptr<Hash> > right_hashes_unique(elements_per_level_.front());
     std::copy_n (hashes_.begin(), elements_per_level_.front(), right_hashes.begin());
 
-    std::sort (left_hashes.begin(), left_hashes.end(), hashPointerLessThanFunctor());
-    std::sort (right_hashes.begin(), right_hashes.end(), hashPointerLessThanFunctor());
+    std::sort (left_hashes.begin(), left_hashes.end(), hashSharedPointerLessThanFunctor());
+    std::sort (right_hashes.begin(), right_hashes.end(), hashSharedPointerLessThanFunctor());
 
-    std::vector<Hash*>::iterator it;
-    it = std::unique_copy (left_hashes.begin(), left_hashes.end(), left_hashes_unique.begin(), hashPointerEqualsFunctor());
+    std::vector< std::shared_ptr<Hash> >::iterator it;
+    it = std::unique_copy (left_hashes.begin(), left_hashes.end(), left_hashes_unique.begin(), hashSharedPointerEqualsFunctor());
     left_hashes_unique.resize(std::distance(left_hashes_unique.begin(),it));
-    it = std::unique_copy (right_hashes.begin(), right_hashes.end(), right_hashes_unique.begin(), hashPointerEqualsFunctor());
+    it = std::unique_copy (right_hashes.begin(), right_hashes.end(), right_hashes_unique.begin(), hashSharedPointerEqualsFunctor());
     right_hashes_unique.resize(std::distance(right_hashes_unique.begin(),it));
 
     it = set_symmetric_difference(left_hashes_unique.begin(), left_hashes_unique.end(), 
                                   right_hashes_unique.begin(), right_hashes_unique.end(), 
-                                  changed_hashes.begin(), hashPointerLessThanFunctor());
+                                  changed_hashes.begin(), hashSharedPointerLessThanFunctor());
 
     changed_hashes.resize(std::distance(changed_hashes.begin(),it));
     return true;

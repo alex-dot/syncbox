@@ -3,16 +3,16 @@
 bool hash_tree_compare_helper(unsigned int x)
 {
   bool return_value = true;
-  Hash* hash_orig = new Hash("test");
-  Hash* hash_diff = new Hash("test2");
-  std::vector<Hash*> hashes_orig(x);
-  std::vector<Hash*> hashes_diff(x);
-  std::vector<Hash*> hashes_temp;
+  std::shared_ptr<Hash> hash_orig(new Hash("test"));
+  std::shared_ptr<Hash> hash_diff(new Hash("test2"));
+  std::vector< std::shared_ptr<Hash> > hashes_orig(x);
+  std::vector< std::shared_ptr<Hash> > hashes_diff(x);
+  std::vector< std::shared_ptr<Hash> > hashes_temp;
   std::vector<int> elp;
   HashTree* ht_orig = new HashTree();
   HashTree* ht_diff = new HashTree();
   
-  for (std::vector<Hash*>::iterator i = hashes_orig.begin(); i != hashes_orig.end(); ++i)
+  for (std::vector< std::shared_ptr<Hash> >::iterator i = hashes_orig.begin(); i != hashes_orig.end(); ++i)
   { (*i) = hash_orig; }
   ht_orig->makeHashTree(hashes_orig);
   hashes_orig.clear();
@@ -21,7 +21,7 @@ bool hash_tree_compare_helper(unsigned int x)
   std::vector<int> list_of_culprits(10000);   // a list of differing hashes
   for (int i = 0; i < rounds; ++i)
   {
-    for (std::vector<Hash*>::iterator j = hashes_diff.begin(); j != hashes_diff.end(); ++j)
+    for (std::vector< std::shared_ptr<Hash> >::iterator j = hashes_diff.begin(); j != hashes_diff.end(); ++j)
     { (*j) = hash_orig; }
     unsigned int diff_node_nr = rand() % x;
     hashes_diff[diff_node_nr] = hash_diff;
@@ -91,8 +91,6 @@ bool hash_tree_compare_helper(unsigned int x)
     }
   }
 
-  delete hash_orig;
-  delete hash_diff;
   delete ht_orig;
   delete ht_diff;
 

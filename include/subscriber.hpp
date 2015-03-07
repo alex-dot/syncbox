@@ -30,7 +30,7 @@ class Subscriber
       sb_subtype(sb_subtype_)
       {};
     Subscriber(const Subscriber&);
-    ~Subscriber() {};
+    ~Subscriber();
 
     static Subscriber* initialize(zmq::context_t* z_ctx_, 
                                   std::string endpoint_, 

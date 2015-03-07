@@ -45,7 +45,7 @@ class Boxoffice
       box_threads(),
       boxes()
       {};
-    ~Boxoffice() {};
+    ~Boxoffice();
 
     int connectToBroadcast();
     int connectToMain();

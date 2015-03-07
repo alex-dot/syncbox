@@ -35,32 +35,52 @@ Box::Box(boost::filesystem::path p, int box_num) :
   box_num_(box_num)
   {
     Directory* baseDir = new Directory(p);
-    std::vector<Hash*> hashes;
+    std::vector< std::shared_ptr<Hash> > hashes;
 
-    Hash* hash = new Hash();
+    std::shared_ptr<Hash> hash(new Hash());
     baseDir->makeDirectoryHash(hash);
     entries_[hash->getHash()] = baseDir;
     hashes.push_back(hash);
 
-    recursiveDirectoryFill(hashes, baseDir->fillDirectory(path_));
+    std::vector<boost::filesystem::directory_entry> dirs;
+    baseDir->fillDirectory(path_, dirs);
+    recursiveDirectoryFill(hashes, dirs);
 
     HashTree* temp_ht = new HashTree();
     temp_ht->makeHashTree(hashes);
-    hash_tree_ = temp_ht;
+    std::swap(hash_tree_,temp_ht);
+    delete temp_ht;
   }
 
-void Box::recursiveDirectoryFill(std::vector<Hash*>& hashes, std::vector<boost::filesystem::directory_entry>* dirs)
+Box::~Box()
 {
-  for ( std::vector<boost::filesystem::directory_entry>::iterator i = dirs->begin();
-        i != dirs->end();
+  // note: we only would need to do this for entries_, since we reference the 
+  // same Directories* in watch_descriptors_
+  // but let's make sure and clear both unordered_maps regardless
+  for (std::unordered_map<std::string,Directory*>::iterator i = entries_.begin(); i != entries_.end(); ++i)
+    delete i->second;
+  entries_.clear();
+  watch_descriptors_.clear();
+
+  delete hash_tree_;
+  delete z_broadcast_;
+  delete z_boxoffice_;
+}
+
+void Box::recursiveDirectoryFill(std::vector< std::shared_ptr<Hash> >& hashes, std::vector<boost::filesystem::directory_entry>& dirs)
+{
+  for ( std::vector<boost::filesystem::directory_entry>::iterator i = 
+        dirs.begin(); i != dirs.end();
         ++i )
   {
     Directory* directory = new Directory(*i);
-    Hash* hash = new Hash();
+    std::shared_ptr<Hash> hash(new Hash());
     directory->makeDirectoryHash(hash);
-    entries_[hash->getHash()] = directory;
+    entries_.insert(std::make_pair(hash->getHash(),directory));
     hashes.push_back(hash);
-    recursiveDirectoryFill(hashes, directory->fillDirectory(*i));
+    std::vector<boost::filesystem::directory_entry> temp_dirs;
+    directory->fillDirectory(*i, temp_dirs);
+    recursiveDirectoryFill(hashes, temp_dirs);
   }
 }
 
@@ -69,7 +89,7 @@ bool Box::checkBoxChange(const Box& left) const
 {
   return (left.getHashTree()->getTopHash() == hash_tree_->getTopHash()) ? false : true;
 }
-bool Box::getChangedDirHashes(std::vector<Hash*>& changed_hashes, 
+bool Box::getChangedDirHashes(std::vector< std::shared_ptr<Hash> >& changed_hashes, 
                               const Box& left) const
 {
   return hash_tree_->getChangedHashes(changed_hashes, *(left.getHashTree()));
@@ -138,7 +158,11 @@ int Box::watch()
     sstream = new std::stringstream();
     s_recv_in(*z_broadcast_, fd, *sstream);
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) break;
+    if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) 
+    {
+      delete sstream;
+      break;
+    }
 
     // sending inotify event
     std::string message = sstream->str();

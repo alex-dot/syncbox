@@ -44,7 +44,7 @@ class Publisher
       z_broadcast(nullptr),
       channel_list()
       {};
-    ~Publisher() {};
+    ~Publisher();
 
     int connectToBroadcast();
     int connectToBoxoffice();

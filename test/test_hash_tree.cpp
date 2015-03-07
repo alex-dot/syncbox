@@ -5,8 +5,8 @@
 
 BOOST_AUTO_TEST_CASE(hash_tree_size_compare)
 {
-  Hash* hash = new Hash("test");
-  std::vector<Hash*> hashes;
+  std::shared_ptr<Hash> hash(new Hash("test"));
+  std::vector< std::shared_ptr<Hash> > hashes;
   // 1 node
   hashes.push_back(hash);
   HashTree* ht = new HashTree(hashes);
@@ -50,13 +50,12 @@ BOOST_AUTO_TEST_CASE(hash_tree_size_compare)
   ht->makeHashTree(hashes);
   BOOST_CHECK_EQUAL(37, ht->getHashes()->size());
 
-  delete hash;
   delete ht;
 }
 BOOST_AUTO_TEST_CASE(hash_tree_size_compare_random)
 {
-  Hash* hash = new Hash("test");
-  std::vector<Hash*> hashes;
+  std::shared_ptr<Hash> hash(new Hash("test"));
+  std::vector< std::shared_ptr<Hash> > hashes;
   HashTree* ht = new HashTree();
   for (int i = 0; i < 5; ++i)
   {
@@ -83,7 +82,6 @@ BOOST_AUTO_TEST_CASE(hash_tree_size_compare_random)
     BOOST_CHECK_EQUAL(size, ht->getHashes()->size());
   }
 
-  delete hash;
   delete ht;
 }
 BOOST_AUTO_TEST_CASE(hash_tree_compare)
@@ -99,11 +97,11 @@ BOOST_AUTO_TEST_CASE(hash_tree_compare)
 }
 BOOST_AUTO_TEST_CASE(hash_tree_compare_diff)
 {
-  Hash* hash_orig = new Hash("test");  // 7ab383fc29d81f8d0d68e87c69bae5f1f18266d730c48b1d
-  Hash* hash_diff = new Hash("test2"); // 3b1b47a309a5f1be449e3719e5160c8572c4425685830d2b
-  std::vector<Hash*> hashes_orig(8);
-  std::vector<Hash*> hashes_diff(8);
-  std::vector<Hash*> changed_hashes;
+  std::shared_ptr<Hash> hash_orig(new Hash("test"));  // 7ab383fc29d81f8d0d68e87c69bae5f1f18266d730c48b1d
+  std::shared_ptr<Hash> hash_diff(new Hash("test2")); // 3b1b47a309a5f1be449e3719e5160c8572c4425685830d2b
+  std::vector< std::shared_ptr<Hash> > hashes_orig(8);
+  std::vector< std::shared_ptr<Hash> > hashes_diff(8);
+  std::vector< std::shared_ptr<Hash> > changed_hashes;
   HashTree* ht_orig = new HashTree();
   HashTree* ht_diff = new HashTree();
 
@@ -128,15 +126,15 @@ BOOST_AUTO_TEST_CASE(hash_tree_compare_diff)
 }
 BOOST_AUTO_TEST_CASE(hash_tree_sort)
 {
-  Hash* hash1 = new Hash("test1"); // C099BBD00FAF33027AB55BFB4C3A67F19ECD8EB950078ED2
-  Hash* hash2 = new Hash("test2"); // 3B1B47A309A5F1BE449E3719E5160C8572C4425685830D2B
-  Hash* hash3 = new Hash("test3"); // B8B9F8AB7E7B617ABD37E86B89DEE671F6332AF9A4088497
-  Hash* hash4 = new Hash("test4"); // 7A8CFACA415DFD2ACB4930F4D8EA4D7477D0622B61736CB7
-  Hash* hash5 = new Hash("test5"); // 550F59F87EFA94C8A9E04D7238064BBE29D221097CEBD9B3
+  std::shared_ptr<Hash> hash1(new Hash("test1")); // C099BBD00FAF33027AB55BFB4C3A67F19ECD8EB950078ED2
+  std::shared_ptr<Hash> hash2(new Hash("test2")); // 3B1B47A309A5F1BE449E3719E5160C8572C4425685830D2B
+  std::shared_ptr<Hash> hash3(new Hash("test3")); // B8B9F8AB7E7B617ABD37E86B89DEE671F6332AF9A4088497
+  std::shared_ptr<Hash> hash4(new Hash("test4")); // 7A8CFACA415DFD2ACB4930F4D8EA4D7477D0622B61736CB7
+  std::shared_ptr<Hash> hash5(new Hash("test5")); // 550F59F87EFA94C8A9E04D7238064BBE29D221097CEBD9B3
   // therefore the correct order would be:
   // hash2, hash5, hash4, hash3, hash1
-  std::vector<Hash*> hashes = {hash1, hash2, hash3, hash4, hash5};
-  std::sort (hashes.begin(), hashes.end(), hashPointerLessThanFunctor());
+  std::vector< std::shared_ptr<Hash> > hashes = {hash1, hash2, hash3, hash4, hash5};
+  std::sort (hashes.begin(), hashes.end(), hashSharedPointerLessThanFunctor());
   BOOST_CHECK_EQUAL(hash2->getHash(), hashes[0]->getHash());
   BOOST_CHECK_EQUAL(hash5->getHash(), hashes[1]->getHash());
   BOOST_CHECK_EQUAL(hash4->getHash(), hashes[2]->getHash());
@@ -146,8 +144,8 @@ BOOST_AUTO_TEST_CASE(hash_tree_sort)
 }
 BOOST_AUTO_TEST_CASE(hash_tree_top_hash)
 {
-  Hash* hash = new Hash("test");
-  std::vector<Hash*> hashes = {hash, hash, hash};
+  std::shared_ptr<Hash> hash(new Hash("test"));
+  std::vector< std::shared_ptr<Hash> > hashes = {hash, hash, hash};
   HashTree* ht = new HashTree(hashes);
   ht->makeHashTreeFromSelf();
   // Value taken from: http://asecuritysite.com/encryption/tiger

@@ -22,13 +22,14 @@ class Directory
     Directory(const boost::filesystem::path&);
     ~Directory();
 
-    std::vector<boost::filesystem::directory_entry>* fillDirectory(const boost::filesystem::path&);
-    void makeDirectoryHash(Hash* hash);
+    void fillDirectory(const boost::filesystem::path&, 
+                       std::vector<boost::filesystem::directory_entry>&);
+    void makeDirectoryHash(std::shared_ptr<Hash> hash);
 
     HashTree* getHashTree() const;
 
     bool checkDirectoryChange(const Directory& left) const;
-    bool getChangedEntryHashes(std::vector<Hash*>& changed_hashes,
+    bool getChangedEntryHashes(std::vector< std::shared_ptr<Hash> >& changed_hashes,
                                const Directory& left) const;
 
     const std::string getPath() const;

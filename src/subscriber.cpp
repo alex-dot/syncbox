@@ -13,6 +13,14 @@
 #include <iostream>
 #include <boost/thread.hpp>
 
+
+Subscriber::~Subscriber()
+{
+  delete z_boxoffice;
+  delete z_subscriber;
+  delete z_broadcast;
+}
+
 Subscriber* Subscriber::initialize(zmq::context_t* z_ctx_, 
                                    std::string endpoint_, 
                                    int sb_subtype_)
@@ -88,8 +96,16 @@ int Subscriber::run()
     int msg_type, msg_signal;
     s_recv(*z_subscriber, *z_broadcast, *sstream);
     if (*sstream >> msg_type >> msg_signal) {
-      if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) { return 1; }
-        else { return -1; } }
+      if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE )
+        { 
+          delete sstream;
+          return 1; 
+        }
+      else 
+        { 
+          delete sstream;
+          return -1;
+        } }
     std::cout << sstream->str() << std::endl;
     delete sstream;
   }

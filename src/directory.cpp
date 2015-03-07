@@ -10,6 +10,8 @@
 #include <boost/filesystem.hpp>
 #include <vector>
 #include <unordered_map>
+#include <utility>
+#include <memory>
 
 #include <stdio.h>
 #include <string>
@@ -28,26 +30,28 @@ Directory::Directory(const boost::filesystem::path& p) :
   hash_tree_(),
   directory_hash_()
   {
-    fillDirectory(path_);
+    std::vector<boost::filesystem::directory_entry> dirs;
+    fillDirectory(path_, dirs);
   }
 
 Directory::~Directory()
 {
   //delete hashes
+  delete hash_tree_;
 }
 
-std::vector<boost::filesystem::directory_entry>* Directory::fillDirectory(const boost::filesystem::path& document_root)
+void Directory::fillDirectory(const boost::filesystem::path& document_root, 
+                              std::vector<boost::filesystem::directory_entry>& dirs)
 {
-  // need EXCEPTION handling for empty hash
-  std::vector<boost::filesystem::directory_entry>* dirs = new std::vector<boost::filesystem::directory_entry>();
-  std::vector<Hash*> temp_hashes;
+  // TODO: need EXCEPTION handling for empty hash
+  std::vector< std::shared_ptr<Hash> > temp_hashes;
   // iterate over the given path and write every file to entries_, return directories
   for ( boost::filesystem::directory_iterator i = boost::filesystem::directory_iterator(document_root); 
         i != boost::filesystem::directory_iterator(); 
         ++i )
   {
     if (is_directory(*i))
-      dirs->push_back(*i);
+      dirs.push_back(*i);
 
     else if (is_regular_file(*i))
     {
@@ -69,11 +73,11 @@ std::vector<boost::filesystem::directory_entry>* Directory::fillDirectory(const 
       string_to_hash += std::to_string(boost::filesystem::last_write_time(file));
 
       // make hash
-      Hash* hash = new Hash(string_to_hash);
+      std::shared_ptr<Hash> hash(new Hash(string_to_hash));
       temp_hashes.push_back(hash);
 
       // insert into entries_
-      entries_[hash->getHash()] = *i;
+      entries_.insert(std::make_pair(hash->getHash(),*i));
     }
 
     else
@@ -81,10 +85,10 @@ std::vector<boost::filesystem::directory_entry>* Directory::fillDirectory(const 
   }
   HashTree* temp_ht = new HashTree();
   temp_ht->makeHashTree(temp_hashes);
-  hash_tree_ = temp_ht;
-  return dirs;
+  std::swap(hash_tree_,temp_ht);
+  delete temp_ht;
 }
-void Directory::makeDirectoryHash(Hash* hash)
+void Directory::makeDirectoryHash(std::shared_ptr<Hash> hash)
 {
   std::string hash_string = hash_tree_->getTopHash()->getHash();
   hash_string += this->getPath();
@@ -96,10 +100,10 @@ bool Directory::checkDirectoryChange(const Directory& left) const
 {
   return (left.getHashTree() == this->getHashTree()) ? false : true;
 }
-bool Directory::getChangedEntryHashes(std::vector<Hash*>& changed_hashes,
+bool Directory::getChangedEntryHashes(std::vector< std::shared_ptr<Hash> >& changed_hashes,
                        const Directory& left) const
 {
-  return this->getHashTree()->getChangedHashes(changed_hashes, *(left.getHashTree()));
+  return hash_tree_->getChangedHashes(changed_hashes, *(left.getHashTree()));
 }
 
 const std::string Directory::getPath() const { return path_.filename().c_str(); }
@@ -108,8 +112,8 @@ const std::string Directory::getAbsolutePath() const { return path_.c_str(); }
 
 void Directory::printHashTree() const
 {
-  std::vector<Hash*> hashes = *(hash_tree_->getHashes());
-  for (std::vector<Hash*>::iterator i = hashes.begin(); i != hashes.end(); ++i)
+  std::vector< std::shared_ptr<Hash> > hashes = *(hash_tree_->getHashes());
+  for (std::vector< std::shared_ptr<Hash> >::iterator i = hashes.begin(); i != hashes.end(); ++i)
   {
     std::cout << (*i)->getHash() << std::endl;
   }

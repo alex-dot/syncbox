@@ -24,12 +24,12 @@ class Box
   public:
     Box();
     Box(boost::filesystem::path, int box_num);
-    ~Box() {}
+    ~Box();
 
     HashTree* getHashTree() const;
 
     bool checkBoxChange(const Box& left) const;
-    bool getChangedDirHashes(std::vector<Hash*>& changed_hashes, 
+    bool getChangedDirHashes(std::vector< std::shared_ptr<Hash> >& changed_hashes, 
                              const Box& left) const;
 
     int setContext(zmq::context_t* z_ctx)
@@ -56,7 +56,8 @@ class Box
     void printDirectories() const;
 
   private:
-    void recursiveDirectoryFill(std::vector<Hash*>& hashes, std::vector<boost::filesystem::directory_entry>* dir);
+    void recursiveDirectoryFill(std::vector< std::shared_ptr<Hash> >& hashes, 
+                                std::vector<boost::filesystem::directory_entry>& dir);
 
     zmq::context_t* z_ctx_;
     zmq::socket_t* z_broadcast_;

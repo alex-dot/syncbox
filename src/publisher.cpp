@@ -13,6 +13,15 @@
 #include <iostream>
 #include <boost/thread.hpp>
 
+
+Publisher::~Publisher()
+{
+  delete z_bo_pair;
+  delete z_broadcast;
+  for (std::vector<zmq::socket_t*>::iterator i = channel_list.begin(); i != channel_list.end(); ++i)
+    delete *i;
+}
+
 Publisher* Publisher::initialize(zmq::context_t* z_ctx_)
 {
   Publisher* pub = getInstance();
@@ -144,8 +153,8 @@ int Publisher::listenOnChannels()
     sstream = new std::stringstream();
     s_recv(*z_bo_pair, *z_broadcast, *sstream);
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) break;
     delete sstream;
+    if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) break;
   }
 
   return 0;

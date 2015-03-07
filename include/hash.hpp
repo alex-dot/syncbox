@@ -66,5 +66,13 @@ struct hashPointerEqualsFunctor
 {
   bool operator()(const Hash* lhs, const Hash* rhs) { return ((*lhs) == (*rhs)); }
 };
+struct hashSharedPointerLessThanFunctor
+{
+  bool operator()(const std::shared_ptr<Hash> lhs, const std::shared_ptr<Hash> rhs) { return (*lhs < *rhs); }
+};
+struct hashSharedPointerEqualsFunctor
+{
+  bool operator()(const std::shared_ptr<Hash> lhs, const std::shared_ptr<Hash> rhs) { return ((*lhs) == (*rhs)); }
+};
 
 #endif
