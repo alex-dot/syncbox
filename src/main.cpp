@@ -114,25 +114,6 @@ int main(int argc, char* argv[])
     // catch signals
     s_catch_signals();
 
-
-/*
-    // bind process broadcast pub
-    zmq::socket_t test(z_context, ZMQ_PUB);
-    test.bind("inproc://sb_broadcast");
-
-    int length, i = 0;
-    int fd; 
-    int wd;
-    char buffer[SB_IN_BUF_LEN];
-
-    fd = inotify_init();
-    if ( fd < 0 ) perror("inotify_init");
-    wd = inotify_add_watch( fd, "/home/alex/bin/syncbox/test/testdir2", SB_IN_EVENT_MASK );
-
-    if (SB_MSG_DEBUG) printf("main: opening boxoffice thread\n");
-    boost::thread bo_thread(boxoffice_thread, &fd, &z_context);
-*/
-
 /*
     std::cout << IN_ACCESS << std::endl;
     std::cout << IN_ATTRIB << std::endl;
@@ -203,25 +184,6 @@ int main(int argc, char* argv[])
     z_broadcast.close();
 
 
-/*
-    sleep(4);
-    std::cout << "closing thread" << std::endl;
-
-
-      zmq::message_t z_msg;
-        snprintf((char*) z_msg.data(), 7, "blabla");
-        test.send(z_msg);
-
-
-//    bo_thread.interrupt();
-    std::cout << "closed" << std::endl;
-    sleep(1);
-
-    inotify_rm_watch(fd, wd);
-    close(fd);
-
-test.close();
-*/
     z_context.close();
 
 
