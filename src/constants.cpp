@@ -7,10 +7,16 @@
 void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream)
 {
   zmq::message_t z_msg;
+  std::vector<zmq::pollitem_t> z_items = {
+    { static_cast<void *>(socket),    0, ZMQ_POLLIN, 0 },
+    { static_cast<void *>(broadcast), 0, ZMQ_POLLIN, 0 }
+  };
+  /*
   zmq::pollitem_t z_items[] {
     { socket,    0, ZMQ_POLLIN, 0 },
     { broadcast, 0, ZMQ_POLLIN, 0 }
   };
+  */
   int more;
   while(true)
   {
@@ -43,8 +49,8 @@ void s_recv_in(zmq::socket_t &broadcast, int fd, std::stringstream &sstream)
 {
   zmq::message_t z_msg;
   zmq::pollitem_t z_items[] {
-    {         0, fd, ZMQ_POLLIN, 0 },
-    { broadcast,  0, ZMQ_POLLIN, 0 }
+    {                        nullptr, fd, ZMQ_POLLIN, 0 },
+    { static_cast<void *>(broadcast),  0, ZMQ_POLLIN, 0 }
   };
   while(true)
   {

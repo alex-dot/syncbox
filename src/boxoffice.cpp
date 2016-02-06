@@ -49,6 +49,7 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
   Boxoffice* bo = getInstance();
 
   // TODO: serialize settings -> subscribers
+  // the endpoints shall be got from the box's config
   bo->subscribers.push_back(std::make_pair(
     "ipc://syncbox.ipc",SB_SUBTYPE_TCP_BIDIR));
 

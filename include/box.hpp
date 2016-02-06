@@ -59,14 +59,14 @@ class Box
     void recursiveDirectoryFill(std::vector< std::shared_ptr<Hash> >& hashes, 
                                 std::vector<boost::filesystem::directory_entry>& dir);
 
-    zmq::context_t* z_ctx_;
-    zmq::socket_t* z_broadcast_;
-    zmq::socket_t* z_boxoffice_;
-    boost::filesystem::path path_;
+    zmq::context_t*                            z_ctx_;
+    zmq::socket_t*                             z_broadcast_;
+    zmq::socket_t*                             z_boxoffice_;
+    boost::filesystem::path                    path_;
     std::unordered_map<std::string,Directory*> entries_;
-    HashTree* hash_tree_;
-    std::unordered_map<int,Directory*> watch_descriptors_;
-    int box_num_;
+    HashTree*                                  hash_tree_;
+    std::unordered_map<int,Directory*>         watch_descriptors_;
+    int                                        box_num_;
 };
 
 #endif

@@ -21,6 +21,7 @@ add_executable(syncboxTest testMain.cpp
                            ../src/hash_tree.cpp
                            ../src/directory.cpp
                            ../src/box.cpp
+                           #../src/boxconfig.cpp
                            test_hash.cpp
                            test_hash_tree.cpp
                            test_directory.cpp

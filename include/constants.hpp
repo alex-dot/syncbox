@@ -40,8 +40,14 @@ enum SB_SUB_TYPE {
 enum SB_SIGIN {
   SB_SIGIN_EVENT
 };
+enum SB_BACKUP_TYPE {
+  SB_BACKUP_NONE,
+  SB_BACKUP_LOCAL,
+  SB_BACKUP_REMOTE,
+  SB_BACKUP_BOTH
+};
 
-#define SB_MSG_DEBUG false
+#define SB_MSG_DEBUG true
 
 //static size_t  
 #define SB_IN_EVENT_SIZE (sizeof(struct inotify_event))
