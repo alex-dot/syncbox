@@ -42,6 +42,12 @@ int Config::initialize(int argc, char* argv[])
     options.add(cmdline_options).add(generic_options);
 
 
+    // BUG we cannot ADD nodes/boxes through the cli,
+    //     it takes either the config file or the command line...
+    // parse command line arguments
+    po::store(po::parse_command_line( argc, argv, options ), c->vm_);
+    po::notify(c->vm_);
+
     // parse config file, if any
     wordexp_t expanded_config_file_path;
     wordexp( SB_CONFIG_FILE, &expanded_config_file_path, 0 );
@@ -49,13 +55,9 @@ int Config::initialize(int argc, char* argv[])
     if ( !ifs ) {
         if (SB_MSG_DEBUG) printf("config: no config file found\n");
     } else {
-        store(parse_config_file(ifs, generic_options), c->vm_);
-        notify(c->vm_);
+        po::store(po::parse_config_file(ifs, generic_options), c->vm_);
+        po::notify(c->vm_);
     }
-
-    // parse command line arguments
-    po::store(po::parse_command_line( argc, argv, options ), c->vm_);
-    po::notify(c->vm_);
 
     return c->doSanityCheck( &options, &nodes );
 }
@@ -156,8 +158,6 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
         perror("[E] No box locations supplied, exiting...");
         return 1;
     }
-
-    std::cout << "we have " << c->box_dirs_.size() << " boxes!" << std::endl;
 
     return 0;
 }
