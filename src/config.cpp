@@ -12,6 +12,7 @@
 #include <regex>
 #include <boost/filesystem.hpp>
 #include <wordexp.h>
+#include <algorithm>
 
 
 int Config::initialize(int argc, char* argv[])
@@ -84,8 +85,13 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
     if (SB_MSG_DEBUG) printf("config: checking nodes\n");
     if ( nodes->size() >= 1 ) {
         // TODO add logic for non-bidirectional nodes
-        for (std::vector<std::string>::iterator i = nodes->begin(); 
-             i != nodes->end(); ++i)
+
+        // Let's make the nodes vector unique before turning it over
+        std::vector<std::string>::iterator i;
+        i = std::unique( nodes->begin(), nodes->end() );
+        nodes->resize( std::distance( nodes->begin(), i ) );
+
+        for (i = nodes->begin(); i != nodes->end(); ++i)
         {
             // check if the supplied node is connectable
             // only tcp and ipc are allowed
@@ -133,7 +139,8 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
     // checking boxes
     if (SB_MSG_DEBUG) printf("config: checking boxes\n");
     if ( c->box_dirs_.size() >= 1 ) {
-        for (std::vector< std::string >::iterator i = c->box_dirs_.begin(); 
+        std::vector< std::string >::iterator i;
+        for (i = c->box_dirs_.begin(); 
              i != c->box_dirs_.end(); ++i)
         {
             // check if the box locations map to directories on the filesystem
@@ -142,10 +149,14 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 return 1;
             }
         }
+        // finally make the vector unique
+        i = std::unique( c->box_dirs_.begin(), c->box_dirs_.end() );
+        c->box_dirs_.resize( std::distance( c->box_dirs_.begin(), i ) );
     } else {
         perror("[E] No box locations supplied, exiting...");
         return 1;
     }
+
     std::cout << "we have " << c->box_dirs_.size() << " boxes!" << std::endl;
 
     return 0;
