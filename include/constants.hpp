@@ -56,6 +56,8 @@ enum SB_BACKUP_TYPE {
 #define SB_IN_EVENT_MASK  IN_ATTRIB|IN_CREATE|IN_DELETE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE|IN_MOVE_SELF
 
 
+#define SB_CONFIG_FILE "~/.syncbox"
+
 // file message struct
 struct file_msg_string
 {

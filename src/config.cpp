@@ -8,7 +8,10 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <regex>
+#include <boost/filesystem.hpp>
+#include <wordexp.h>
 
 
 int Config::initialize(int argc, char* argv[])
@@ -20,19 +23,40 @@ int Config::initialize(int argc, char* argv[])
 
     // parsing program options using boost::program_options
     namespace po = boost::program_options;
-    po::options_description desc("Allowed options");
-    desc.add_options()
+
+    po::options_description cmdline_options("Generic options");
+    cmdline_options.add_options()
         ("help,h", "produce help message")
+    ;
+
+    po::options_description generic_options("Allowed options");
+    generic_options.add_options()
         ("node,n", po::value<std::vector< std::string >>(&nodes), 
             "Add node to listen to (multiple arguments allowed)")
         ("box,b", po::value<std::vector <std::string> >(&c->box_dirs_), 
             "Add path of a directory to watch (multiple arguments allowed)")
     ;
 
-    po::store(po::parse_command_line( argc, argv, desc ), c->vm_);
+    po::options_description options;
+    options.add(cmdline_options).add(generic_options);
+
+
+    // parse config file, if any
+    wordexp_t expanded_config_file_path;
+    wordexp( SB_CONFIG_FILE, &expanded_config_file_path, 0 );
+    std::ifstream ifs( expanded_config_file_path.we_wordv[0] );
+    if ( !ifs ) {
+        if (SB_MSG_DEBUG) printf("config: no config file found\n");
+    } else {
+        store(parse_config_file(ifs, generic_options), c->vm_);
+        notify(c->vm_);
+    }
+
+    // parse command line arguments
+    po::store(po::parse_command_line( argc, argv, options ), c->vm_);
     po::notify(c->vm_);
 
-    return c->doSanityCheck( &desc, &nodes );
+    return c->doSanityCheck( &options, &nodes );
 }
 
 const std::vector< std::pair<std::string,int> >
@@ -45,12 +69,12 @@ const std::vector< std::string >
         return box_dirs_;
 }
 
-int Config::doSanityCheck(boost::program_options::options_description* desc, 
+int Config::doSanityCheck(boost::program_options::options_description* options, 
                           std::vector<std::string>* nodes) {
 
     // check for help argument, print the help, and exit
     if (vm_.count("help")) {
-        std::cout << *(desc) << std::endl;
+        std::cout << *(options) << std::endl;
         return 1;
     }
 
@@ -122,6 +146,7 @@ int Config::doSanityCheck(boost::program_options::options_description* desc,
         perror("[E] No box locations supplied, exiting...");
         return 1;
     }
+    std::cout << "we have " << c->box_dirs_.size() << " boxes!" << std::endl;
 
     return 0;
 }

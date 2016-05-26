@@ -34,7 +34,7 @@ class Config
     Config() {};
     ~Config() {};
 
-    int doSanityCheck(boost::program_options::options_description* desc, 
+    int doSanityCheck(boost::program_options::options_description* options, 
                       std::vector<std::string>*);
 
     boost::program_options::variables_map   vm_;
