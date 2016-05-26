@@ -32,16 +32,6 @@ int Config::initialize(int argc, char* argv[])
     po::store(po::parse_command_line( argc, argv, desc ), c->vm_);
     po::notify(c->vm_);
 
-/*
-    // adding the subscriber endpoints
-    c->subscriber_endpoints_.push_back(
-        std::make_pair("ipc://syncbox.ipc",SB_SUBTYPE_TCP_BIDIR)
-    );
-
-    // adding the directories to be watched
-    std::string box_dir = "/home/alex/bin/ba-arbeit/syncbox/test/testdir_watch";
-    c->box_dirs_.push_back(box_dir);
-*/
     return c->doSanityCheck( &desc, &nodes );
 }
 
@@ -67,6 +57,7 @@ int Config::doSanityCheck(boost::program_options::options_description* desc,
     Config* c = Config::getInstance();
 
     // checking nodes (need at least one)
+    if (SB_MSG_DEBUG) printf("config: checking nodes\n");
     if ( nodes->size() >= 1 ) {
         // TODO add logic for non-bidirectional nodes
         for (std::vector<std::string>::iterator i = nodes->begin(); 
@@ -115,9 +106,22 @@ int Config::doSanityCheck(boost::program_options::options_description* desc,
         return 1;
     }
 
+    // checking boxes
+    if (SB_MSG_DEBUG) printf("config: checking boxes\n");
+    if ( c->box_dirs_.size() >= 1 ) {
+        for (std::vector< std::string >::iterator i = c->box_dirs_.begin(); 
+             i != c->box_dirs_.end(); ++i)
+        {
+            // check if the box locations map to directories on the filesystem
+            if ( !boost::filesystem::is_directory(*i) ) {
+                std::cerr << "[E] " << *i << " is not a directory." << std::endl;
+                return 1;
+            }
+        }
+    } else {
+        perror("[E] No box locations supplied, exiting...");
+        return 1;
+    }
 
-
-    std::cout << "got " << c->box_dirs_.size() << " boxes" << std::endl;
-
-    return 1;
+    return 0;
 }
