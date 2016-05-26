@@ -16,6 +16,7 @@
 #include "boxoffice.hpp"
 #include "publisher.hpp"
 #include "subscriber.hpp"
+#include "config.hpp"
 
 void *publisher_thread(void *arg);
 void *subscriber_thread(zmq::context_t*, std::string, int);
@@ -48,10 +49,8 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
 
   Boxoffice* bo = getInstance();
 
-  // TODO: serialize settings -> subscribers
-  // the endpoints shall be got from the box's config
-  bo->subscribers.push_back(std::make_pair(
-    "ipc://syncbox.ipc",SB_SUBTYPE_TCP_BIDIR));
+  Config* conf = Config::getInstance();
+  bo->subscribers = conf->getSubscriberEndpoints();
 
   // setting up
   return_value = bo->setContext(z_ctx);
@@ -160,10 +159,8 @@ int Boxoffice::connectToPub()
 
 int Boxoffice::setupBoxes()
 {
-  std::vector<std::string> box_dirs;
-  std::string box_dir = "/home/alex/bin/syncbox/test/testdir_watch";
-  box_dirs.push_back(box_dir);
-//  box_dirs.push_back(box_dir);
+  Config* conf = Config::getInstance();
+  std::vector<std::string> box_dirs = conf->getBoxDirectories();
 
   int box_num = 0;
   box_threads.reserve(box_dirs.size());
@@ -243,7 +240,7 @@ int Boxoffice::runRouter()
 
 
     // helper variables
-    int box_num, wd, cookie, len;
+    int box_num, wd, cookie;
     uint32_t mask;
     std::string filename, line;
     std::stringstream* sstream_line;
@@ -367,7 +364,7 @@ int Boxoffice::closeConnections()
 
   if (SB_MSG_DEBUG) printf("bo: exit signal sent, exiting...\n");
 
-  return 0;
+  return return_value;
 }
 
 

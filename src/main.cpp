@@ -21,11 +21,12 @@
 #include "constants.hpp"
 #include "boxoffice.hpp"
 #include "publisher.hpp"
+#include "config.hpp"
 
 static int s_interrupted = 0;
 static void s_signal_handler (int signal_value)
 {
-    s_interrupted = 1;
+    s_interrupted = signal_value;
 }
 
 static void s_catch_signals ()
@@ -43,9 +44,7 @@ static void s_catch_signals ()
 
 void *boxoffice_thread(void *arg)
 {
-  Boxoffice* bo;
-  bo = Boxoffice::initialize(static_cast<zmq::context_t*>(arg));
-
+  Boxoffice::initialize(static_cast<zmq::context_t*>(arg));
   return (NULL);
 }
 
@@ -55,10 +54,13 @@ int main_application(int argc, char* argv[])
   // opening zeromq context
   zmq::context_t z_context(1);
 
-  // we eagerly initialize the Boxoffice- and Publisher-singleton here, 
-  // for thread-safety
+  // we eagerly initialize all singletons here
   Boxoffice::getInstance();
   Publisher::getInstance();
+  int return_val = Config::initialize(argc, argv);
+  if (return_val != 0) {
+    return return_val;
+  }
 
   // catch signals
   s_catch_signals();
@@ -118,7 +120,7 @@ int main(int argc, char* argv[])
   // FORKING
   if (SB_MSG_DEBUG)
   {
-    main_application(argc, argv);
+    return main_application(argc, argv);
   } else {
     pid_t pid, sid;
   
@@ -138,7 +140,7 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
       }
   
-      main_application(argc, argv);
+      return main_application(argc, argv);
   
     } // pid > 0 is the parent process
     else if (pid > 0)
@@ -146,7 +148,5 @@ int main(int argc, char* argv[])
       exit(EXIT_SUCCESS);
     }
   }
-
-  return 0;
 
 }

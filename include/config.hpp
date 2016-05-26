@@ -7,6 +7,9 @@
 #ifndef SB_CONFIG_HPP
 #define SB_CONFIG_HPP
 
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
+
 class Config
 {
   public:
@@ -19,15 +22,29 @@ class Config
       return &conf_instance_;
     }
 
-    static Config* initialize();
+    static int initialize(int argc, char* argv[]);
+
+    // Getters
+    const std::vector< std::pair<std::string,int> >
+        getSubscriberEndpoints() const;
+    const std::vector< std::string >
+        getBoxDirectories() const;
 
   private:
     Config() {};
     ~Config() {};
 
-    int                                        config_backup_type_;
-    boost::filesystem::path                    backup_dir_;
-    int                                        backup_max_;
+    int doSanityCheck(boost::program_options::options_description* desc, 
+                      std::vector<std::string>*);
+
+    boost::program_options::variables_map   vm_;
+
+    std::vector< std::pair<std::string,int> >  subscriber_endpoints_;
+    std::vector< std::string >                 box_dirs_;
+
+//    int                                        config_backup_type_;
+//    boost::filesystem::path                    backup_dir_;
+//    int                                        backup_max_;
     // for backup_config:
     // excludes
     // includes

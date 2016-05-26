@@ -1,9 +1,9 @@
 include_directories(../include)
 add_executable(syncbox  main.cpp
                         constants.cpp
+                        config.cpp
                         directory.cpp
                         box.cpp
-                        #boxconfig.cpp
                         hash_tree.cpp
                         hash.cpp
                         boxoffice.cpp

@@ -17,7 +17,7 @@ find_package(Threads)
 set(Boost_USE_STATIC_LIBS OFF) 
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
-find_package(Boost 1.55.0 COMPONENTS system filesystem thread unit_test_framework) 
+find_package(Boost 1.55.0 COMPONENTS system filesystem thread unit_test_framework program_options) 
 
 # - Find Crypto++
 # courtesy of: 
