@@ -62,6 +62,7 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
   if (return_value == 0) return_value = bo->setupBoxes();
   if (return_value == 0) return_value = bo->setupPublishers();
   if (return_value == 0) return_value = bo->setupSubscribers();
+  if (return_value == 0) return_value = bo->checkChildren();
   if (return_value == 0) return_value = bo->runRouter();
 
   // closing
@@ -144,11 +145,6 @@ int Boxoffice::setupPublishers()
 
 int Boxoffice::setupSubscribers()
 {
-  // standard variables
-  zmq::message_t z_msg;
-  int msg_type, msg_signal;
-  std::stringstream* sstream;
-
   // opening subscriber threads
   if (SB_MSG_DEBUG) printf("bo: opening subscriber threads\n");
   for (std::vector< std::pair<std::string,int> >::iterator i = subscribers.begin(); 
@@ -158,12 +154,19 @@ int Boxoffice::setupSubscribers()
     sub_threads.push_back(sub_thread);
   }
 
-  // TODO move this into separate function
+  return 0;
+}
 
-  // connect to subscribers and boxes
+int Boxoffice::checkChildren() {
+  // standard variables
+  zmq::message_t z_msg;
+  int msg_type, msg_signal;
+  std::stringstream* sstream;
+
+  // connect to subscribers, publishers and boxes
   z_router = new zmq::socket_t(*z_ctx, ZMQ_PULL);
   z_router->bind("inproc://sb_boxoffice_pull_in");
-  if (SB_MSG_DEBUG) printf("bo: starting to listen to subs...\n");
+  if (SB_MSG_DEBUG) printf("bo: starting to listen to children...\n");
 
   // wait for heartbeat
   int heartbeats = sub_threads.size() + pub_threads.size() + box_threads.size();

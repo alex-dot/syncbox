@@ -51,6 +51,7 @@ class Boxoffice
     int setupBoxes();
     int setupPublishers();
     int setupSubscribers();
+    int checkChildren();
     int runRouter();
     int closeConnections();
 
