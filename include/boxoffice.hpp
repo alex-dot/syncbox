@@ -48,6 +48,7 @@ class Boxoffice
 
     int connectToBroadcast();
     int connectToMain();
+    int setupConnectionToChildren();
     int setupBoxes();
     int setupPublishers();
     int setupSubscribers();

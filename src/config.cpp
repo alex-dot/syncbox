@@ -21,6 +21,7 @@ int Config::initialize(int argc, char* argv[])
 
     // we handle nodes differently, so we want to parse them in a temp variable
     std::vector< std::string > nodes;
+    std::vector< std::string > hostnames;
 
     // parsing program options using boost::program_options
     namespace po = boost::program_options;
@@ -36,7 +37,7 @@ int Config::initialize(int argc, char* argv[])
             "Add node location to listen to (multiple arguments allowed)")
         ("box,b", po::value<std::vector <std::string> >(&c->box_dirs_), 
             "Add path of a directory to watch (multiple arguments allowed)")
-        ("hostname,p", po::value<std::vector <std::string> >(&c->publisher_endpoints_),
+        ("hostname,p", po::value<std::vector <std::string> >(&hostnames),
             "Add a name for this machine under which other nodes can reach it (multiple arguments allowed)")
     ;
 
@@ -61,7 +62,7 @@ int Config::initialize(int argc, char* argv[])
         po::notify(c->vm_);
     }
 
-    return c->doSanityCheck( &options, &nodes );
+    return c->doSanityCheck( &options, &nodes, &hostnames );
 }
 
 const std::vector< std::pair<std::string,int> >
@@ -78,7 +79,8 @@ const std::vector< std::string >
 }
 
 int Config::doSanityCheck(boost::program_options::options_description* options, 
-                          std::vector<std::string>* nodes) {
+                          std::vector<std::string>* nodes, 
+                          std::vector<std::string>* hostnames) {
 
     // check for help argument, print the help, and exit
     if (vm_.count("help")) {
@@ -130,10 +132,13 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
 
     // checking publishers
     if (SB_MSG_DEBUG) printf("config: checking publishers\n");
-    if ( c->publisher_endpoints_.size() >= 1 ) {
-        for ( std::vector<std::string>::iterator i = c->publisher_endpoints_.begin(); 
-              i != c->publisher_endpoints_.end(); 
-              ++i)
+    if ( hostnames->size() >= 1 ) {
+        // Let's make the nodes vector unique before turning it over
+        std::vector<std::string>::iterator i;
+        i = std::unique( hostnames->begin(), hostnames->end() );
+        hostnames->resize( std::distance( hostnames->begin(), i ) );
+
+        for ( i = hostnames->begin(); i != hostnames->end(); ++i)
         {
             // check if the supplied publisher is connectible
             // only tcp is allowed
@@ -150,9 +155,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                     endpoint = "tcp://" + endpoint;
 
                 // add it to the config class for later use
-                c->subscriber_endpoints_.push_back(
-                    std::make_pair( endpoint, SB_SUBTYPE_TCP_BIDIR )
-                );
+                c->publisher_endpoints_.push_back(endpoint);
             } else {
                 std::cerr << "[E] Cannot process node '" << *i << "'" << std::endl;
                 return 1;

@@ -37,7 +37,8 @@ class Config
     ~Config() {};
 
     int doSanityCheck(boost::program_options::options_description* options, 
-                      std::vector<std::string>*);
+                      std::vector<std::string>* nodes,
+                      std::vector<std::string>* hostnames);
 
     boost::program_options::variables_map   vm_;
 
