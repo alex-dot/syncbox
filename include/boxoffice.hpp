@@ -59,15 +59,12 @@ class Boxoffice
     zmq::socket_t* z_bo_main;
     zmq::socket_t* z_router;
     zmq::socket_t* z_broadcast;
-    //std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
+    std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
     std::vector< std::string > publishers;
     std::vector<boost::thread*> pub_threads;
     std::vector<boost::thread*> sub_threads;
     std::vector<boost::thread*> box_threads;
     std::unordered_map<int,Box*> boxes;
-
-  public: // TODO: settings-serialization -> make private again
-    std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
 };
 
 #endif

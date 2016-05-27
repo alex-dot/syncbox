@@ -28,6 +28,8 @@ class Config
     const std::vector< std::pair<std::string,int> >
         getSubscriberEndpoints() const;
     const std::vector< std::string >
+        getPublisherEndpoints() const;
+    const std::vector< std::string >
         getBoxDirectories() const;
 
   private:
@@ -40,6 +42,7 @@ class Config
     boost::program_options::variables_map   vm_;
 
     std::vector< std::pair<std::string,int> >  subscriber_endpoints_;
+    std::vector< std::string >                 publisher_endpoints_;
     std::vector< std::string >                 box_dirs_;
 
 //    int                                        config_backup_type_;

@@ -51,6 +51,7 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
 
   Config* conf = Config::getInstance();
   bo->subscribers = conf->getSubscriberEndpoints();
+  bo->publishers = conf->getPublisherEndpoints();
 
   // setting up
   return_value = bo->setContext(z_ctx);

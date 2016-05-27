@@ -33,9 +33,11 @@ int Config::initialize(int argc, char* argv[])
     po::options_description generic_options("Allowed options");
     generic_options.add_options()
         ("node,n", po::value<std::vector< std::string >>(&nodes), 
-            "Add node to listen to (multiple arguments allowed)")
+            "Add node location to listen to (multiple arguments allowed)")
         ("box,b", po::value<std::vector <std::string> >(&c->box_dirs_), 
             "Add path of a directory to watch (multiple arguments allowed)")
+        ("hostname,p", po::value<std::vector <std::string> >(&c->publisher_endpoints_),
+            "Add a name for this machine under which other nodes can reach it (multiple arguments allowed)")
     ;
 
     po::options_description options;
@@ -66,7 +68,10 @@ const std::vector< std::pair<std::string,int> >
     Config::getSubscriberEndpoints() const {
         return subscriber_endpoints_;
 }
-
+const std::vector< std::string >
+    Config::getPublisherEndpoints() const {
+        return publisher_endpoints_;
+}
 const std::vector< std::string >
     Config::getBoxDirectories() const {
         return box_dirs_;
@@ -120,6 +125,41 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
         }
     } else {
         perror("[E] No nodes supplied, exiting...");
+        return 1;
+    }
+
+    // checking publishers
+    if (SB_MSG_DEBUG) printf("config: checking publishers\n");
+    if ( c->publisher_endpoints_.size() >= 1 ) {
+        for ( std::vector<std::string>::iterator i = c->publisher_endpoints_.begin(); 
+              i != c->publisher_endpoints_.end(); 
+              ++i)
+        {
+            // check if the supplied publisher is connectible
+            // only tcp is allowed
+            // depending on the matched regex, the zmq protocol will be appended
+            std::smatch sm;
+            if ( std::regex_match( *i, 
+                                   sm, 
+                                   std::regex("(tcp://)?(.*)(:)([0-9]*)")
+                                 ) )
+            {
+                // prepare the node endpoint
+                std::string endpoint = *i;
+                if ( sm[1].length() == 0 )
+                    endpoint = "tcp://" + endpoint;
+
+                // add it to the config class for later use
+                c->subscriber_endpoints_.push_back(
+                    std::make_pair( endpoint, SB_SUBTYPE_TCP_BIDIR )
+                );
+            } else {
+                std::cerr << "[E] Cannot process node '" << *i << "'" << std::endl;
+                return 1;
+            }
+        }
+    } else {
+        perror("[E] No publishers supplied, exiting...");
         return 1;
     }
 
