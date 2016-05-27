@@ -95,8 +95,8 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
 
         for (i = nodes->begin(); i != nodes->end(); ++i)
         {
-            // check if the supplied node is connectable
-            // only tcp and ipc are allowed
+            // check if the supplied node is connectible
+            // only tcp is allowed
             // depending on the matched regex, the zmq protocol will be appended
             std::smatch sm;
             if ( std::regex_match( *i, 
@@ -108,21 +108,6 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 std::string endpoint = *i;
                 if ( sm[1].length() == 0 )
                     endpoint = "tcp://" + endpoint;
-
-                // add it to the config class for later use
-                c->subscriber_endpoints_.push_back(
-                    std::make_pair( endpoint, SB_SUBTYPE_TCP_BIDIR )
-                );
-            }
-            else if ( std::regex_match( *i, 
-                                        sm, 
-                                        std::regex("(ipc://)?(.*)(\\.ipc)")
-                                      ) )
-            {
-                // prepare the node endpoint
-                std::string endpoint = *i;
-                if ( sm[1].length() == 0 )
-                    endpoint = "ipc://" + endpoint;
 
                 // add it to the config class for later use
                 c->subscriber_endpoints_.push_back(
