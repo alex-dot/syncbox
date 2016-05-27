@@ -56,7 +56,6 @@ int main_application(int argc, char* argv[])
 
   // we eagerly initialize all singletons here
   Boxoffice::getInstance();
-  Publisher::getInstance();
   int return_val = Config::initialize(argc, argv);
   if (return_val != 0) {
     return return_val;

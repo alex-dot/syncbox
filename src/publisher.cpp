@@ -16,17 +16,16 @@
 
 Publisher::~Publisher()
 {
-  delete z_bo_pair;
+  delete z_boxoffice;
+  delete z_publisher;
   delete z_broadcast;
-  for (std::vector<zmq::socket_t*>::iterator i = channel_list.begin(); i != channel_list.end(); ++i)
-    delete *i;
 }
 
-Publisher* Publisher::initialize(zmq::context_t* z_ctx_)
+Publisher* Publisher::initialize(zmq::context_t* z_ctx_, 
+                                 std::string endpoint_)
 {
-  Publisher* pub = getInstance();
+  Publisher* pub = new Publisher(z_ctx_, endpoint_);
 
-  pub->setContext(z_ctx_);
   pub->connectToBroadcast();
   pub->connectToBoxoffice();
 
@@ -46,14 +45,14 @@ int Publisher::connectToBroadcast()
 
 int Publisher::connectToBoxoffice()
 {
-  // since the publisher is a singleton, we can simply use two ZMQ_PAIRs
-  z_bo_pair = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
-  z_bo_pair->bind("inproc://sb_pub_bo_pair");
+  z_boxoffice = new zmq::socket_t(*z_ctx, ZMQ_PUSH);
+  z_boxoffice->connect("inproc://sb_boxoffice_pull_in");
 
   // send a heartbeat to boxoffice, so it knows the publisher is ready
+  if (SB_MSG_DEBUG) printf("pub: sending heartbeat...\n");
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_ALIVE);
-  z_bo_pair->send(z_msg);
+  z_boxoffice->send(z_msg);
 
   return 0;
 }
@@ -61,74 +60,30 @@ int Publisher::connectToBoxoffice()
 int Publisher::sendExitSignal()
 {
   // send exit signal to boxoffice
-  if (SB_MSG_DEBUG) printf("pub: sending exit signal\n");
+  if (SB_MSG_DEBUG) printf("pub: sending exit signal...\n");
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
-  z_bo_pair->send(z_msg);
+  z_boxoffice->send(z_msg);
 
-  z_bo_pair->close();
+  if (SB_MSG_DEBUG) printf("pub: signal sent, exiting...\n");
+  z_boxoffice->close();
 
+  z_publisher->close();
   z_broadcast->close();
-
-  if (SB_MSG_DEBUG) printf("pub: exit signal sent, exiting...\n");
 
   return 0;
 }
 
 int Publisher::run()
 {
-  zmq::message_t z_msg;
-  int msg_type, msg_signal;
-  std::stringstream* sstream;
+  // internal check if publisher was correctly initialized
+  if ( z_ctx == nullptr || endpoint.compare("") == 0 )
+    return 1;
 
-  // query pub channels from boxoffice
-  if (SB_MSG_DEBUG) printf("pub: querying channels.\n");
-  snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_PUB, SB_SIGPUB_GET_CHANNELS);
-  z_bo_pair->send(z_msg);
-
-  // receiving channels and starting them
-  if (SB_MSG_DEBUG) printf("pub: getting channels.\n");
-  while(true)
-  {
-    sstream = new std::stringstream();
-    s_recv(*z_bo_pair, *z_broadcast, *sstream);
-    if (*sstream >> msg_type >> msg_signal) {
-      if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) { return 1; }
-        else { return -1; } }
-    std::string channel_name = sstream->str();
-    delete sstream;
-    if (SB_MSG_DEBUG) printf("pub: channel name: %s\n", channel_name.c_str());
-
-    startPubChannel(channel_name);
-
-    if ( !z_msg.more() ) break;
-  }
-
-  listenOnChannels();
-
-  // closing channels
-  for (std::vector<zmq::socket_t*>::iterator i = channel_list.begin(); i != channel_list.end(); ++i)
-    stopPubChannel(*i);
-
-  return 0;
-}
-
-int Publisher::startPubChannel(std::string channel_name)
-{
-  if (SB_MSG_DEBUG) printf("pub: starting pubsub sockets and sending...\n");
-
+  if (SB_MSG_DEBUG) printf("pub: starting pub socket and sending...\n");
   zmq::socket_t* z_publisher = new zmq::socket_t(*z_ctx, ZMQ_PUB);
-  z_publisher->bind(channel_name.c_str());
-  channel_list.push_back(z_publisher);
+  z_publisher->bind(endpoint.c_str());
 
-  return 0;
-}
-
-int Publisher::stopPubChannel(zmq::socket_t* channel)
-  { channel->close(); return 0; }
-
-int Publisher::listenOnChannels()
-{
   std::stringstream* sstream;
   int msg_type, msg_signal;
   //zmq::socket_t* channel = channel_list.back();
@@ -151,7 +106,7 @@ int Publisher::listenOnChannels()
   {
     // waiting for boxoffice input
     sstream = new std::stringstream();
-    s_recv(*z_bo_pair, *z_broadcast, *sstream);
+    s_recv(*z_boxoffice, *z_broadcast, *sstream);
     *sstream >> msg_type >> msg_signal;
     delete sstream;
     if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) break;

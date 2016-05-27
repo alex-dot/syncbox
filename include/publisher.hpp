@@ -1,9 +1,10 @@
-/*
- * The publisher is a singleton that binds sockets where it publishes box 
- * state changes for an arbitrary number of (external) subscribers to 
- * receive. It shall react on messages from the boxoffice and send the 
- * appropriate messages accordingly. 
- * Publisher shall only be used within the publisher thread. 
+/**
+ * Each configured access point shall have its own publisher to send 
+ * its configured box data across. Every publisher binds sockets where it 
+ * publishes box state changes for an arbitrary number of (external) 
+ * subscribers to receive. It shall react on messages from the boxoffice 
+ * and send the appropriate messages accordingly. 
+ * For each publisher there shall be a separate publisher thread. 
  */
 
 #ifndef SB_PUBLISHER_HPP
@@ -14,16 +15,25 @@
 class Publisher
 {
   public:
-    Publisher(const Publisher&) = delete;
-    Publisher& operator=(const Publisher&) = delete;
+    Publisher() :
+      z_ctx(nullptr),
+      z_boxoffice(nullptr),
+      z_publisher(nullptr),
+      z_broadcast(nullptr),
+      endpoint("")
+      {};
+    Publisher(zmq::context_t* z_ctx_, std::string endpoint_) :
+      z_ctx(z_ctx_),
+      z_boxoffice(nullptr),
+      z_publisher(nullptr),
+      z_broadcast(nullptr),
+      endpoint(endpoint_)
+      {};
+    Publisher(const Publisher&);
+    ~Publisher();
 
-    static Publisher* getInstance()
-    {
-      static Publisher pub_instance_;
-      return &pub_instance_;
-    }
-
-    static Publisher* initialize(zmq::context_t* z_ctx_);
+    static Publisher* initialize(zmq::context_t* z_ctx_, 
+                                 std::string endpoint_);
     int setContext(zmq::context_t* z_ctx_)
     {
       z_ctx = z_ctx_;
@@ -38,24 +48,14 @@ class Publisher
     int run();
 
   private:
-    Publisher() :
-      z_ctx(nullptr),
-      z_bo_pair(nullptr),
-      z_broadcast(nullptr),
-      channel_list()
-      {};
-    ~Publisher();
-
     int connectToBroadcast();
     int connectToBoxoffice();
-    int startPubChannel(std::string channel_name);
-    int stopPubChannel(zmq::socket_t* channel);
-    int listenOnChannels();
 
     zmq::context_t* z_ctx;
-    zmq::socket_t* z_bo_pair;
+    zmq::socket_t* z_boxoffice;
+    zmq::socket_t* z_publisher;
     zmq::socket_t* z_broadcast;
-    std::vector<zmq::socket_t*> channel_list;
+    std::string endpoint;
 };
 
 #endif
