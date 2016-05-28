@@ -90,7 +90,12 @@ void Directory::fillDirectory(const boost::filesystem::path& document_root,
 }
 void Directory::makeDirectoryHash(std::shared_ptr<Hash> hash)
 {
-  std::string hash_string = hash_tree_->getTopHash()->getHash();
+  std::string hash_string;
+  if ( !hash_tree_->empty() ) {
+    hash_string = hash_tree_->getTopHash()->getHash();
+  } else {
+    hash_string = "";
+  }
   hash_string += this->getPath();
   hash->makeHash(hash_string);
 }

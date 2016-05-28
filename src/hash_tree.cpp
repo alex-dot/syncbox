@@ -96,6 +96,7 @@ void HashTree::makeHashTreeFromSelf()
   this->makeHashTree(temp_hashes);
 }
 
+bool HashTree::empty() const { return hashes_.empty(); }
 const std::vector< std::shared_ptr<Hash> >* HashTree::getHashes() const { return &hashes_; }
 std::shared_ptr<Hash> HashTree::getTopHash() const { return hashes_.back(); }
 

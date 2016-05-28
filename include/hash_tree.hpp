@@ -29,6 +29,7 @@ class HashTree
     std::shared_ptr<Hash> getTopHash() const;
 
 
+    bool empty() const;
     bool checkHashTreeChange(const HashTree& left) const;
     bool getChangedHashes(std::vector< std::shared_ptr<Hash> >& changed_hashes, const HashTree& lhs) const;
 
