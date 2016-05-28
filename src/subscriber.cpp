@@ -90,23 +90,22 @@ int Subscriber::run()
   const char *sub_filter = "";
   z_subscriber->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
 
-  for (int i = 0; i < 1; ++i)
+  while (true)
   {
     std::stringstream* sstream = new std::stringstream();
     int msg_type, msg_signal;
     s_recv(*z_subscriber, *z_broadcast, *sstream);
     if (*sstream >> msg_type >> msg_signal) {
       if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE )
-        { 
-          delete sstream;
-          return 1; 
-        }
-      else 
-        { 
-          delete sstream;
-          return -1;
-        } }
-    std::cout << sstream->str() << std::endl;
+      { 
+        delete sstream;
+        return 1; 
+      } else { 
+        delete sstream;
+        return -1;
+      }
+    }
+    std::cout << "[sub] received message: " << sstream->str() << std::endl;
     delete sstream;
   }
 

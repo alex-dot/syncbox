@@ -87,25 +87,24 @@ int Publisher::run()
   std::stringstream* sstream;
   int msg_type, msg_signal;
 
-  /*for (int i = 0; i < 2; ++i)
+  while(true)
   {
-    if (boost::this_thread::interruption_requested()) 
-      break;
-*/
+    // waiting for boxoffice input in non-blocking mode
+    sstream = new std::stringstream();
+    int z_return = s_recv_noblock(*z_boxoffice, *z_broadcast, *sstream);
+
+    if ( z_return > 0 ) {
+      *sstream >> msg_type >> msg_signal;
+      delete sstream;
+      if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) break;
+    }
+
+    // send a message
     std::string message = "this is message: ";// + std::to_string(i);
     if (SB_MSG_DEBUG) printf("pub: %s\n", message.c_str());
     zmq::message_t z_msg(message.length()+1);
     snprintf((char*) z_msg.data(), message.length()+1, "%s", message.c_str());
     z_publisher->send(z_msg);
-//  }*/
-  while(true)
-  {
-    // waiting for boxoffice input
-    sstream = new std::stringstream();
-    s_recv(*z_boxoffice, *z_broadcast, *sstream);
-    *sstream >> msg_type >> msg_signal;
-    delete sstream;
-    if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) break;
   }
 
   return 0;

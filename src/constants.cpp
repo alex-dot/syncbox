@@ -11,12 +11,6 @@ void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &
     { static_cast<void *>(socket),    0, ZMQ_POLLIN, 0 },
     { static_cast<void *>(broadcast), 0, ZMQ_POLLIN, 0 }
   };
-  /*
-  zmq::pollitem_t z_items[] {
-    { socket,    0, ZMQ_POLLIN, 0 },
-    { broadcast, 0, ZMQ_POLLIN, 0 }
-  };
-  */
   int more;
   while(true)
   {
@@ -40,6 +34,42 @@ void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &
       broadcast.recv(&z_msg);
       sstream << std::string(static_cast<char*>(z_msg.data()));
       break;
+    }
+  }
+}
+
+// wrapper for polling on one socket while simultaneously polling the broadcast, but non-blocking
+int s_recv_noblock(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream)
+{
+  zmq::message_t z_msg;
+  std::vector<zmq::pollitem_t> z_items = {
+    { static_cast<void *>(socket),    0, ZMQ_POLLIN, 0 },
+    { static_cast<void *>(broadcast), 0, ZMQ_POLLIN, 0 }
+  };
+  int more;
+  while(true)
+  {
+    int z_return = zmq::poll(&z_items[0], 2, 100);
+
+    if ( z_return == 0 ) {
+      return 0;
+    } else if ( z_items[0].revents & ZMQ_POLLIN )
+    {
+      while(true)
+      {
+        socket.recv(&z_msg);
+        sstream << std::string(static_cast<char*>(z_msg.data()));
+        size_t more_size = sizeof(more);
+        socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+        if (!more)
+          return 1;
+      }
+      return 1;
+    } else if ( z_items[1].revents & ZMQ_POLLIN )
+    {
+      broadcast.recv(&z_msg);
+      sstream << std::string(static_cast<char*>(z_msg.data()));
+      return 1;
     }
   }
 }
