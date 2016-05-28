@@ -81,27 +81,23 @@ int Publisher::run()
     return 1;
 
   if (SB_MSG_DEBUG) printf("pub: starting pub socket and sending...\n");
-  zmq::socket_t* z_publisher = new zmq::socket_t(*z_ctx, ZMQ_PUB);
+  z_publisher = new zmq::socket_t(*z_ctx, ZMQ_PUB);
   z_publisher->bind(endpoint.c_str());
 
   std::stringstream* sstream;
   int msg_type, msg_signal;
-  //zmq::socket_t* channel = channel_list.back();
 
   /*for (int i = 0; i < 2; ++i)
   {
     if (boost::this_thread::interruption_requested()) 
       break;
-
-    std::string message = "this is message: " + std::to_string(i);
+*/
+    std::string message = "this is message: ";// + std::to_string(i);
     if (SB_MSG_DEBUG) printf("pub: %s\n", message.c_str());
     zmq::message_t z_msg(message.length()+1);
     snprintf((char*) z_msg.data(), message.length()+1, "%s", message.c_str());
-    channel->send(z_msg, ZMQ_SNDMORE);
-    channel->send(z_msg, ZMQ_SNDMORE);
-    channel->send(z_msg);
-    sleep(1);
-  }*/
+    z_publisher->send(z_msg);
+//  }*/
   while(true)
   {
     // waiting for boxoffice input

@@ -144,13 +144,14 @@ int Boxoffice::setupPublishers()
   zmq::message_t z_msg;
 
   // opening publisher threads
-  if (SB_MSG_DEBUG) printf("bo: opening publisher threads\n");
+  if (SB_MSG_DEBUG) printf("bo: opening %d publisher threads\n", (int)publishers.size());
   for (std::vector< std::string >::iterator i = publishers.begin(); 
         i != publishers.end(); ++i)
   {
     boost::thread* pub_thread = new boost::thread(publisher_thread, z_ctx, *i);
     pub_threads.push_back(pub_thread);
   }
+  if (SB_MSG_DEBUG) printf("bo: opened %d publisher threads\n", (int)pub_threads.size());
 
   return 0;
 }
@@ -158,13 +159,14 @@ int Boxoffice::setupPublishers()
 int Boxoffice::setupSubscribers()
 {
   // opening subscriber threads
-  if (SB_MSG_DEBUG) printf("bo: opening subscriber threads\n");
+  if (SB_MSG_DEBUG) printf("bo: opening %d subscriber threads\n", (int)subscribers.size());
   for (std::vector< std::pair<std::string,int> >::iterator i = subscribers.begin(); 
         i != subscribers.end(); ++i)
   {
     boost::thread* sub_thread = new boost::thread(subscriber_thread, z_ctx, i->first, i->second);
     sub_threads.push_back(sub_thread);
   }
+  if (SB_MSG_DEBUG) printf("bo: opened %d subscriber threads\n", (int)sub_threads.size());
 
   return 0;
 }
@@ -336,6 +338,8 @@ void *publisher_thread(zmq::context_t* z_ctx, std::string endpoint)
 
   pub->run();
   pub->sendExitSignal();
+
+  delete pub;
 
   return (NULL);
 }
