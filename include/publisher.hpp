@@ -17,14 +17,16 @@ class Publisher
   public:
     Publisher() :
       z_ctx(nullptr),
-      z_boxoffice(nullptr),
+      z_boxoffice_pull(nullptr),
+      z_boxoffice_push(nullptr),
       z_publisher(nullptr),
       z_broadcast(nullptr),
       endpoint("")
       {};
     Publisher(zmq::context_t* z_ctx_, std::string endpoint_) :
       z_ctx(z_ctx_),
-      z_boxoffice(nullptr),
+      z_boxoffice_pull(nullptr),
+      z_boxoffice_push(nullptr),
       z_publisher(nullptr),
       z_broadcast(nullptr),
       endpoint(endpoint_)
@@ -52,7 +54,8 @@ class Publisher
     int connectToBoxoffice();
 
     zmq::context_t* z_ctx;
-    zmq::socket_t* z_boxoffice;
+    zmq::socket_t* z_boxoffice_pull;
+    zmq::socket_t* z_boxoffice_push;
     zmq::socket_t* z_publisher;
     zmq::socket_t* z_broadcast;
     std::string endpoint;

@@ -40,6 +40,7 @@ Boxoffice::~Boxoffice()
   // deleting sockets
   delete z_bo_main;
   delete z_router;
+  delete z_bo_pub;
   delete z_broadcast;
 }
 
@@ -108,9 +109,12 @@ int Boxoffice::connectToMain()
 
 int Boxoffice::setupConnectionToChildren()
 {
-  // connect to subscribers, publishers and boxes
+  // connection for information from subscribers, publishers and boxes
   z_router = new zmq::socket_t(*z_ctx, ZMQ_PULL);
   z_router->bind("inproc://sb_boxoffice_pull_in");
+  // connection to send information to publishers and boxes
+  z_bo_pub = new zmq::socket_t(*z_ctx, ZMQ_PUB);
+  z_bo_pub->bind("inproc://sb_boxoffice_push_out");
   if (SB_MSG_DEBUG) printf("bo: starting to listen to children...\n");
 
   return 0;
@@ -239,8 +243,13 @@ int Boxoffice::runRouter()
     Box* box = boxes[box_num];
     std::string file_path = box->getBaseDir();
     file_path += box->getPathOfDirectory(wd);
-    file_path += "/" + filename;
-std::cout << file_path << std::endl;
+    if ( file_path.back() != '/' ) file_path += "/";
+    file_path += filename;
+
+    zmq::message_t z_msg( file_path.length()+4 );
+    snprintf((char*) z_msg.data(), file_path.length()+5, "%d %d %s", SB_SIGTYPE_FILE, SB_FILE_NEW, file_path.c_str());
+    z_bo_pub->send(z_msg);
+
 /*
     std::ifstream file(file_path, std::ifstream::binary);
     file.seekg(0, std::ifstream::beg);
@@ -312,6 +321,8 @@ int Boxoffice::closeConnections()
 
   if ( z_router != nullptr )
     z_router->close();
+
+  z_bo_pub->close();
 
   // sending exit signal to the main thread...
   if ( z_bo_main != nullptr )

@@ -59,6 +59,7 @@ class Boxoffice
     zmq::context_t* z_ctx;
     zmq::socket_t* z_bo_main;
     zmq::socket_t* z_router;
+    zmq::socket_t* z_bo_pub;
     zmq::socket_t* z_broadcast;
     std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
     std::vector< std::string > publishers;

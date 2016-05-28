@@ -16,7 +16,8 @@
 
 Publisher::~Publisher()
 {
-  delete z_boxoffice;
+  delete z_boxoffice_pull;
+  delete z_boxoffice_push;
   delete z_publisher;
   delete z_broadcast;
 }
@@ -45,14 +46,20 @@ int Publisher::connectToBroadcast()
 
 int Publisher::connectToBoxoffice()
 {
-  z_boxoffice = new zmq::socket_t(*z_ctx, ZMQ_PUSH);
-  z_boxoffice->connect("inproc://sb_boxoffice_pull_in");
+  // open connection to send data to boxoffice
+  z_boxoffice_pull = new zmq::socket_t(*z_ctx, ZMQ_PUSH);
+  z_boxoffice_pull->connect("inproc://sb_boxoffice_pull_in");
+  // open connection to receive data from boxoffice
+  z_boxoffice_push = new zmq::socket_t(*z_ctx, ZMQ_SUB);
+  z_boxoffice_push->connect("inproc://sb_boxoffice_push_out");
+  const char *sub_filter = "";
+  z_boxoffice_push->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
 
   // send a heartbeat to boxoffice, so it knows the publisher is ready
   if (SB_MSG_DEBUG) printf("pub: sending heartbeat...\n");
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_ALIVE);
-  z_boxoffice->send(z_msg);
+  z_boxoffice_pull->send(z_msg);
 
   return 0;
 }
@@ -63,13 +70,15 @@ int Publisher::sendExitSignal()
   if (SB_MSG_DEBUG) printf("pub: sending exit signal...\n");
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
-  z_boxoffice->send(z_msg);
+  z_boxoffice_pull->send(z_msg);
 
   if (SB_MSG_DEBUG) printf("pub: signal sent, exiting...\n");
-  z_boxoffice->close();
+  z_boxoffice_pull->close();
 
   z_publisher->close();
   z_broadcast->close();
+  z_boxoffice_pull->close();
+  z_boxoffice_push->close();
 
   return 0;
 }
@@ -91,20 +100,23 @@ int Publisher::run()
   {
     // waiting for boxoffice input in non-blocking mode
     sstream = new std::stringstream();
-    int z_return = s_recv_noblock(*z_boxoffice, *z_broadcast, *sstream);
+//    int z_return = s_recv_noblock(*z_boxoffice_push, *z_broadcast, *sstream);
+    s_recv(*z_boxoffice_push, *z_broadcast, *sstream);
 
-    if ( z_return > 0 ) {
+//    if ( z_return > 0 ) {
       *sstream >> msg_type >> msg_signal;
-      delete sstream;
       if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) break;
-    }
+//    }
 
     // send a message
-    std::string message = "this is message: ";// + std::to_string(i);
+    std::string message;
+    *sstream >> message;
     if (SB_MSG_DEBUG) printf("pub: %s\n", message.c_str());
     zmq::message_t z_msg(message.length()+1);
     snprintf((char*) z_msg.data(), message.length()+1, "%s", message.c_str());
     z_publisher->send(z_msg);
+
+    delete sstream;
   }
 
   return 0;
