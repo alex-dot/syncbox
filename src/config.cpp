@@ -55,6 +55,7 @@ int Config::initialize(int argc, char* argv[])
     wordexp_t expanded_config_file_path;
     wordexp( SB_CONFIG_FILE, &expanded_config_file_path, 0 );
     std::ifstream ifs( expanded_config_file_path.we_wordv[0] );
+    wordfree(&expanded_config_file_path);
     if ( !ifs ) {
         if (SB_MSG_DEBUG) printf("config: no config file found\n");
     } else {
@@ -88,8 +89,6 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
         return 1;
     }
 
-    Config* c = Config::getInstance();
-
     // checking nodes (need at least one)
     if (SB_MSG_DEBUG) printf("config: checking nodes\n");
     if ( nodes->size() >= 1 ) {
@@ -117,7 +116,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                     endpoint = "tcp://" + endpoint;
 
                 // add it to the config class for later use
-                c->subscriber_endpoints_.push_back(
+                this->subscriber_endpoints_.push_back(
                     std::make_pair( endpoint, SB_SUBTYPE_TCP_BIDIR )
                 );
             } else {
@@ -155,7 +154,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                     endpoint = "tcp://" + endpoint;
 
                 // add it to the config class for later use
-                c->publisher_endpoints_.push_back(endpoint);
+                this->publisher_endpoints_.push_back(endpoint);
             } else {
                 std::cerr << "[E] Cannot process node '" << *i << "'" << std::endl;
                 return 1;
@@ -168,10 +167,10 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
 
     // checking boxes
     if (SB_MSG_DEBUG) printf("config: checking boxes\n");
-    if ( c->box_dirs_.size() >= 1 ) {
+    if ( this->box_dirs_.size() >= 1 ) {
         std::vector< std::string >::iterator i;
-        for (i = c->box_dirs_.begin(); 
-             i != c->box_dirs_.end(); ++i)
+        for (i = this->box_dirs_.begin(); 
+             i != this->box_dirs_.end(); ++i)
         {
             // check if the box locations map to directories on the filesystem
             if ( !boost::filesystem::is_directory(*i) ) {
@@ -180,8 +179,8 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
             }
         }
         // finally make the vector unique
-        i = std::unique( c->box_dirs_.begin(), c->box_dirs_.end() );
-        c->box_dirs_.resize( std::distance( c->box_dirs_.begin(), i ) );
+        i = std::unique( this->box_dirs_.begin(), this->box_dirs_.end() );
+        this->box_dirs_.resize( std::distance( this->box_dirs_.begin(), i ) );
     } else {
         perror("[E] No box locations supplied, exiting...");
         return 1;

@@ -119,5 +119,7 @@ int Publisher::run()
     delete sstream;
   }
 
+  delete sstream;
+
   return 0;
 }
