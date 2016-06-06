@@ -91,9 +91,18 @@ int main_application(int argc, char* argv[])
 
     if (s_interrupted)
     {
-      std::cout << "main: received interrupt, broadcasting signal..." << std::endl;
+      std::cout << "main: received interrupt, broadcasting signal to boxoffice..." << std::endl;
+      snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_INTERRUPT);
+      z_boxoffice.send(z_msg);
+      std::cout << "main: waiting for boxoffice to send exit..." << std::endl;
+      z_boxoffice.recv(&z_msg);
+      sstream << static_cast<char*>(z_msg.data());
+      int msg_type, msg_signal;
+      sstream >> msg_type >> msg_signal;
+      std::cout << "main: boxoffice exited, broadcasting signal..." << std::endl;
       snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_INTERRUPT);
       z_broadcast.send(z_msg);
+
       break;
     }
 

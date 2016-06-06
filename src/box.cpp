@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <iostream>
 
-namespace FSM {
+namespace fsm {
   #include "tarmuft_fsm.h"
 }
 
@@ -172,7 +172,7 @@ int Box::watch()
     std::string message = sstream->str();
     zmq::message_t* z_msg;
     z_msg = new zmq::message_t(7);
-    snprintf((char*) z_msg->data(), 7, "%d %d %d\n", SB_SIGTYPE_INOTIFY, FSM::new_local_file_event, box_num_);
+    snprintf((char*) z_msg->data(), 7, "%d %d %d\n", SB_SIGTYPE_INOTIFY, (int)fsm::new_local_file_event, box_num_);
     z_boxoffice_->send(*z_msg, ZMQ_SNDMORE);
     delete z_msg;
     z_msg = new zmq::message_t(message.length()+1);

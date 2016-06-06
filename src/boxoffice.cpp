@@ -11,12 +11,15 @@
 #include <fstream>
 #include "cryptopp/aes.h"
 
-#include "tarmuft_fsm.h"
 #include "constants.hpp"
 #include "boxoffice.hpp"
 #include "publisher.hpp"
 #include "subscriber.hpp"
 #include "config.hpp"
+
+namespace fsm {
+  #include "tarmuft_fsm.h"
+}
 
 void *publisher_thread(zmq::context_t*, std::string);
 void *subscriber_thread(zmq::context_t*, std::string, int);
@@ -209,50 +212,77 @@ int Boxoffice::runRouter()
   {
     // waiting for subscriber or inotify input
     sstream = new std::stringstream();
-    s_recv(*z_router, *z_broadcast, *sstream);
+    s_recv(*z_router, *z_bo_main, *sstream);
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type == SB_SIGTYPE_LIFE    || msg_signal == SB_SIGLIFE_INTERRUPT ) 
+    if ( msg_type == SB_SIGTYPE_LIFE    && msg_signal == SB_SIGLIFE_INTERRUPT ) 
     {
       delete sstream;
       break;
     }
 
+        if (SB_MSG_DEBUG) printf("bo: something happened\n");
 
-
+    if ( msg_type == SB_SIGTYPE_INOTIFY && (fsm::event_t)msg_signal == fsm::new_local_file_event ) {
     /*
     if ( msg_type != SB_SIGTYPE_INOTIFY || msg_signal != SB_SIGIN_EVENT ) 
       perror("[E] bo: received garbage while waiting for inotify event");
+      */
 
+      // fsm variables
+      fsm::state_t state = fsm::ready_state;
+      fsm::status_t status = (fsm::status_t)300;
+      fsm::event_t event = fsm::get_event_by_status_code(status);
+    
+        if (SB_MSG_DEBUG) printf("bo: received inotify\n");
 
-    // helper variables
-    int box_num, wd, cookie;
-    uint32_t mask;
-    std::string filename, line;
-    std::stringstream* sstream_line;
-    std::string path;
+      if ( fsm::check_event(state, event, status) ) {
 
-    // reading inotify message
-    sstream->seekg(0, std::stringstream::beg);
-    std::getline(*sstream, line);      // signal frame
-    sstream_line = new std::stringstream(line);
-    *sstream_line >> msg_type >> msg_signal >> box_num;
-    delete sstream_line;
-    std::getline(*sstream, line);      // info frame
-    sstream_line = new std::stringstream(line);
-    *sstream_line >> wd >> mask >> cookie;
-    delete sstream_line;
-    std::getline(*sstream, filename);  // filename frame
+        if (SB_MSG_DEBUG) printf("bo: checked event\n");
 
-    // getting the path
-    Box* box = boxes[box_num];
-    std::string file_path = box->getBaseDir();
-    file_path += box->getPathOfDirectory(wd);
-    if ( file_path.back() != '/' ) file_path += "/";
-    file_path += filename;
+        // helper variables
+        int box_num, wd, cookie;
+        uint32_t mask;
+        std::string filename, line;
+        std::stringstream* sstream_line;
+        std::string path;
+        fsm::action_t action = fsm::get_action(state, event, status);
+        fsm::status_t new_status = fsm::get_heartbeat_status(state, event, action);
+    
+        // reading inotify message
+        sstream->seekg(0, std::stringstream::beg);
+        std::getline(*sstream, line);      // signal frame
+        sstream_line = new std::stringstream(line);
+        *sstream_line >> msg_type >> msg_signal >> box_num;
+        delete sstream_line;
+        std::getline(*sstream, line);      // info frame
+        sstream_line = new std::stringstream(line);
+        *sstream_line >> wd >> mask >> cookie;
+        delete sstream_line;
+        std::getline(*sstream, filename);  // filename frame
+    
+        // getting the path
+        Box* box = boxes[box_num];
+        std::string file_path = box->getBaseDir();
+        file_path += box->getPathOfDirectory(wd);
+        if ( file_path.back() != '/' ) file_path += "/";
+        file_path += filename;
+    
+        if (SB_MSG_DEBUG) printf("bo: %s\n", file_path.c_str());
 
-    zmq::message_t z_msg( file_path.length()+4 );
-    snprintf((char*) z_msg.data(), file_path.length()+5, "%d %d %s", SB_SIGTYPE_FILE, SB_FILE_NEW, file_path.c_str());
-    z_bo_pub->send(z_msg);
+        zmq::message_t z_msg( file_path.length()+6 );
+        snprintf(
+          (char*) z_msg.data(), 
+          file_path.length()+7, 
+          "%d %d %s", 
+          SB_SIGTYPE_FSM, 
+          new_status, 
+          file_path.c_str());
+        z_bo_pub->send(z_msg);
+      }
+
+    }
+    
+        if (SB_MSG_DEBUG) printf("bo: return\n");
 
 /*
     std::ifstream file(file_path, std::ifstream::binary);
@@ -282,6 +312,10 @@ int Boxoffice::closeConnections()
   int msg_type, msg_signal;
   std::stringstream* sstream;
   int return_value = 0;
+
+  zmq::message_t z_msg;
+  snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
+  z_bo_main->send(z_msg);
 
   // wait for exit/interrupt signal
   int heartbeats = sub_threads.size() + pub_threads.size() + box_threads.size();
