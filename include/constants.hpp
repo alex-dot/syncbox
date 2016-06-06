@@ -13,7 +13,6 @@
 #include <unistd.h>
 #include <sys/inotify.h>
 #include <ctime>
-#include <msgpack.hpp>
 
 enum SB_SIGTYPE {
   SB_SIGTYPE_LIFE,
@@ -68,7 +67,6 @@ struct file_msg_string
   std::string tag;
   std::time_t time;
   std::string text;
-  MSGPACK_DEFINE(tag, time, text)
 };
 
 // wrapper for polling on one socket while simultaneously polling the broadcast
