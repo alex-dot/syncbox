@@ -11,6 +11,7 @@
 #include <fstream>
 #include "cryptopp/aes.h"
 
+#include "tarmuft_fsm.h"
 #include "constants.hpp"
 #include "boxoffice.hpp"
 #include "publisher.hpp"
@@ -215,6 +216,10 @@ int Boxoffice::runRouter()
       delete sstream;
       break;
     }
+
+
+
+    /*
     if ( msg_type != SB_SIGTYPE_INOTIFY || msg_signal != SB_SIGIN_EVENT ) 
       perror("[E] bo: received garbage while waiting for inotify event");
 
