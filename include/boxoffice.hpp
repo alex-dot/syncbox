@@ -18,6 +18,10 @@
 
 #include "box.hpp"
 
+namespace fsm {
+  #include "tarmuft_fsm.h"
+}
+
 class Boxoffice
 {
   public:
@@ -35,14 +39,18 @@ class Boxoffice
 
   private:
     Boxoffice() :
+      state_(fsm::ready_state),
       z_ctx(nullptr),
       z_bo_main(nullptr),
       z_router(nullptr),
+      z_bo_pub(nullptr),
       z_broadcast(nullptr),
+      subscribers(),
+      publishers(),
+      boxes(),
       pub_threads(),
       sub_threads(),
-      box_threads(),
-      boxes()
+      box_threads()
       {};
     ~Boxoffice();
 
@@ -56,17 +64,23 @@ class Boxoffice
     int runRouter();
     int closeConnections();
 
+    int performAction(fsm::event_t, fsm::action_t, fsm::status_t);
+
+    fsm::state_t state_;
+
     zmq::context_t* z_ctx;
     zmq::socket_t* z_bo_main;
     zmq::socket_t* z_router;
     zmq::socket_t* z_bo_pub;
     zmq::socket_t* z_broadcast;
+
     std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
     std::vector< std::string > publishers;
+    std::unordered_map<int,Box*> boxes;
+
     std::vector<boost::thread*> pub_threads;
     std::vector<boost::thread*> sub_threads;
     std::vector<boost::thread*> box_threads;
-    std::unordered_map<int,Box*> boxes;
 };
 
 #endif

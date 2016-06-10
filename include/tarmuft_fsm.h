@@ -2,7 +2,7 @@
  * \file        tarmuft_fsm - tarmuft state machine engine
  * \brief       Provides a finite state machine API.  
  * \author      Alexander Herr
- * \date        2014-2016
+ * \date        2016
  * \copyright   GNU Public License v3 or higher. 
  *
  *  ** WARNING *************************************************************
@@ -27,6 +27,7 @@ extern "C" {
 //  State machine constants
 
 typedef enum {
+    NULL_state = 0,
     ready_state = 1,
     announcing_new_file_state = 2,
     sending_new_file_metadata_state = 3,
@@ -91,45 +92,45 @@ typedef enum {
 
 static inline event_t
   get_event_by_status_code(status_t status) {
-    if ( status == 100 ) {
+    if ( status == status_100 ) {
         return node_only_sends_heartbeats_event;
-    } else if ( status == 110 ) {
+    } else if ( status == status_110 ) {
         return received_heartbeat_event;
-    } else if ( status == 111 ) {
+    } else if ( status == status_111 ) {
         return received_heartbeat_event;
-    } else if ( status == 112 ) {
+    } else if ( status == status_112 ) {
         return file_send_tick_event;
-    } else if ( status == 113 ) {
+    } else if ( status == status_113 ) {
         return all_data_received_event;
-    } else if ( status == 120 ) {
+    } else if ( status == status_120 ) {
         return received_heartbeat_event;
-    } else if ( status == 121 ) {
+    } else if ( status == status_121 ) {
         return received_heartbeat_event;
-    } else if ( status == 122 ) {
+    } else if ( status == status_122 ) {
         return all_nodes_replied_event;
-    } else if ( status == 130 ) {
+    } else if ( status == status_130 ) {
         return received_heartbeat_event;
-    } else if ( status == 131 ) {
+    } else if ( status == status_131 ) {
         return received_heartbeat_event;
-    } else if ( status == 132 ) {
+    } else if ( status == status_132 ) {
         return timing_offset_elapsed_event;
-    } else if ( status == 140 ) {
+    } else if ( status == status_140 ) {
         return received_heartbeat_event;
-    } else if ( status == 142 ) {
+    } else if ( status == status_142 ) {
         return all_nodes_have_file_event;
-    } else if ( status == 150 ) {
+    } else if ( status == status_150 ) {
         return received_heartbeat_event;
-    } else if ( status == 200 ) {
+    } else if ( status == status_200 ) {
         return received_file_data_event;
-    } else if ( status == 210 ) {
+    } else if ( status == status_210 ) {
         return received_file_data_event;
-    } else if ( status == 300 ) {
+    } else if ( status == status_300 ) {
         return new_local_file_event;
-    } else if ( status == 410 ) {
+    } else if ( status == status_410 ) {
         return received_heartbeat_event;
-    } else if ( status == 420 ) {
+    } else if ( status == status_420 ) {
         return received_heartbeat_event;
-    } else if ( status == 500 ) {
+    } else if ( status == status_500 ) {
         return interrupt_event;
     } else {
         return NULL_event;
@@ -407,321 +408,272 @@ static inline action_t
 }
 
 static inline status_t
-  get_heartbeat_status(state_t state, event_t event, action_t action) {
+  get_heartbeat_status(state_t state, event_t event, status_t received_status) {
     if ( state == ready_state ) {
-        if ( event == new_local_file_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_120;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_121;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == interrupt_event ) {
-            if ( action == exit_action ) {
-                return status_500;
-            } else {
-                return NULL_status;
-            }
+        if ( event == new_local_file_event && received_status == status_300 ) {
+            return status_120;
+        } else if ( event == received_heartbeat_event && received_status == status_120 ) {
+            return status_121;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return status_500;
         } else {
             return NULL_status;
         }
     } else if ( state == announcing_new_file_state ) {
-        if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_120;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == all_nodes_replied_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_130;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == interrupt_event ) {
-            if ( action == exit_action ) {
-                return status_500;
-            } else {
-                return NULL_status;
-            }
+        if ( event == received_heartbeat_event && received_status == status_121 ) {
+            return status_120;
+        } else if ( event == all_nodes_replied_event && received_status == status_122 ) {
+            return status_130;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return status_500;
         } else {
             return NULL_status;
         }
     } else if ( state == sending_new_file_metadata_state ) {
-        if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_110;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == timing_offset_elapsed_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_110;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == interrupt_event ) {
-            if ( action == exit_action ) {
-                return status_500;
-            } else {
-                return NULL_status;
-            }
+        if ( event == received_heartbeat_event && received_status == status_131 ) {
+            return status_110;
+        } else if ( event == timing_offset_elapsed_event && received_status == status_132 ) {
+            return status_110;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return status_500;
         } else {
             return NULL_status;
         }
     } else if ( state == sending_new_file_state ) {
-        if ( event == file_send_tick_event ) {
-            if ( action == send_file_data_action ) {
-                return status_200;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_110;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_110;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_file_data_event ) {
-            if ( action == ignore_action ) {
-                return status_110;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == all_nodes_have_file_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_150;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_150;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_410;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_420;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == node_only_sends_heartbeats_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_410;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == interrupt_event ) {
-            if ( action == exit_action ) {
-                return status_500;
-            } else {
-                return NULL_status;
-            }
+        if ( event == file_send_tick_event && received_status == status_112 ) {
+            return status_200;
+        } else if ( event == received_heartbeat_event && received_status == status_111 ) {
+            return status_110;
+        } else if ( event == received_heartbeat_event && received_status == status_140 ) {
+            return status_110;
+        } else if ( event == received_file_data_event && received_status == status_210 ) {
+            return status_110;
+        } else if ( event == all_nodes_have_file_event && received_status == status_142 ) {
+            return status_150;
+        } else if ( event == received_heartbeat_event && received_status == status_150 ) {
+            return status_150;
+        } else if ( event == received_heartbeat_event && received_status == status_410 ) {
+            return status_410;
+        } else if ( event == received_heartbeat_event && received_status == status_420 ) {
+            return status_420;
+        } else if ( event == node_only_sends_heartbeats_event && received_status == status_100 ) {
+            return status_410;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return status_500;
         } else {
             return NULL_status;
         }
     } else if ( state == acknowledging_new_file_state ) {
-        if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_131;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_131;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == interrupt_event ) {
-            if ( action == exit_action ) {
-                return status_500;
-            } else {
-                return NULL_status;
-            }
+        if ( event == received_heartbeat_event && received_status == status_130 ) {
+            return status_131;
+        } else if ( event == received_heartbeat_event && received_status == status_131 ) {
+            return status_131;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return status_500;
         } else {
             return NULL_status;
         }
     } else if ( state == promoting_new_file_metadata_state ) {
-        if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_131;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_131;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == timing_offset_elapsed_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_111;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == interrupt_event ) {
-            if ( action == exit_action ) {
-                return status_500;
-            } else {
-                return NULL_status;
-            }
+        if ( event == received_heartbeat_event && received_status == status_130 ) {
+            return status_131;
+        } else if ( event == received_heartbeat_event && received_status == status_131 ) {
+            return status_131;
+        } else if ( event == timing_offset_elapsed_event && received_status == status_132 ) {
+            return status_111;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return status_500;
         } else {
             return NULL_status;
         }
     } else if ( state == sending_fake_file_state ) {
-        if ( event == file_send_tick_event ) {
-            if ( action == send_file_data_action ) {
-                return status_210;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_111;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_111;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_111;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_file_data_event ) {
-            if ( action == store_file_data_action ) {
-                return status_111;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == all_data_received_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_140;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_420;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_410;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_420;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == node_only_sends_heartbeats_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_410;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == interrupt_event ) {
-            if ( action == exit_action ) {
-                return status_500;
-            } else {
-                return NULL_status;
-            }
+        if ( event == file_send_tick_event && received_status == status_112 ) {
+            return status_210;
+        } else if ( event == received_heartbeat_event && received_status == status_110 ) {
+            return status_111;
+        } else if ( event == received_heartbeat_event && received_status == status_111 ) {
+            return status_111;
+        } else if ( event == received_heartbeat_event && received_status == status_140 ) {
+            return status_111;
+        } else if ( event == received_file_data_event && received_status == status_200 ) {
+            return status_111;
+        } else if ( event == all_data_received_event && received_status == status_113 ) {
+            return status_140;
+        } else if ( event == received_heartbeat_event && received_status == status_150 ) {
+            return status_420;
+        } else if ( event == received_heartbeat_event && received_status == status_410 ) {
+            return status_410;
+        } else if ( event == received_heartbeat_event && received_status == status_420 ) {
+            return status_420;
+        } else if ( event == node_only_sends_heartbeats_event && received_status == status_100 ) {
+            return status_410;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return status_500;
         } else {
             return NULL_status;
         }
     } else if ( state == broadcasting_all_received_state ) {
-        if ( event == file_send_tick_event ) {
-            if ( action == send_fake_file_data_action ) {
-                return status_210;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_140;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_140;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_140;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == all_nodes_have_file_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_150;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == received_heartbeat_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_150;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == node_only_sends_heartbeats_event ) {
-            if ( action == send_heartbeat_action ) {
-                return status_410;
-            } else {
-                return NULL_status;
-            }
-        } else if ( event == interrupt_event ) {
-            if ( action == exit_action ) {
-                return status_500;
-            } else {
-                return NULL_status;
-            }
+        if ( event == file_send_tick_event && received_status == status_112 ) {
+            return status_210;
+        } else if ( event == received_heartbeat_event && received_status == status_110 ) {
+            return status_140;
+        } else if ( event == received_heartbeat_event && received_status == status_111 ) {
+            return status_140;
+        } else if ( event == received_heartbeat_event && received_status == status_140 ) {
+            return status_140;
+        } else if ( event == all_nodes_have_file_event && received_status == status_142 ) {
+            return status_150;
+        } else if ( event == received_heartbeat_event && received_status == status_150 ) {
+            return status_150;
+        } else if ( event == node_only_sends_heartbeats_event && received_status == status_100 ) {
+            return status_410;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return status_500;
         } else {
             return NULL_status;
         }
     } else if ( state == exit_state ) {
-        if ( event == interrupt_event ) {
-            if ( action == exit_action ) {
-                return status_500;
-            } else {
-                return NULL_status;
-            }
+        if ( event == interrupt_event && received_status == status_500 ) {
+            return status_500;
         } else {
             return NULL_status;
         }
     } else {
         return NULL_status;
+    }
+}
+
+static inline state_t
+  get_new_state(state_t state, event_t event, status_t received_status) {
+    if ( state == ready_state ) {
+        if ( event == new_local_file_event && received_status == status_300 ) {
+            return announcing_new_file_state;
+        } else if ( event == received_heartbeat_event && received_status == status_120 ) {
+            return acknowledging_new_file_state;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return exit_state;
+        } else {
+            return NULL_state;
+        }
+    } else if ( state == announcing_new_file_state ) {
+        if ( event == received_heartbeat_event && received_status == status_121 ) {
+            return announcing_new_file_state;
+        } else if ( event == all_nodes_replied_event && received_status == status_122 ) {
+            return sending_new_file_metadata_state;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return exit_state;
+        } else {
+            return NULL_state;
+        }
+    } else if ( state == sending_new_file_metadata_state ) {
+        if ( event == received_heartbeat_event && received_status == status_131 ) {
+            return sending_new_file_metadata_state;
+        } else if ( event == timing_offset_elapsed_event && received_status == status_132 ) {
+            return sending_new_file_state;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return exit_state;
+        } else {
+            return NULL_state;
+        }
+    } else if ( state == sending_new_file_state ) {
+        if ( event == file_send_tick_event && received_status == status_112 ) {
+            return sending_new_file_state;
+        } else if ( event == received_heartbeat_event && received_status == status_111 ) {
+            return sending_new_file_state;
+        } else if ( event == received_heartbeat_event && received_status == status_140 ) {
+            return sending_new_file_state;
+        } else if ( event == received_file_data_event && received_status == status_210 ) {
+            return sending_new_file_state;
+        } else if ( event == all_nodes_have_file_event && received_status == status_142 ) {
+            return ready_state;
+        } else if ( event == received_heartbeat_event && received_status == status_150 ) {
+            return ready_state;
+        } else if ( event == received_heartbeat_event && received_status == status_410 ) {
+            return ready_state;
+        } else if ( event == received_heartbeat_event && received_status == status_420 ) {
+            return ready_state;
+        } else if ( event == node_only_sends_heartbeats_event && received_status == status_100 ) {
+            return ready_state;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return exit_state;
+        } else {
+            return NULL_state;
+        }
+    } else if ( state == acknowledging_new_file_state ) {
+        if ( event == received_heartbeat_event && received_status == status_130 ) {
+            return promoting_new_file_metadata_state;
+        } else if ( event == received_heartbeat_event && received_status == status_131 ) {
+            return acknowledging_new_file_state;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return exit_state;
+        } else {
+            return NULL_state;
+        }
+    } else if ( state == promoting_new_file_metadata_state ) {
+        if ( event == received_heartbeat_event && received_status == status_130 ) {
+            return promoting_new_file_metadata_state;
+        } else if ( event == received_heartbeat_event && received_status == status_131 ) {
+            return promoting_new_file_metadata_state;
+        } else if ( event == timing_offset_elapsed_event && received_status == status_132 ) {
+            return sending_fake_file_state;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return exit_state;
+        } else {
+            return NULL_state;
+        }
+    } else if ( state == sending_fake_file_state ) {
+        if ( event == file_send_tick_event && received_status == status_112 ) {
+            return sending_fake_file_state;
+        } else if ( event == received_heartbeat_event && received_status == status_110 ) {
+            return sending_fake_file_state;
+        } else if ( event == received_heartbeat_event && received_status == status_111 ) {
+            return sending_fake_file_state;
+        } else if ( event == received_heartbeat_event && received_status == status_140 ) {
+            return sending_fake_file_state;
+        } else if ( event == received_file_data_event && received_status == status_200 ) {
+            return sending_fake_file_state;
+        } else if ( event == all_data_received_event && received_status == status_113 ) {
+            return broadcasting_all_received_state;
+        } else if ( event == received_heartbeat_event && received_status == status_150 ) {
+            return ready_state;
+        } else if ( event == received_heartbeat_event && received_status == status_410 ) {
+            return ready_state;
+        } else if ( event == received_heartbeat_event && received_status == status_420 ) {
+            return ready_state;
+        } else if ( event == node_only_sends_heartbeats_event && received_status == status_100 ) {
+            return ready_state;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return exit_state;
+        } else {
+            return NULL_state;
+        }
+    } else if ( state == broadcasting_all_received_state ) {
+        if ( event == file_send_tick_event && received_status == status_112 ) {
+            return broadcasting_all_received_state;
+        } else if ( event == received_heartbeat_event && received_status == status_110 ) {
+            return broadcasting_all_received_state;
+        } else if ( event == received_heartbeat_event && received_status == status_111 ) {
+            return broadcasting_all_received_state;
+        } else if ( event == received_heartbeat_event && received_status == status_140 ) {
+            return broadcasting_all_received_state;
+        } else if ( event == all_nodes_have_file_event && received_status == status_142 ) {
+            return ready_state;
+        } else if ( event == received_heartbeat_event && received_status == status_150 ) {
+            return ready_state;
+        } else if ( event == node_only_sends_heartbeats_event && received_status == status_100 ) {
+            return ready_state;
+        } else if ( event == interrupt_event && received_status == status_500 ) {
+            return exit_state;
+        } else {
+            return NULL_state;
+        }
+    } else if ( state == exit_state ) {
+        if ( event == interrupt_event && received_status == status_500 ) {
+            return exit_state;
+        } else {
+            return NULL_state;
+        }
+    } else {
+        return NULL_state;
     }
 }
 
