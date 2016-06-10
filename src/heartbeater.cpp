@@ -91,6 +91,7 @@ int Heartbeater::run()
 
   if (SB_MSG_DEBUG) printf("hb: starting hb socket and sending...\n");
   z_heartbeater = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
+  // this needs to be opened up for more than one publisher/heartbeater
   z_heartbeater->bind("inproc://pub_hb_pair");
 
   std::stringstream* sstream;
@@ -106,6 +107,8 @@ int Heartbeater::run()
       *sstream >> msg_type >> msg_signal;
       if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
     }
+
+    if (SB_MSG_DEBUG) printf("hb: sending hb status code %d\n", (int)current_status_);
 
     // send a message
     std::string message = "info";

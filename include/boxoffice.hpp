@@ -44,11 +44,13 @@ class Boxoffice
       z_bo_main(nullptr),
       z_router(nullptr),
       z_bo_pub(nullptr),
+      z_bo_hb(nullptr),
       z_broadcast(nullptr),
       subscribers(),
       publishers(),
       boxes(),
       pub_threads(),
+      hb_threads(),
       sub_threads(),
       box_threads()
       {};
@@ -59,6 +61,7 @@ class Boxoffice
     int setupConnectionToChildren();
     int setupBoxes();
     int setupPublishers();
+    int setupHeartbeaters();
     int setupSubscribers();
     int checkChildren();
     int runRouter();
@@ -72,6 +75,7 @@ class Boxoffice
     zmq::socket_t* z_bo_main;
     zmq::socket_t* z_router;
     zmq::socket_t* z_bo_pub;
+    zmq::socket_t* z_bo_hb;
     zmq::socket_t* z_broadcast;
 
     std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
@@ -79,6 +83,7 @@ class Boxoffice
     std::unordered_map<int,Box*> boxes;
 
     std::vector<boost::thread*> pub_threads;
+    std::vector<boost::thread*> hb_threads;
     std::vector<boost::thread*> sub_threads;
     std::vector<boost::thread*> box_threads;
 };

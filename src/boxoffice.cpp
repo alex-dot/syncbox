@@ -14,10 +14,12 @@
 #include "constants.hpp"
 #include "boxoffice.hpp"
 #include "publisher.hpp"
+#include "heartbeater.hpp"
 #include "subscriber.hpp"
 #include "config.hpp"
 
 void *publisher_thread(zmq::context_t*, std::string);
+void *heartbeater_thread(zmq::context_t*, fsm::status_t status);
 void *subscriber_thread(zmq::context_t*, std::string, int);
 void *box_thread(zmq::context_t* z_ctx, Box* box);
 
@@ -31,6 +33,8 @@ Boxoffice::~Boxoffice()
   // deleting threads
   for (std::vector<boost::thread*>::iterator i = pub_threads.begin(); i != pub_threads.end(); ++i)
     delete *i;
+  for (std::vector<boost::thread*>::iterator i =  hb_threads.begin(); i !=  hb_threads.end(); ++i)
+    delete *i;
   for (std::vector<boost::thread*>::iterator i = sub_threads.begin(); i != sub_threads.end(); ++i)
     delete *i;
   for (std::vector<boost::thread*>::iterator i = box_threads.begin(); i != box_threads.end(); ++i)
@@ -40,6 +44,7 @@ Boxoffice::~Boxoffice()
   delete z_bo_main;
   delete z_router;
   delete z_bo_pub;
+  delete z_bo_hb;
   delete z_broadcast;
 }
 
@@ -63,6 +68,7 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
   if (return_value == 0) return_value = bo->setupConnectionToChildren();
   if (return_value == 0) return_value = bo->setupBoxes();
   if (return_value == 0) return_value = bo->setupPublishers();
+  if (return_value == 0) return_value = bo->setupHeartbeaters();
   if (return_value == 0) return_value = bo->setupSubscribers();
   if (return_value == 0) return_value = bo->checkChildren();
   if (return_value == 0) return_value = bo->runRouter();
@@ -114,6 +120,9 @@ int Boxoffice::setupConnectionToChildren()
   // connection to send information to publishers and boxes
   z_bo_pub = new zmq::socket_t(*z_ctx, ZMQ_PUB);
   z_bo_pub->bind("inproc://sb_boxoffice_push_out");
+  // connection to send information to heartbeaters
+  z_bo_hb = new zmq::socket_t(*z_ctx, ZMQ_PUB);
+  z_bo_hb->bind("inproc://sb_boxoffice_hb_push_out");
   if (SB_MSG_DEBUG) printf("bo: starting to listen to children...\n");
 
   return 0;
@@ -159,6 +168,24 @@ int Boxoffice::setupPublishers()
   return 0;
 }
 
+int Boxoffice::setupHeartbeaters()
+{
+  // standard variables
+  zmq::message_t z_msg;
+
+  // opening heartbeater threads
+  if (SB_MSG_DEBUG) printf("bo: opening %d heartbeater threads\n", (int)publishers.size());
+  for (std::vector< std::string >::iterator i = publishers.begin(); 
+        i != publishers.end(); ++i)
+  {
+    boost::thread* hb_thread = new boost::thread(heartbeater_thread, z_ctx, fsm::status_100);
+    hb_threads.push_back(hb_thread);
+  }
+  if (SB_MSG_DEBUG) printf("bo: opened %d heartbeater threads\n", (int)hb_threads.size());
+
+  return 0;
+}
+
 int Boxoffice::setupSubscribers()
 {
   // opening subscriber threads
@@ -181,7 +208,7 @@ int Boxoffice::checkChildren() {
   std::stringstream* sstream;
 
   // wait for heartbeat
-  int heartbeats = sub_threads.size() + pub_threads.size() + box_threads.size();
+  int heartbeats = sub_threads.size() + pub_threads.size() + hb_threads.size() + box_threads.size();
   for (int i = 0; i < heartbeats; ++i)
   {
     sstream = new std::stringstream();
@@ -190,8 +217,8 @@ int Boxoffice::checkChildren() {
     if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) return 1;
     delete sstream;
   }
-  if (SB_MSG_DEBUG) printf("bo: all subscribers, publishers and boxes connected\n");
-  if (SB_MSG_DEBUG) printf("bo: counted %d subs and boxes\n", heartbeats);
+  if (SB_MSG_DEBUG) printf("bo: all subscribers, publishers, heartbeaters and boxes connected\n");
+  if (SB_MSG_DEBUG) printf("bo: counted %d threads\n", heartbeats);
 
   return 0;
 }
@@ -253,7 +280,7 @@ int Boxoffice::closeConnections()
   z_bo_main->send(z_msg);
 
   // wait for exit/interrupt signal
-  int heartbeats = sub_threads.size() + pub_threads.size() + box_threads.size();
+  int heartbeats = sub_threads.size() + pub_threads.size() + hb_threads.size() + box_threads.size();
   for (int i = 0; i < heartbeats; ++i)
   {
     sstream = new std::stringstream();
@@ -263,7 +290,7 @@ int Boxoffice::closeConnections()
                                          && msg_signal != SB_SIGLIFE_INTERRUPT ) ) return_value = 1;
     delete sstream;
   }
-  if (SB_MSG_DEBUG) printf("bo: all subscribers and publishers exited\n");
+  if (SB_MSG_DEBUG) printf("bo: all subscribers, publishers, heartbeaters and boxes exited\n");
 
 /*  // if return_val != 0, the pub got interrupted, so it will sent the exit signal again
   if ( return_value != 0 ) 
@@ -286,6 +313,9 @@ int Boxoffice::closeConnections()
   for (std::vector<boost::thread*>::iterator i = pub_threads.begin(); i != pub_threads.end(); ++i)
     (*i)->join();
 
+  for (std::vector<boost::thread*>::iterator i =  hb_threads.begin(); i !=  hb_threads.end(); ++i)
+    (*i)->join();
+
   for (std::vector<boost::thread*>::iterator i = sub_threads.begin(); i != sub_threads.end(); ++i)
     (*i)->join();
 
@@ -296,6 +326,7 @@ int Boxoffice::closeConnections()
     z_router->close();
 
   z_bo_pub->close();
+  z_bo_hb->close();
 
   // sending exit signal to the main thread...
   if ( z_bo_main != nullptr )
@@ -380,6 +411,19 @@ void *publisher_thread(zmq::context_t* z_ctx, std::string endpoint)
   pub->sendExitSignal();
 
   delete pub;
+
+  return (NULL);
+}
+
+void *heartbeater_thread(zmq::context_t* z_ctx, fsm::status_t status)
+{
+  Heartbeater* hb;
+  hb = Heartbeater::initialize(z_ctx, status);
+
+  hb->run();
+  hb->sendExitSignal();
+
+  delete hb;
 
   return (NULL);
 }
