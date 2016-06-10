@@ -68,6 +68,7 @@ class Boxoffice
     int closeConnections();
 
     int performAction(fsm::event_t, fsm::action_t, fsm::status_t);
+    int sendHeartbeat(fsm::status_t);
 
     fsm::state_t state_;
 

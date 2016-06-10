@@ -120,9 +120,15 @@ int Publisher::run()
     // send a message
     std::string message;
     *sstream >> message;
-    if (SB_MSG_DEBUG) printf("pub: %s\n", message.c_str());
-    zmq::message_t z_msg(message.length()+1);
-    snprintf((char*) z_msg.data(), message.length()+1, "%s", message.c_str());
+    if (SB_MSG_DEBUG) printf("pub: %d %s\n", msg_signal, message.c_str());
+    zmq::message_t z_msg(message.length()+5);
+    snprintf(
+      (char*) z_msg.data(), 
+      message.length()+5, 
+      "%d %s", 
+      msg_signal,
+      message.c_str()
+    );
     z_publisher->send(z_msg);
 
     delete sstream;

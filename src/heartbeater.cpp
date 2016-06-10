@@ -106,6 +106,9 @@ int Heartbeater::run()
     if ( z_return > 0 ) {
       *sstream >> msg_type >> msg_signal;
       if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
+      if ( msg_type == SB_SIGTYPE_FSM ) {
+        current_status_ = (fsm::status_t)msg_signal;
+      }
     }
 
     if (SB_MSG_DEBUG) printf("hb: sending hb status code %d\n", (int)current_status_);

@@ -248,8 +248,9 @@ int Boxoffice::runRouter()
       // fsm variables
       fsm::status_t status = (fsm::status_t)msg_signal;
       fsm::event_t event = fsm::get_event_by_status_code(status);
-    
-      if (SB_MSG_DEBUG) printf("bo: checking inotify event\n");
+
+      if (SB_MSG_DEBUG) printf("bo: checking inotify event with state %d, event %d and status %d\n", 
+        state_, event, status);
       if ( fsm::check_event(state_, event, status) ) {
 
         fsm::action_t action = fsm::get_action(state_, event, status);
@@ -350,7 +351,7 @@ int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::stat
   switch (event) {
     case fsm::send_heartbeat_action: {
       fsm::status_t new_status = fsm::get_heartbeat_status(state_, event, received_status);
-//      send_heartbeat(new_status);
+      sendHeartbeat(new_status);
       break;
     }
     default:
@@ -396,6 +397,15 @@ int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::stat
     file_path.c_str());
   z_bo_pub->send(z_msg);
   */
+
+  return 0;
+}
+
+int Boxoffice::sendHeartbeat(fsm::status_t new_status) {
+  if (SB_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
+  zmq::message_t z_msg;
+  snprintf((char*) z_msg.data(), 6, "%d %d", SB_SIGTYPE_FSM, new_status);
+  z_bo_hb->send(z_msg);
 
   return 0;
 }
