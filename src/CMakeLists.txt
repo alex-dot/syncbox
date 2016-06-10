@@ -8,6 +8,7 @@ add_executable(syncbox  main.cpp
                         hash.cpp
                         boxoffice.cpp
                         publisher.cpp
+                        heartbeater.cpp
                         subscriber.cpp)
 target_link_libraries(syncbox ${CMAKE_THREAD_LIBS_INIT}
                               ${Boost_LIBRARIES}

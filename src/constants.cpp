@@ -39,7 +39,7 @@ void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &
 }
 
 // wrapper for polling on one socket while simultaneously polling the broadcast, but non-blocking
-int s_recv_noblock(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream)
+int s_recv_noblock(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream, int timeout)
 {
   zmq::message_t z_msg;
   std::vector<zmq::pollitem_t> z_items = {
@@ -49,7 +49,7 @@ int s_recv_noblock(zmq::socket_t &socket, zmq::socket_t &broadcast, std::strings
   int more;
   while(true)
   {
-    int z_return = zmq::poll(&z_items[0], 2, 100);
+    int z_return = zmq::poll(&z_items[0], 2, timeout);
 
     if ( z_return == 0 ) {
       return 0;
