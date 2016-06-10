@@ -20,6 +20,7 @@ class Publisher
       z_boxoffice_pull(nullptr),
       z_boxoffice_push(nullptr),
       z_publisher(nullptr),
+      z_heartbeater(nullptr),
       z_broadcast(nullptr),
       endpoint("")
       {};
@@ -28,6 +29,7 @@ class Publisher
       z_boxoffice_pull(nullptr),
       z_boxoffice_push(nullptr),
       z_publisher(nullptr),
+      z_heartbeater(nullptr),
       z_broadcast(nullptr),
       endpoint(endpoint_)
       {};
@@ -52,11 +54,13 @@ class Publisher
   private:
     int connectToBroadcast();
     int connectToBoxoffice();
+    int connectToHeartbeater();
 
     zmq::context_t* z_ctx;
     zmq::socket_t* z_boxoffice_pull;
     zmq::socket_t* z_boxoffice_push;
     zmq::socket_t* z_publisher;
+    zmq::socket_t* z_heartbeater;
     zmq::socket_t* z_broadcast;
     std::string endpoint;
 };

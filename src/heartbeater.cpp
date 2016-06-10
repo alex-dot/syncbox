@@ -56,7 +56,7 @@ int Heartbeater::connectToBoxoffice()
   z_boxoffice_push->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
 
   // send a heartbeat to boxoffice, so it knows the heartbeater is ready
-  if (SB_MSG_DEBUG) printf("pub: sending heartbeat...\n");
+  if (SB_MSG_DEBUG) printf("hb: sending heartbeat...\n");
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_ALIVE);
   z_boxoffice_pull->send(z_msg);
@@ -67,12 +67,12 @@ int Heartbeater::connectToBoxoffice()
 int Heartbeater::sendExitSignal()
 {
   // send exit signal to boxoffice
-  if (SB_MSG_DEBUG) printf("pub: sending exit signal...\n");
+  if (SB_MSG_DEBUG) printf("hb: sending exit signal...\n");
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
   z_boxoffice_pull->send(z_msg);
 
-  if (SB_MSG_DEBUG) printf("pub: signal sent, exiting...\n");
+  if (SB_MSG_DEBUG) printf("hb: signal sent, exiting...\n");
   z_boxoffice_pull->close();
 
   z_heartbeater->close();
@@ -101,7 +101,7 @@ int Heartbeater::run()
   {
     // waiting for boxoffice input in non-blocking mode
     sstream = new std::stringstream();
-    int z_return = s_recv_noblock(*z_boxoffice_push, *z_broadcast, *sstream, 100);
+    int z_return = s_recv_noblock(*z_boxoffice_push, *z_broadcast, *sstream, 500);
 
     if ( z_return > 0 ) {
       *sstream >> msg_type >> msg_signal;

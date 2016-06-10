@@ -19,6 +19,7 @@ Publisher::~Publisher()
   delete z_boxoffice_pull;
   delete z_boxoffice_push;
   delete z_publisher;
+  delete z_heartbeater;
   delete z_broadcast;
 }
 
@@ -29,6 +30,7 @@ Publisher* Publisher::initialize(zmq::context_t* z_ctx_,
 
   pub->connectToBroadcast();
   pub->connectToBoxoffice();
+  pub->connectToHeartbeater();
 
   return pub;
 }
@@ -64,6 +66,15 @@ int Publisher::connectToBoxoffice()
   return 0;
 }
 
+int Publisher::connectToHeartbeater()
+{
+  // connect to process broadcast
+  z_heartbeater = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
+  z_heartbeater->connect("inproc://pub_hb_pair");
+
+  return 0;
+}
+
 int Publisher::sendExitSignal()
 {
   // send exit signal to boxoffice
@@ -76,6 +87,7 @@ int Publisher::sendExitSignal()
   z_boxoffice_pull->close();
 
   z_publisher->close();
+  z_heartbeater->close();
   z_broadcast->close();
   z_boxoffice_pull->close();
   z_boxoffice_push->close();
@@ -100,13 +112,10 @@ int Publisher::run()
   {
     // waiting for boxoffice input in non-blocking mode
     sstream = new std::stringstream();
-//    int z_return = s_recv_noblock(*z_boxoffice_push, *z_broadcast, *sstream);
-    s_recv(*z_boxoffice_push, *z_broadcast, *sstream);
+    s_recv(*z_boxoffice_push, *z_broadcast, *z_heartbeater, *sstream);
 
-//    if ( z_return > 0 ) {
-      *sstream >> msg_type >> msg_signal;
-      if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) break;
-//    }
+    *sstream >> msg_type >> msg_signal;
+    if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
 
     // send a message
     std::string message;
