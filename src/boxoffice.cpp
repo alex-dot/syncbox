@@ -348,13 +348,14 @@ int Boxoffice::closeConnections()
 
 int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::status_t received_status) {
 
-  switch (event) {
+  switch (action) {
     case fsm::send_heartbeat_action: {
       fsm::status_t new_status = fsm::get_heartbeat_status(state_, event, received_status);
-      sendHeartbeat(new_status);
+      updateHeartbeat(new_status);
       break;
     }
     default:
+      if (SB_MSG_DEBUG) printf("bo: could not perform action: %d\n", action);
       break;
   }
 
@@ -401,7 +402,7 @@ int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::stat
   return 0;
 }
 
-int Boxoffice::sendHeartbeat(fsm::status_t new_status) {
+int Boxoffice::updateHeartbeat(fsm::status_t new_status) {
   if (SB_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
   zmq::message_t z_msg;
   snprintf((char*) z_msg.data(), 6, "%d %d", SB_SIGTYPE_FSM, new_status);

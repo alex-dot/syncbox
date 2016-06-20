@@ -101,7 +101,7 @@ int Heartbeater::run()
   {
     // waiting for boxoffice input in non-blocking mode
     sstream = new std::stringstream();
-    int z_return = s_recv_noblock(*z_boxoffice_push, *z_broadcast, *sstream, 500);
+    int z_return = s_recv_noblock(*z_boxoffice_push, *z_broadcast, *sstream, 2500);
 
     if ( z_return > 0 ) {
       *sstream >> msg_type >> msg_signal;
