@@ -119,6 +119,14 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 this->subscriber_endpoints_.push_back(
                     std::make_pair( endpoint, SB_SUBTYPE_TCP_BIDIR )
                 );
+            } else if ( SB_MSG_DEBUG && std::regex_match( *i, 
+                                   sm, 
+                                   std::regex("(ipc://)(.*)")
+                                 ) ) {
+                // add it to the config class for later use
+                this->subscriber_endpoints_.push_back(
+                    std::make_pair( *i, SB_SUBTYPE_TCP_BIDIR )
+                );
             } else {
                 std::cerr << "[E] Cannot process node '" << *i << "'" << std::endl;
                 return 1;
@@ -155,6 +163,12 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
 
                 // add it to the config class for later use
                 this->publisher_endpoints_.push_back(endpoint);
+            } else if ( SB_MSG_DEBUG && std::regex_match( *i, 
+                                   sm, 
+                                   std::regex("(ipc://)(.*)")
+                                 ) ) {
+                // add it to the config class for later use
+                this->publisher_endpoints_.push_back(*i);
             } else {
                 std::cerr << "[E] Cannot process node '" << *i << "'" << std::endl;
                 return 1;
