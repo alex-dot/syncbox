@@ -252,12 +252,14 @@ int Boxoffice::runRouter()
       if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
         state_, event, status);
       if ( fsm::check_event(state_, event, status) ) {
-
-        fsm::action_t action = fsm::get_action(state_, event, status);
-        performAction(event, action, status);
-        if (SB_MSG_DEBUG) printf("bo: updating self to state %d\n", 
-          fsm::get_new_state(state_, event, status));
-        state_ = fsm::get_new_state(state_, event, status);
+        fsm::state_t new_state = fsm::get_new_state(state_, event, status);
+        if ( state_ != new_state ) {
+          fsm::action_t action = fsm::get_action(state_, event, status);
+          performAction(event, action, status);
+          if (SB_MSG_DEBUG) printf("bo: updating self to state %d\n", 
+            fsm::get_new_state(state_, event, status));
+          state_ = new_state;
+        }
 
       } else {
         if (SB_MSG_DEBUG) printf("bo: unhandled event, ignoring...\n");
