@@ -1121,7 +1121,7 @@ static inline status_t
     }
 }
 
-static state_t
+static inline state_t
   get_new_state(state_t state, event_t event, status_t received_status) {
     if ( state == ready_state ) {
         if ( event == new_local_file_event && received_status == status_300 ) {
