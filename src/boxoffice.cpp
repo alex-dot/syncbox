@@ -249,12 +249,14 @@ int Boxoffice::runRouter()
       fsm::status_t status = (fsm::status_t)msg_signal;
       fsm::event_t event = fsm::get_event_by_status_code(status);
 
-      if (SB_MSG_DEBUG) printf("bo: checking inotify event with state %d, event %d and status %d\n", 
+      if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
         state_, event, status);
       if ( fsm::check_event(state_, event, status) ) {
 
         fsm::action_t action = fsm::get_action(state_, event, status);
         performAction(event, action, status);
+        if (SB_MSG_DEBUG) printf("bo: updating self to state %d\n", 
+          fsm::get_new_state(state_, event, status));
         state_ = fsm::get_new_state(state_, event, status);
 
       } else {

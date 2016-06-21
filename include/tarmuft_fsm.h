@@ -307,6 +307,8 @@ static bool
     } else if ( state == acknowledging_new_file_state ) {
         if ( event == received_heartbeat_event && status == status_130 ) {
             return true;
+        } else if ( event == received_heartbeat_event && status == status_120 ) {
+            return true;
         } else if ( event == received_heartbeat_event && status == status_121 ) {
             return true;
         } else if ( event == received_heartbeat_event && status == status_124 ) {
@@ -322,6 +324,8 @@ static bool
         }
     } else if ( state == acknowledging_new_file_with_more_state ) {
         if ( event == received_heartbeat_event && status == status_134 ) {
+            return true;
+        } else if ( event == received_heartbeat_event && status == status_124 ) {
             return true;
         } else if ( event == received_heartbeat_event && status == status_125 ) {
             return true;
@@ -618,6 +622,8 @@ static action_t
     } else if ( state == acknowledging_new_file_state ) {
         if ( event == received_heartbeat_event && status == status_130 ) {
             return send_heartbeat_action;
+        } else if ( event == received_heartbeat_event && status == status_120 ) {
+            return send_heartbeat_action;
         } else if ( event == received_heartbeat_event && status == status_121 ) {
             return send_heartbeat_action;
         } else if ( event == received_heartbeat_event && status == status_124 ) {
@@ -633,6 +639,8 @@ static action_t
         }
     } else if ( state == acknowledging_new_file_with_more_state ) {
         if ( event == received_heartbeat_event && status == status_134 ) {
+            return send_heartbeat_action;
+        } else if ( event == received_heartbeat_event && status == status_124 ) {
             return send_heartbeat_action;
         } else if ( event == received_heartbeat_event && status == status_125 ) {
             return send_heartbeat_action;
@@ -929,6 +937,8 @@ static status_t
     } else if ( state == acknowledging_new_file_state ) {
         if ( event == received_heartbeat_event && received_status == status_130 ) {
             return status_131;
+        } else if ( event == received_heartbeat_event && received_status == status_120 ) {
+            return status_121;
         } else if ( event == received_heartbeat_event && received_status == status_121 ) {
             return status_121;
         } else if ( event == received_heartbeat_event && received_status == status_124 ) {
@@ -945,6 +955,8 @@ static status_t
     } else if ( state == acknowledging_new_file_with_more_state ) {
         if ( event == received_heartbeat_event && received_status == status_134 ) {
             return status_131;
+        } else if ( event == received_heartbeat_event && received_status == status_124 ) {
+            return status_125;
         } else if ( event == received_heartbeat_event && received_status == status_125 ) {
             return status_125;
         } else if ( event == new_local_file_event && received_status == status_300 ) {
@@ -1240,6 +1252,8 @@ static state_t
     } else if ( state == acknowledging_new_file_state ) {
         if ( event == received_heartbeat_event && received_status == status_130 ) {
             return promoting_new_file_metadata_state;
+        } else if ( event == received_heartbeat_event && received_status == status_120 ) {
+            return acknowledging_new_file_state;
         } else if ( event == received_heartbeat_event && received_status == status_121 ) {
             return acknowledging_new_file_state;
         } else if ( event == received_heartbeat_event && received_status == status_124 ) {
@@ -1256,6 +1270,8 @@ static state_t
     } else if ( state == acknowledging_new_file_with_more_state ) {
         if ( event == received_heartbeat_event && received_status == status_134 ) {
             return promoting_new_file_metadata_with_more_state;
+        } else if ( event == received_heartbeat_event && received_status == status_124 ) {
+            return acknowledging_new_file_with_more_state;
         } else if ( event == received_heartbeat_event && received_status == status_125 ) {
             return acknowledging_new_file_with_more_state;
         } else if ( event == new_local_file_event && received_status == status_300 ) {
