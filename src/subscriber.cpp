@@ -106,10 +106,12 @@ int Subscriber::run()
   {
     sstream = new std::stringstream();
     s_recv(*z_subscriber, *z_broadcast, *sstream);
-    if (*sstream >> msg_type >> msg_signal) {
-      if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
-    } else {
+    *sstream >> msg_type;
+    if ( msg_type == SB_SIGTYPE_LIFE ) {
       *sstream >> msg_signal;
+      if ( msg_signal == SB_SIGLIFE_INTERRUPT ) break;
+    } else {
+      msg_signal = msg_type;
     }
 
     *sstream >> message;
