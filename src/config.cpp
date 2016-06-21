@@ -66,9 +66,9 @@ int Config::initialize(int argc, char* argv[])
     return c->doSanityCheck( &options, &nodes, &hostnames );
 }
 
-const std::vector< std::pair<std::string,int> >
+const std::vector< node_t >
     Config::getSubscriberEndpoints() const {
-        return subscriber_endpoints_;
+        return subscribers_;
 }
 const std::vector< std::string >
     Config::getPublisherEndpoints() const {
@@ -116,17 +116,23 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                     endpoint = "tcp://" + endpoint;
 
                 // add it to the config class for later use
-                this->subscriber_endpoints_.push_back(
-                    std::make_pair( endpoint, SB_SUBTYPE_TCP_BIDIR )
-                );
+                node_t new_node;
+                new_node.endpoint = endpoint;
+                new_node.subscriber = std::make_pair( endpoint, SB_SUBTYPE_TCP_BIDIR );
+                new_node.last_timestamp = 0;
+                new_node.offset = 0;
+                this->subscribers_.push_back( new_node );
             } else if ( SB_MSG_DEBUG && std::regex_match( *i, 
                                    sm, 
                                    std::regex("(ipc://)(.*)")
                                  ) ) {
                 // add it to the config class for later use
-                this->subscriber_endpoints_.push_back(
-                    std::make_pair( *i, SB_SUBTYPE_TCP_BIDIR )
-                );
+                node_t new_node;
+                new_node.endpoint = *i;
+                new_node.subscriber = std::make_pair( *i, SB_SUBTYPE_TCP_BIDIR );
+                new_node.last_timestamp = 0;
+                new_node.offset = 0;
+                this->subscribers_.push_back( new_node );
             } else {
                 std::cerr << "[E] Cannot process node '" << *i << "'" << std::endl;
                 return 1;

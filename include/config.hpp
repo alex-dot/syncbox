@@ -10,6 +10,13 @@
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
+struct node_t {
+  std::string                endpoint;
+  std::pair<std::string,int> subscriber;
+  uint32_t                   last_timestamp;
+  uint16_t                   offset;
+};
+
 class Config
 {
   public:
@@ -25,7 +32,7 @@ class Config
     static int initialize(int argc, char* argv[]);
 
     // Getters
-    const std::vector< std::pair<std::string,int> >
+    const std::vector< node_t >
         getSubscriberEndpoints() const;
     const std::vector< std::string >
         getPublisherEndpoints() const;
@@ -42,9 +49,9 @@ class Config
 
     boost::program_options::variables_map   vm_;
 
-    std::vector< std::pair<std::string,int> >  subscriber_endpoints_;
-    std::vector< std::string >                 publisher_endpoints_;
-    std::vector< std::string >                 box_dirs_;
+    std::vector< node_t >       subscribers_;
+    std::vector< std::string >  publisher_endpoints_;
+    std::vector< std::string >  box_dirs_;
 
 //    int                                        config_backup_type_;
 //    boost::filesystem::path                    backup_dir_;

@@ -17,6 +17,7 @@
 #include <unordered_map>
 
 #include "box.hpp"
+#include "config.hpp"
 
 namespace fsm {
   #include "tarmuft_fsm.h"
@@ -79,7 +80,7 @@ class Boxoffice
     zmq::socket_t* z_bo_hb;
     zmq::socket_t* z_broadcast;
 
-    std::vector< std::pair<std::string,int> > subscribers; // endpoint and type
+    std::vector< node_t > subscribers; // endpoint and type
     std::vector< std::string > publishers;
     std::unordered_map<int,Box*> boxes;
 

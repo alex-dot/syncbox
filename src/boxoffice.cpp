@@ -16,7 +16,6 @@
 #include "publisher.hpp"
 #include "heartbeater.hpp"
 #include "subscriber.hpp"
-#include "config.hpp"
 
 void *publisher_thread(zmq::context_t*, std::string);
 void *heartbeater_thread(zmq::context_t*, fsm::status_t status);
@@ -190,10 +189,13 @@ int Boxoffice::setupSubscribers()
 {
   // opening subscriber threads
   if (SB_MSG_DEBUG) printf("bo: opening %d subscriber threads\n", (int)subscribers.size());
-  for (std::vector< std::pair<std::string,int> >::iterator i = subscribers.begin(); 
+  for (std::vector< node_t >::iterator i = subscribers.begin(); 
         i != subscribers.end(); ++i)
   {
-    boost::thread* sub_thread = new boost::thread(subscriber_thread, z_ctx, i->first, i->second);
+    boost::thread* sub_thread = new boost::thread(subscriber_thread, 
+                                                  z_ctx, 
+                                                  i->subscriber.first, 
+                                                  i->subscriber.second);
     sub_threads.push_back(sub_thread);
   }
   if (SB_MSG_DEBUG) printf("bo: opened %d subscriber threads\n", (int)sub_threads.size());
