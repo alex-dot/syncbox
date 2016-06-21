@@ -109,7 +109,7 @@ typedef enum {
 //  ---------------------------------------------------------------------------
 //  State machine API
 
-static event_t
+static inline event_t
   get_event_by_status_code(status_t status) {
     if ( status == status_100 ) {
         return node_only_sends_heartbeats_event;
@@ -176,7 +176,7 @@ static event_t
     }
 }
 
-static bool
+static inline bool
   check_event(state_t state, event_t event, status_t status) {
     if ( state == ready_state ) {
         if ( event == new_local_file_event && status == status_300 ) {
@@ -491,7 +491,7 @@ static bool
     }
 }
 
-static action_t
+static inline action_t
   get_action(state_t state, event_t event, status_t status) {
     if ( state == ready_state ) {
         if ( event == new_local_file_event && status == status_300 ) {
@@ -806,7 +806,7 @@ static action_t
     }
 }
 
-static status_t
+static inline status_t
   get_heartbeat_status(state_t state, event_t event, status_t received_status) {
     if ( state == ready_state ) {
         if ( event == new_local_file_event && received_status == status_300 ) {
