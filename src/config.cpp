@@ -19,9 +19,9 @@ int Config::initialize(int argc, char* argv[])
 {
     Config* c = Config::getInstance();
 
-    // we handle nodes differently, so we want to parse them in a temp variable
     std::vector< std::string > nodes;
     std::vector< std::string > hostnames;
+    std::string                configfile;
 
     // parsing program options using boost::program_options
     namespace po = boost::program_options;
@@ -39,6 +39,8 @@ int Config::initialize(int argc, char* argv[])
             "Add path of a directory to watch (multiple arguments allowed)")
         ("hostname,p", po::value<std::vector <std::string> >(&hostnames),
             "Add a name for this machine under which other nodes can reach it (multiple arguments allowed)")
+        ("config,c", po::value<std::string>(&configfile),
+            "Use supplied config file instead of default one")
     ;
 
     po::options_description options;
@@ -53,7 +55,11 @@ int Config::initialize(int argc, char* argv[])
 
     // parse config file, if any
     wordexp_t expanded_config_file_path;
-    wordexp( SB_CONFIG_FILE, &expanded_config_file_path, 0 );
+    if (configfile.empty()) {
+        wordexp( SB_CONFIG_FILE, &expanded_config_file_path, 0 );
+    } else {
+        wordexp( configfile.c_str(), &expanded_config_file_path, 0 );
+    }
     std::ifstream ifs( expanded_config_file_path.we_wordv[0] );
     wordfree(&expanded_config_file_path);
     if ( !ifs ) {

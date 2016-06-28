@@ -9,3 +9,5 @@ bib/
 obj/
 *.pdf
 slides/
+test/config1
+test/config2
