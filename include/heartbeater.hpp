@@ -8,7 +8,7 @@
 #ifndef SB_HEARTBEATER_HPP
 #define SB_HEARTBEATER_HPP
 
-#include <zmq.hpp>
+#include <zmqpp/zmqpp.hpp>
 
 namespace fsm {
   #include "tarmuft_fsm.h"
@@ -25,7 +25,7 @@ class Heartbeater
       z_broadcast(nullptr),
       current_status_(fsm::status_100)
       {};
-    Heartbeater(zmq::context_t* z_ctx_, fsm::status_t status) :
+    Heartbeater(zmqpp::context* z_ctx_, fsm::status_t status) :
       z_ctx(z_ctx_),
       z_boxoffice_pull(nullptr),
       z_boxoffice_push(nullptr),
@@ -36,9 +36,9 @@ class Heartbeater
     Heartbeater(const Heartbeater&);
     ~Heartbeater();
 
-    static Heartbeater* initialize(zmq::context_t* z_ctx_, 
+    static Heartbeater* initialize(zmqpp::context* z_ctx_, 
                                    fsm::status_t status);
-    int setContext(zmq::context_t* z_ctx_)
+    int setContext(zmqpp::context* z_ctx_)
     {
       z_ctx = z_ctx_;
       if ( z_ctx == nullptr )
@@ -55,11 +55,11 @@ class Heartbeater
     int connectToBroadcast();
     int connectToBoxoffice();
 
-    zmq::context_t* z_ctx;
-    zmq::socket_t* z_boxoffice_pull;
-    zmq::socket_t* z_boxoffice_push;
-    zmq::socket_t* z_heartbeater;
-    zmq::socket_t* z_broadcast;
+    zmqpp::context* z_ctx;
+    zmqpp::socket* z_boxoffice_pull;
+    zmqpp::socket* z_boxoffice_push;
+    zmqpp::socket* z_heartbeater;
+    zmqpp::socket* z_broadcast;
     fsm::status_t current_status_;
 };
 

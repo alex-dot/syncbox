@@ -13,7 +13,7 @@
 #include <boost/filesystem.hpp>
 #include <vector>
 #include <unordered_map>
-#include <zmq.hpp>
+#include <zmqpp/zmqpp.hpp>
 
 #include "constants.hpp"
 #include "directory.hpp"
@@ -32,7 +32,7 @@ class Box
     bool getChangedDirHashes(std::vector< std::shared_ptr<Hash> >& changed_hashes, 
                              const Box& left) const;
 
-    int setContext(zmq::context_t* z_ctx)
+    int setContext(zmqpp::context* z_ctx)
     {
       z_ctx_ = z_ctx;
       if ( z_ctx_ == nullptr )
@@ -59,9 +59,10 @@ class Box
     void recursiveDirectoryFill(std::vector< std::shared_ptr<Hash> >& hashes, 
                                 std::vector<boost::filesystem::directory_entry>& dir);
 
-    zmq::context_t*                            z_ctx_;
-    zmq::socket_t*                             z_broadcast_;
-    zmq::socket_t*                             z_boxoffice_;
+    zmqpp::context*                            z_ctx_;
+    zmqpp::socket*                             z_broadcast_;
+    zmqpp::socket*                             z_boxoffice_pull;
+    zmqpp::socket*                             z_boxoffice_push;
     boost::filesystem::path                    path_;
     std::unordered_map<std::string,Directory*> entries_;
     HashTree*                                  hash_tree_;

@@ -8,7 +8,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include <zmq.hpp>
+#include <zmqpp/zmqpp.hpp>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/inotify.h>
@@ -64,11 +64,11 @@ struct file_msg_string
 };
 
 // wrapper for polling on one socket while simultaneously polling the broadcast
-void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream);
-void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, zmq::socket_t &heartbeat, std::stringstream &sstream);
+void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &sstream);
+void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, zmqpp::socket &heartbeat, std::stringstream &sstream);
 // wrapper for polling on one socket while simultaneously polling the broadcast, but non-blocking
-int s_recv_noblock(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream, int timeout);
+int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &sstream, int timeout);
 // wrapper for polling on inotify event while simultaneously polling the broadcast
-void s_recv_in(zmq::socket_t &broadcast, int fd, std::stringstream &sstream);
+void s_recv_in(zmqpp::socket &broadcast, zmqpp::socket &socket, int fd, std::stringstream &sstream);
 
 #endif

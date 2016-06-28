@@ -22,7 +22,8 @@ namespace fsm {
 Box::Box() :
   z_ctx_(nullptr),
   z_broadcast_(nullptr),
-  z_boxoffice_(nullptr),
+  z_boxoffice_pull(nullptr),
+  z_boxoffice_push(nullptr),
   path_(),
   entries_(),
   hash_tree_(),
@@ -32,7 +33,8 @@ Box::Box() :
 Box::Box(boost::filesystem::path p, int box_num) :
   z_ctx_(nullptr),
   z_broadcast_(nullptr),
-  z_boxoffice_(nullptr),
+  z_boxoffice_pull(nullptr),
+  z_boxoffice_push(nullptr),
   path_(p),
   entries_(),
   hash_tree_(),
@@ -68,7 +70,8 @@ Box::~Box()
 
   delete hash_tree_;
   delete z_broadcast_;
-  delete z_boxoffice_;
+  delete z_boxoffice_pull;
+  delete z_boxoffice_push;
 }
 
 void Box::recursiveDirectoryFill(std::vector< std::shared_ptr<Hash> >& hashes, std::vector<boost::filesystem::directory_entry>& dirs)
@@ -102,23 +105,29 @@ bool Box::getChangedDirHashes(std::vector< std::shared_ptr<Hash> >& changed_hash
 int Box::connectToBroadcast()
 {
   if (SB_MSG_DEBUG) printf("box: connecting to broadcast\n");
-  z_broadcast_ = new zmq::socket_t(*z_ctx_, ZMQ_SUB);
+  z_broadcast_ = new zmqpp::socket(*z_ctx_, zmqpp::socket_type::sub);
   z_broadcast_->connect("inproc://sb_broadcast");
-  const char *sub_filter = "";
-  z_broadcast_->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
+  z_broadcast_->subscribe("");
 
   return 0;
 }
 int Box::connectToBoxoffice()
 {
-  z_boxoffice_ = new zmq::socket_t(*z_ctx_, ZMQ_PUSH);
-  z_boxoffice_->connect("inproc://sb_boxoffice_pull_in");
+  // open connection to send data to boxoffice
+  z_boxoffice_pull = new zmqpp::socket(*z_ctx_, zmqpp::socket_type::push);
+  z_boxoffice_pull->connect("inproc://sb_boxoffice_pull_in");
+  // open connection to receive data from boxoffice
+  z_boxoffice_push = new zmqpp::socket(*z_ctx_, zmqpp::socket_type::sub);
+  z_boxoffice_push->connect("inproc://sb_boxoffice_push_out");
+  z_boxoffice_push->subscribe("");
 
   // send a heartbeat to boxoffice, so it knows the box is ready
   if (SB_MSG_DEBUG) printf("box: sending heartbeat...\n");
-  zmq::message_t z_msg;
-  snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_ALIVE);
-  z_boxoffice_->send(z_msg);
+  std::stringstream message;
+  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_ALIVE;
+  zmqpp::message z_msg;
+  z_msg << message.str();
+  z_boxoffice_pull->send(z_msg);
 
   return 0;
 }
@@ -127,13 +136,15 @@ int Box::sendExitSignal()
 {
   // send exit signal to boxoffice
   if (SB_MSG_DEBUG) printf("box: sending exit signal...\n");
-  zmq::message_t z_msg;
-  snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
-  z_boxoffice_->send(z_msg);
+  std::stringstream message;
+  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_EXIT;
+  zmqpp::message z_msg;
+  z_msg << message.str();
+  z_boxoffice_pull->send(z_msg);
 
   if (SB_MSG_DEBUG) printf("box: signal sent, exiting...\n");
-  z_boxoffice_->close();
-
+  z_boxoffice_pull->close();
+  z_boxoffice_push->close();
   z_broadcast_->close();
 
   return 0;
@@ -160,30 +171,33 @@ int Box::watch()
   while(true)
   {
     sstream = new std::stringstream();
-    s_recv_in(*z_broadcast_, fd, *sstream);
+    s_recv_in(*z_broadcast_, *z_boxoffice_push, fd, *sstream);
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type == SB_SIGTYPE_LIFE || msg_signal == SB_SIGLIFE_INTERRUPT ) 
+    if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) 
     {
       delete sstream;
       break;
     }
 
     // sending inotify event
-    std::string message = sstream->str();
-    zmq::message_t* z_msg;
-    z_msg = new zmq::message_t(7);
-    snprintf((char*) z_msg->data(), 7, "%d %d %d\n", SB_SIGTYPE_INOTIFY, (int)fsm::status_300, box_num_);
-    z_boxoffice_->send(*z_msg, ZMQ_SNDMORE);
+    std::string infomessage = sstream->str();
+    std::stringstream message;
+    message << SB_SIGTYPE_INOTIFY << " "
+            << fsm::status_300    << " "
+            << box_num_;
+    zmqpp::message* z_msg = new zmqpp::message();
+    *z_msg << message.str();
+    z_boxoffice_pull->send(*z_msg, ZMQ_SNDMORE);
     delete z_msg;
-    z_msg = new zmq::message_t(message.length()+1);
-    snprintf((char*) z_msg->data(), message.length()+1, "%s", message.c_str());
-    z_boxoffice_->send(*z_msg);
+
+    message << infomessage.c_str();
+    z_msg = new zmqpp::message();
+    *z_msg << message.str();
+    z_boxoffice_pull->send(*z_msg);
     delete z_msg;
 
     delete sstream;
   }
-
-  z_broadcast_->close();
 
   close(fd);
 

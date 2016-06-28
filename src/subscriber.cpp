@@ -7,7 +7,7 @@
 
 #include <unistd.h>
 
-#include <zmq.hpp>
+#include <zmqpp/zmqpp.hpp>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -22,7 +22,7 @@ Subscriber::~Subscriber()
   delete z_broadcast;
 }
 
-Subscriber* Subscriber::initialize(zmq::context_t* z_ctx_, 
+Subscriber* Subscriber::initialize(zmqpp::context* z_ctx_, 
                                    std::string endpoint_, 
                                    int sb_subtype_)
 {
@@ -39,10 +39,9 @@ int Subscriber::connectToBroadcast()
   // connect to process broadcast
   // since we want to rarely use that (mostly interrupt) we assume that by 
   // the time we need it, we have long been connected to it
-  z_broadcast = new zmq::socket_t(*z_ctx, ZMQ_SUB);
+  z_broadcast = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
   z_broadcast->connect("inproc://sb_broadcast");
-  const char *sub_filter = "";
-  z_broadcast->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
+  z_broadcast->subscribe("");
 
   return 0;
 }
@@ -50,18 +49,19 @@ int Subscriber::connectToBroadcast()
 int Subscriber::connectToBoxoffice()
 {
   // open connection to send data to boxoffice
-  z_boxoffice_pull = new zmq::socket_t(*z_ctx, ZMQ_PUSH);
+  z_boxoffice_pull = new zmqpp::socket(*z_ctx, zmqpp::socket_type::push);
   z_boxoffice_pull->connect("inproc://sb_boxoffice_pull_in");
   // open connection to receive data from boxoffice
-  z_boxoffice_push = new zmq::socket_t(*z_ctx, ZMQ_SUB);
+  z_boxoffice_push = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
   z_boxoffice_push->connect("inproc://sb_boxoffice_push_out");
-  const char *sub_filter = "";
-  z_boxoffice_push->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
+  z_boxoffice_push->subscribe("");
 
   // send a heartbeat to boxoffice, so it knows the publisher is ready
   if (SB_MSG_DEBUG) printf("pub: sending heartbeat...\n");
-  zmq::message_t z_msg;
-  snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_ALIVE);
+  std::stringstream message;
+  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_ALIVE;
+  zmqpp::message z_msg;
+  z_msg << message.str();
   z_boxoffice_pull->send(z_msg);
 
   return 0;
@@ -71,14 +71,15 @@ int Subscriber::sendExitSignal()
 {
   // send exit signal to boxoffice
   if (SB_MSG_DEBUG) printf("sub: sending exit signal...\n");
-  zmq::message_t z_msg;
-  snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
+  std::stringstream message;
+  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_EXIT;
+  zmqpp::message z_msg;
+  z_msg << message.str();
   z_boxoffice_pull->send(z_msg);
 
   if (SB_MSG_DEBUG) printf("sub: signal sent, exiting...\n");
   z_boxoffice_pull->close();
   z_boxoffice_push->close();
-
   z_subscriber->close();
   z_broadcast->close();
 
@@ -93,19 +94,18 @@ int Subscriber::run()
     return 1;
 
   if (SB_MSG_DEBUG) printf("sub: receiving from publisher...\n");
-  z_subscriber = new zmq::socket_t(*z_ctx, ZMQ_SUB);
+  z_subscriber = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
   z_subscriber->connect(endpoint.c_str());
-  const char *sub_filter = "";
-  z_subscriber->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
+  z_subscriber->subscribe("");
 
   std::stringstream* sstream;
   int msg_type, msg_signal;
-  std::string message;
+  std::string infomessage;
 
   while (true)
   {
     sstream = new std::stringstream();
-    s_recv(*z_subscriber, *z_broadcast, *sstream);
+    s_recv(*z_boxoffice_push, *z_broadcast, *z_subscriber, *sstream);
     *sstream >> msg_type;
     if ( msg_type == SB_SIGTYPE_LIFE ) {
       *sstream >> msg_signal;
@@ -114,16 +114,13 @@ int Subscriber::run()
       msg_signal = msg_type;
     }
 
-    *sstream >> message;
-    zmq::message_t z_msg(message.length()+7);
-    snprintf(
-      (char*) z_msg.data(), 
-      message.length()+7, 
-      "%d %d %s", 
-      SB_SIGTYPE_SUB,
-      msg_signal,
-      message.c_str()
-    );
+    *sstream >> infomessage;
+    std::stringstream message;
+    message << SB_SIGTYPE_SUB << " "
+            << msg_signal     << " "
+            << infomessage.c_str();
+    zmqpp::message z_msg;
+    z_msg << message.str();
     z_boxoffice_pull->send(z_msg);
 
     delete sstream;

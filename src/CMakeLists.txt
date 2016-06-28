@@ -14,4 +14,5 @@ target_link_libraries(syncbox ${CMAKE_THREAD_LIBS_INIT}
                               ${Boost_LIBRARIES}
                               ${CRYPTO++_LIBRARIES}
                               ${ZEROMQ_LIBRARY}
+                              ${ZEROMQ_CPP_LIBRARY}
                               ${MSGPACK_LIBRARY})

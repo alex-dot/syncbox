@@ -8,7 +8,7 @@
 #ifndef SB_SUBSCRIBER_HPP
 #define SB_SUBSCRIBER_HPP
 
-#include <zmq.hpp>
+#include <zmqpp/zmqpp.hpp>
 
 class Subscriber
 {
@@ -22,7 +22,7 @@ class Subscriber
       endpoint(""),
       sb_subtype(-1)
       {};
-    Subscriber(zmq::context_t* z_ctx_, std::string endpoint_, int sb_subtype_) :
+    Subscriber(zmqpp::context* z_ctx_, std::string endpoint_, int sb_subtype_) :
       z_ctx(z_ctx_),
       z_boxoffice_pull(nullptr),
       z_boxoffice_push(nullptr),
@@ -34,10 +34,10 @@ class Subscriber
     Subscriber(const Subscriber&);
     ~Subscriber();
 
-    static Subscriber* initialize(zmq::context_t* z_ctx_, 
+    static Subscriber* initialize(zmqpp::context* z_ctx_, 
                                   std::string endpoint_, 
                                   int sb_subtype_);
-    int setContext(zmq::context_t* z_ctx_)
+    int setContext(zmqpp::context* z_ctx_)
     {
       z_ctx = z_ctx_;
       if ( z_ctx == nullptr )
@@ -54,11 +54,11 @@ class Subscriber
     int connectToBroadcast();
     int connectToBoxoffice();
 
-    zmq::context_t* z_ctx;
-    zmq::socket_t* z_boxoffice_pull;
-    zmq::socket_t* z_boxoffice_push;
-    zmq::socket_t* z_subscriber;
-    zmq::socket_t* z_broadcast;
+    zmqpp::context* z_ctx;
+    zmqpp::socket* z_boxoffice_pull;
+    zmqpp::socket* z_boxoffice_push;
+    zmqpp::socket* z_subscriber;
+    zmqpp::socket* z_broadcast;
     std::string endpoint;
     int sb_subtype;
 };

@@ -1,158 +1,158 @@
-
+// TODO removed while loops, for it seems as though it waits at poll anyway 
+// and returns once something happened
 
 
 #include "constants.hpp"
 
 // wrapper for polling on one socket while simultaneously polling the broadcast
-void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream)
+void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &sstream)
 {
-  zmq::message_t z_msg;
-  std::vector<zmq::pollitem_t> z_items = {
+  zmqpp::message z_msg;
+  zmq_pollitem_t z_items[] = {
     { static_cast<void *>(socket),    0, ZMQ_POLLIN, 0 },
     { static_cast<void *>(broadcast), 0, ZMQ_POLLIN, 0 }
   };
-  int more;
-  while(true)
-  {
-    zmq::poll(&z_items[0], 2, -1);
 
-    if ( z_items[0].revents & ZMQ_POLLIN )
+  zmqpp::poller poller;
+  poller.add(z_items[0]);
+  poller.add(z_items[1]);
+
+  poller.poll();
+
+  if ( poller.events(z_items[0]) & ZMQ_POLLIN )
+  {
+    socket.receive(z_msg);
+    int parts = z_msg.parts();
+    for (int i = 0; i < parts; ++i)
     {
-      while(true)
-      {
-        socket.recv(&z_msg);
-        sstream << std::string(static_cast<char*>(z_msg.data()));
-        size_t more_size = sizeof(more);
-        socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-        if (!more)
-          break;
-      }
-      break;
-    }
-    if ( z_items[1].revents & ZMQ_POLLIN )
-    {
-      broadcast.recv(&z_msg);
-      sstream << std::string(static_cast<char*>(z_msg.data()));
-      break;
+      sstream << z_msg.get(0);
     }
   }
+  else if ( poller.events(z_items[1]) & ZMQ_POLLIN )
+  {
+    broadcast.receive(z_msg);
+    sstream << z_msg.get(0);
+  }
 }
-void s_recv(zmq::socket_t &socket, zmq::socket_t &broadcast, zmq::socket_t &heartbeat, std::stringstream &sstream)
+void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, zmqpp::socket &heartbeat, std::stringstream &sstream)
 {
-  zmq::message_t z_msg;
-  std::vector<zmq::pollitem_t> z_items = {
+  zmqpp::message z_msg;
+  zmq_pollitem_t z_items[] = {
     { static_cast<void *>(socket),    0, ZMQ_POLLIN, 0 },
     { static_cast<void *>(broadcast), 0, ZMQ_POLLIN, 0 },
     { static_cast<void *>(heartbeat), 0, ZMQ_POLLIN, 0 }
   };
-  int more;
-  while(true)
-  {
-    zmq::poll(&z_items[0], 3, -1);
 
-    if ( z_items[0].revents & ZMQ_POLLIN )
+  zmqpp::poller poller;
+  poller.add(z_items[0]);
+  poller.add(z_items[1]);
+  poller.add(z_items[2]);
+
+  poller.poll();
+
+  if ( poller.events(z_items[0]) & ZMQ_POLLIN )
+  {
+    socket.receive(z_msg);
+    int parts = z_msg.parts();
+    for (int i = 0; i < parts; ++i)
     {
-      while(true)
-      {
-        socket.recv(&z_msg);
-        sstream << std::string(static_cast<char*>(z_msg.data()));
-        size_t more_size = sizeof(more);
-        socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-        if (!more)
-          break;
-      }
-      break;
+      sstream << z_msg.get(0);
     }
-    if ( z_items[1].revents & ZMQ_POLLIN )
-    {
-      broadcast.recv(&z_msg);
-      sstream << std::string(static_cast<char*>(z_msg.data()));
-      break;
-    }
-    if ( z_items[2].revents & ZMQ_POLLIN )
-    {
-      heartbeat.recv(&z_msg);
-      sstream << std::string(static_cast<char*>(z_msg.data()));
-      break;
-    }
+  }
+  if ( poller.events(z_items[1]) & ZMQ_POLLIN )
+  {
+    broadcast.receive(z_msg);
+    sstream << z_msg.get(0);
+  }
+  if ( poller.events(z_items[2]) & ZMQ_POLLIN )
+  {
+    heartbeat.receive(z_msg);
+    sstream << z_msg.get(0);
   }
 }
 
 // wrapper for polling on one socket while simultaneously polling the broadcast, but non-blocking
-int s_recv_noblock(zmq::socket_t &socket, zmq::socket_t &broadcast, std::stringstream &sstream, int timeout)
+int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &sstream, int timeout)
 {
-  zmq::message_t z_msg;
-  std::vector<zmq::pollitem_t> z_items = {
+  int return_val;
+  zmqpp::message z_msg;
+  zmq_pollitem_t z_items[] = {
     { static_cast<void *>(socket),    0, ZMQ_POLLIN, 0 },
     { static_cast<void *>(broadcast), 0, ZMQ_POLLIN, 0 }
   };
-  int more;
-  while(true)
-  {
-    int z_return = zmq::poll(&z_items[0], 2, timeout);
 
-    if ( z_return == 0 ) {
-      return 0;
-    } else if ( z_items[0].revents & ZMQ_POLLIN )
+  zmqpp::poller poller;
+  poller.add(z_items[0]);
+  poller.add(z_items[1]);
+
+  if ( poller.poll(timeout) ) {
+    if ( poller.events(z_items[0]) & ZMQ_POLLIN )
     {
-      while(true)
+      socket.receive(z_msg);
+      int parts = z_msg.parts();
+      for (int i = 0; i < parts; ++i)
       {
-        socket.recv(&z_msg);
-        sstream << std::string(static_cast<char*>(z_msg.data()));
-        size_t more_size = sizeof(more);
-        socket.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-        if (!more)
-          return 1;
+        sstream << z_msg.get(0);
       }
-      return 1;
-    } else if ( z_items[1].revents & ZMQ_POLLIN )
-    {
-      broadcast.recv(&z_msg);
-      sstream << std::string(static_cast<char*>(z_msg.data()));
-      return 1;
     }
+    if ( poller.events(z_items[1]) & ZMQ_POLLIN )
+    {
+      broadcast.receive(z_msg);
+      sstream << z_msg.get(0);
+    }
+    return_val = 1;
+  } else {
+    return_val = 0;
   }
+  return return_val;
 }
 
 // wrapper for polling on inotify event while simultaneously polling the broadcast
-void s_recv_in(zmq::socket_t &broadcast, int fd, std::stringstream &sstream)
+void s_recv_in(zmqpp::socket &broadcast, zmqpp::socket &socket, int fd, std::stringstream &sstream)
 {
-  zmq::message_t z_msg;
-  zmq::pollitem_t z_items[] {
+  zmqpp::message z_msg;
+  zmq_pollitem_t z_items[] {
     {                        nullptr, fd, ZMQ_POLLIN, 0 },
-    { static_cast<void *>(broadcast),  0, ZMQ_POLLIN, 0 }
+    { static_cast<void *>(broadcast),  0, ZMQ_POLLIN, 0 },
+    { static_cast<void *>(socket),     0, ZMQ_POLLIN, 0 }
   };
-  while(true)
+
+  zmqpp::poller poller;
+  poller.add(z_items[0]);
+  poller.add(z_items[1]);
+  poller.add(z_items[2]);
+
+  poller.poll();
+
+  if ( poller.events(z_items[0]) & ZMQ_POLLIN )
   {
-    zmq::poll(&z_items[0], 2, -1);
+    int length, i = 0;
+    char buffer[SB_IN_BUF_LEN];
 
-    if ( z_items[0].revents & ZMQ_POLLIN )
-    {
-      int length, i = 0;
-      char buffer[SB_IN_BUF_LEN];
-      
-      length = read( fd, buffer, SB_IN_BUF_LEN );
-      if ( length < 0 ) perror("inotify poll");
+    length = read( fd, buffer, SB_IN_BUF_LEN );
+    if ( length < 0 ) perror("inotify poll");
 
-      while( i < length )
-      {
-        struct inotify_event* event;
-        event = (struct inotify_event*) &buffer[0];
-        sstream << event->wd     << " "
-                << event->mask   << " "
-                << event->cookie << " "
-                << event->len    << "\n"
-                << event->name;
-        i += SB_IN_EVENT_SIZE + event->len;
-        if ( i < length ) sstream << "\n";
-      }
-      break;
-    }
-    if ( z_items[1].revents & ZMQ_POLLIN )
+    while( i < length )
     {
-      broadcast.recv(&z_msg);
-      sstream << std::string(static_cast<char*>(z_msg.data()));
-      break;
+      struct inotify_event* event;
+      event = (struct inotify_event*) &buffer[0];
+      sstream << event->wd     << " "
+              << event->mask   << " "
+              << event->cookie << " "
+              << event->len    << "\n"
+              << event->name;
+      i += SB_IN_EVENT_SIZE + event->len;
+      if ( i < length ) sstream << "\n";
     }
+  }
+  if ( poller.events(z_items[1]) & ZMQ_POLLIN )
+  {
+      broadcast.receive(z_msg);
+      sstream << z_msg.get(0);
+  }
+  if ( poller.events(z_items[2]) & ZMQ_POLLIN )
+  {
+      broadcast.receive(z_msg);
+      sstream << z_msg.get(0);
   }
 }

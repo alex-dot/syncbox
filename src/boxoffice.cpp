@@ -2,7 +2,7 @@
  * Boxoffice
  */
 
-#include <zmq.hpp>
+#include <zmqpp/zmqpp.hpp>
 #include <boost/thread.hpp>
 #include <sstream>
 #include <iostream>
@@ -17,10 +17,10 @@
 #include "heartbeater.hpp"
 #include "subscriber.hpp"
 
-void *publisher_thread(zmq::context_t*, std::string);
-void *heartbeater_thread(zmq::context_t*, fsm::status_t status);
-void *subscriber_thread(zmq::context_t*, std::string, int);
-void *box_thread(zmq::context_t* z_ctx, Box* box);
+void *publisher_thread(zmqpp::context*, std::string);
+void *heartbeater_thread(zmqpp::context*, fsm::status_t status);
+void *subscriber_thread(zmqpp::context*, std::string, int);
+void *box_thread(zmqpp::context* z_ctx, Box* box);
 
 Boxoffice::~Boxoffice()
 {
@@ -47,7 +47,7 @@ Boxoffice::~Boxoffice()
   delete z_broadcast;
 }
 
-Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
+Boxoffice* Boxoffice::initialize(zmqpp::context* z_ctx)
 {
   int return_value = 0;
 
@@ -78,9 +78,9 @@ Boxoffice* Boxoffice::initialize(zmq::context_t* z_ctx)
   return bo;
 }
 
-int Boxoffice::setContext(zmq::context_t* z_ctx_)
+int Boxoffice::setContext(zmqpp::context* z_ctx_)
 {
-  zmq::context_t* z_ctx_temp = z_ctx;
+  zmqpp::context* z_ctx_temp = z_ctx;
   z_ctx = z_ctx_;
       
   if ( z_ctx_temp == nullptr ) return 0;
@@ -94,10 +94,9 @@ int Boxoffice::connectToBroadcast()
   // connect to process broadcast
   // since we want to rarely use that (mostly interrupt) we assume that by 
   // the time we need it, we have long been connected to it
-  z_broadcast = new zmq::socket_t(*z_ctx, ZMQ_SUB);
+  z_broadcast = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
   z_broadcast->connect("inproc://sb_broadcast");
-  const char *sub_filter = "";
-  z_broadcast->setsockopt(ZMQ_SUBSCRIBE, sub_filter, 0);
+  z_broadcast->subscribe("");
 
   return 0;
 }
@@ -105,7 +104,7 @@ int Boxoffice::connectToBroadcast()
 int Boxoffice::connectToMain()
 {
   // open PAIR sender to main thread
-  z_bo_main = new zmq::socket_t(*z_ctx, ZMQ_PAIR);
+  z_bo_main = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
   z_bo_main->connect("inproc://sb_bo_main_pair");
 
   return 0;
@@ -114,13 +113,13 @@ int Boxoffice::connectToMain()
 int Boxoffice::setupConnectionToChildren()
 {
   // connection for information from subscribers, publishers and boxes
-  z_router = new zmq::socket_t(*z_ctx, ZMQ_PULL);
+  z_router = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pull);
   z_router->bind("inproc://sb_boxoffice_pull_in");
   // connection to send information to publishers and boxes
-  z_bo_pub = new zmq::socket_t(*z_ctx, ZMQ_PUB);
+  z_bo_pub = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pub);
   z_bo_pub->bind("inproc://sb_boxoffice_push_out");
   // connection to send information to heartbeaters
-  z_bo_hb = new zmq::socket_t(*z_ctx, ZMQ_PUB);
+  z_bo_hb = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pub);
   z_bo_hb->bind("inproc://sb_boxoffice_hb_push_out");
   if (SB_MSG_DEBUG) printf("bo: starting to listen to children...\n");
 
@@ -134,6 +133,7 @@ int Boxoffice::setupBoxes()
 
   int box_num = 0;
   box_threads.reserve(box_dirs.size());
+  if (SB_MSG_DEBUG) printf("bo: opening %d box threads\n", (int)box_dirs.size());
   for (std::vector<std::string>::iterator i = box_dirs.begin(); i != box_dirs.end(); ++i)
   {
     // initializing the boxes here, so we can use file IO while it's thread 
@@ -145,6 +145,7 @@ int Boxoffice::setupBoxes()
     boost::thread* bt = new boost::thread(box_thread, z_ctx, box);
     box_threads.push_back(bt);
   }
+  if (SB_MSG_DEBUG) printf("bo: opened %d box threads\n", (int)box_dirs.size());
 
   return 0;
 }
@@ -152,7 +153,7 @@ int Boxoffice::setupBoxes()
 int Boxoffice::setupPublishers()
 {
   // standard variables
-  zmq::message_t z_msg;
+  zmqpp::message z_msg;
 
   // opening publisher threads
   if (SB_MSG_DEBUG) printf("bo: opening %d publisher threads\n", (int)publishers.size());
@@ -170,7 +171,7 @@ int Boxoffice::setupPublishers()
 int Boxoffice::setupHeartbeaters()
 {
   // standard variables
-  zmq::message_t z_msg;
+  zmqpp::message z_msg;
 
   // opening heartbeater threads
   if (SB_MSG_DEBUG) printf("bo: opening %d heartbeater threads\n", (int)publishers.size());
@@ -205,7 +206,7 @@ int Boxoffice::setupSubscribers()
 
 int Boxoffice::checkChildren() {
   // standard variables
-  zmq::message_t z_msg;
+  zmqpp::message z_msg;
   int msg_type, msg_signal;
   std::stringstream* sstream;
 
@@ -228,7 +229,7 @@ int Boxoffice::checkChildren() {
 int Boxoffice::runRouter()
 { 
   // standard variables
-  zmq::message_t z_msg;
+  zmqpp::message z_msg;
   int msg_type, msg_signal;
   std::stringstream* sstream;
 
@@ -245,6 +246,7 @@ int Boxoffice::runRouter()
       break;
     }
 
+std::cout << "bo: received something" << std::endl;
     if ( msg_type == SB_SIGTYPE_INOTIFY || msg_type == SB_SIGTYPE_SUB ) {
 
       // fsm variables
@@ -281,10 +283,6 @@ int Boxoffice::closeConnections()
   int msg_type, msg_signal;
   std::stringstream* sstream;
   int return_value = 0;
-
-  zmq::message_t z_msg;
-  snprintf((char*) z_msg.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
-  z_bo_main->send(z_msg);
 
   // wait for exit/interrupt signal
   int heartbeats = sub_threads.size() + pub_threads.size() + hb_threads.size() + box_threads.size();
@@ -336,15 +334,14 @@ int Boxoffice::closeConnections()
   z_bo_hb->close();
 
   // sending exit signal to the main thread...
-  if ( z_bo_main != nullptr )
-  {
-    if (SB_MSG_DEBUG) printf("bo: sending exit signal...\n");
-    zmq::message_t z_msg_close(3);
-    snprintf((char*) z_msg_close.data(), 4, "%d %d", SB_SIGTYPE_LIFE, SB_SIGLIFE_EXIT);
-    z_bo_main->send(z_msg_close);
-    // ...and exiting
-    z_bo_main->close();
-  }
+  if (SB_MSG_DEBUG) printf("bo: sending exit signal...\n");
+  std::stringstream message;
+  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_EXIT;
+  zmqpp::message z_msg;
+  z_msg << message.str();
+  z_bo_main->send(z_msg);
+  // ...and exiting
+  z_bo_main->close();
 
   if (SB_MSG_DEBUG) printf("bo: exit signal sent, exiting...\n");
 
@@ -394,7 +391,7 @@ int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::stat
 
   if (SB_MSG_DEBUG) printf("bo: %s\n", file_path.c_str());
 
-  zmq::message_t z_msg( file_path.length()+6 );
+  zmqpp::message z_msg( file_path.length()+6 );
   snprintf(
     (char*) z_msg.data(), 
     file_path.length()+7, 
@@ -410,8 +407,10 @@ int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::stat
 
 int Boxoffice::updateHeartbeat(fsm::status_t new_status) {
   if (SB_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
-  zmq::message_t z_msg;
-  snprintf((char*) z_msg.data(), 6, "%d %d", SB_SIGTYPE_FSM, new_status);
+  std::stringstream message;
+  message << SB_SIGTYPE_FSM << " " << new_status;
+  zmqpp::message z_msg;
+  z_msg << message.str();
   z_bo_hb->send(z_msg);
 
   return 0;
@@ -419,7 +418,7 @@ int Boxoffice::updateHeartbeat(fsm::status_t new_status) {
 
 
 
-void *publisher_thread(zmq::context_t* z_ctx, std::string endpoint)
+void *publisher_thread(zmqpp::context* z_ctx, std::string endpoint)
 {
   Publisher* pub;
   pub = Publisher::initialize(z_ctx, endpoint);
@@ -432,7 +431,7 @@ void *publisher_thread(zmq::context_t* z_ctx, std::string endpoint)
   return (NULL);
 }
 
-void *heartbeater_thread(zmq::context_t* z_ctx, fsm::status_t status)
+void *heartbeater_thread(zmqpp::context* z_ctx, fsm::status_t status)
 {
   Heartbeater* hb;
   hb = Heartbeater::initialize(z_ctx, status);
@@ -445,7 +444,7 @@ void *heartbeater_thread(zmq::context_t* z_ctx, fsm::status_t status)
   return (NULL);
 }
 
-void *subscriber_thread(zmq::context_t* z_ctx, std::string endpoint, int sb_subtype)
+void *subscriber_thread(zmqpp::context* z_ctx, std::string endpoint, int sb_subtype)
 {
   Subscriber* sub;
   sub = Subscriber::initialize(z_ctx, endpoint, sb_subtype);
@@ -458,7 +457,7 @@ void *subscriber_thread(zmq::context_t* z_ctx, std::string endpoint, int sb_subt
   return (NULL);
 }
 
-void *box_thread(zmq::context_t* z_ctx, Box* box)
+void *box_thread(zmqpp::context* z_ctx, Box* box)
 {
   // although boxes have their own thread, it is only used for catching inotify
   // signals

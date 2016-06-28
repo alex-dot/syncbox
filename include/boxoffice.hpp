@@ -10,7 +10,7 @@
 #ifndef SB_BOXOFFICE_HPP
 #define SB_BOXOFFICE_HPP
 
-#include <zmq.hpp>
+#include <zmqpp/zmqpp.hpp>
 #include <boost/thread.hpp>
 #include <vector>
 #include <utility>
@@ -35,8 +35,8 @@ class Boxoffice
       return &bo_instance_;
     }
 
-    static Boxoffice* initialize(zmq::context_t* z_ctx);
-    int setContext(zmq::context_t* z_ctx_);
+    static Boxoffice* initialize(zmqpp::context* z_ctx);
+    int setContext(zmqpp::context* z_ctx_);
 
   private:
     Boxoffice() :
@@ -73,12 +73,12 @@ class Boxoffice
 
     fsm::state_t state_;
 
-    zmq::context_t* z_ctx;
-    zmq::socket_t* z_bo_main;
-    zmq::socket_t* z_router;
-    zmq::socket_t* z_bo_pub;
-    zmq::socket_t* z_bo_hb;
-    zmq::socket_t* z_broadcast;
+    zmqpp::context* z_ctx;
+    zmqpp::socket* z_bo_main;
+    zmqpp::socket* z_router;
+    zmqpp::socket* z_bo_pub;
+    zmqpp::socket* z_bo_hb;
+    zmqpp::socket* z_broadcast;
 
     std::vector< node_t > subscribers; // endpoint and type
     std::vector< std::string > publishers;
