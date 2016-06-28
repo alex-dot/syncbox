@@ -29,6 +29,8 @@ int Config::initialize(int argc, char* argv[])
     po::options_description cmdline_options("Generic options");
     cmdline_options.add_options()
         ("help,h", "produce help message")
+        ("config,c", po::value<std::string>(&configfile),
+            "Use supplied config file instead of default one")
     ;
 
     po::options_description generic_options("Allowed options");
@@ -39,8 +41,6 @@ int Config::initialize(int argc, char* argv[])
             "Add path of a directory to watch (multiple arguments allowed)")
         ("hostname,p", po::value<std::vector <std::string> >(&hostnames),
             "Add a name for this machine under which other nodes can reach it (multiple arguments allowed)")
-        ("config,c", po::value<std::string>(&configfile),
-            "Use supplied config file instead of default one")
     ;
 
     po::options_description options;
