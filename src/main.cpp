@@ -108,7 +108,7 @@ int main_application(int argc, char* argv[])
 
   sstream >> msg_type >> msg_signal;
   if ( msg_type != SB_SIGTYPE_LIFE && msg_signal != SB_SIGLIFE_EXIT ) return 1;
-  if (SB_MSG_DEBUG) printf("main: boxoffice sent exit signal, cleaning up and exiting...");
+  if (SB_MSG_DEBUG) printf("main: boxoffice sent exit signal, cleaning up and exiting...\n");
 
   bo_thread.join();
 

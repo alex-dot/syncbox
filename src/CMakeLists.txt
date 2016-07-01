@@ -2,6 +2,7 @@ include_directories(../include)
 add_executable(syncbox  main.cpp
                         constants.cpp
                         config.cpp
+                        transmitter.cpp
                         directory.cpp
                         box.cpp
                         hash_tree.cpp

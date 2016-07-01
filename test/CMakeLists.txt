@@ -20,12 +20,14 @@ add_executable(syncboxTest testMain.cpp
                            ../src/hash.cpp
                            ../src/hash_tree.cpp
                            ../src/directory.cpp
-                           ../src/box.cpp
+                           ../src/transmitter.cpp
+                           #../src/box.cpp
                            #../src/boxconfig.cpp
                            test_hash.cpp
                            test_hash_tree.cpp
                            test_directory.cpp
-                           test_box.cpp)
+                           #test_box.cpp
+                           )
 target_link_libraries(syncboxTest ${CMAKE_THREAD_LIBS_INIT}
                                   ${Boost_LIBRARIES}
                                   ${CRYPTO++_LIBRARIES}

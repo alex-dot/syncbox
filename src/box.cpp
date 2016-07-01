@@ -20,26 +20,21 @@ namespace fsm {
 }
 
 Box::Box() :
-  z_ctx_(nullptr),
-  z_broadcast_(nullptr),
-  z_boxoffice_pull(nullptr),
-  z_boxoffice_push(nullptr),
+  Transmitter(),
   path_(),
   entries_(),
   hash_tree_(),
-  box_num_()
+  box_hash_()
   {}
 
-Box::Box(boost::filesystem::path p, int box_num) :
-  z_ctx_(nullptr),
-  z_broadcast_(nullptr),
-  z_boxoffice_pull(nullptr),
-  z_boxoffice_push(nullptr),
+Box::Box(zmqpp::context* z_ctx_, boost::filesystem::path p, Hash* box_hash) :
+  Transmitter(z_ctx_),
   path_(p),
   entries_(),
   hash_tree_(),
-  box_num_(box_num)
+  box_hash_(box_hash)
   {
+    tac = (char*)"box";
     Directory* baseDir = new Directory(p);
     std::vector< std::shared_ptr<Hash> > hashes;
 
@@ -69,9 +64,6 @@ Box::~Box()
   watch_descriptors_.clear();
 
   delete hash_tree_;
-  delete z_broadcast_;
-  delete z_boxoffice_pull;
-  delete z_boxoffice_push;
 }
 
 void Box::recursiveDirectoryFill(std::vector< std::shared_ptr<Hash> >& hashes, std::vector<boost::filesystem::directory_entry>& dirs)
@@ -102,55 +94,7 @@ bool Box::getChangedDirHashes(std::vector< std::shared_ptr<Hash> >& changed_hash
   return hash_tree_->getChangedHashes(changed_hashes, *(left.getHashTree()));
 }
 
-int Box::connectToBroadcast()
-{
-  if (SB_MSG_DEBUG) printf("box: connecting to broadcast\n");
-  z_broadcast_ = new zmqpp::socket(*z_ctx_, zmqpp::socket_type::sub);
-  z_broadcast_->connect("inproc://sb_broadcast");
-  z_broadcast_->subscribe("");
-
-  return 0;
-}
-int Box::connectToBoxoffice()
-{
-  // open connection to send data to boxoffice
-  z_boxoffice_pull = new zmqpp::socket(*z_ctx_, zmqpp::socket_type::push);
-  z_boxoffice_pull->connect("inproc://sb_boxoffice_pull_in");
-  // open connection to receive data from boxoffice
-  z_boxoffice_push = new zmqpp::socket(*z_ctx_, zmqpp::socket_type::sub);
-  z_boxoffice_push->connect("inproc://sb_boxoffice_push_out");
-  z_boxoffice_push->subscribe("");
-
-  // send a heartbeat to boxoffice, so it knows the box is ready
-  if (SB_MSG_DEBUG) printf("box: sending heartbeat...\n");
-  std::stringstream message;
-  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_ALIVE;
-  zmqpp::message z_msg;
-  z_msg << message.str();
-  z_boxoffice_pull->send(z_msg);
-
-  return 0;
-}
-
-int Box::sendExitSignal()
-{
-  // send exit signal to boxoffice
-  if (SB_MSG_DEBUG) printf("box: sending exit signal...\n");
-  std::stringstream message;
-  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_EXIT;
-  zmqpp::message z_msg;
-  z_msg << message.str();
-  z_boxoffice_pull->send(z_msg);
-
-  if (SB_MSG_DEBUG) printf("box: signal sent, exiting...\n");
-  z_boxoffice_pull->close();
-  z_boxoffice_push->close();
-  z_broadcast_->close();
-
-  return 0;
-}
-
-int Box::watch()
+int Box::run()
 {
   // defining fd 
   int fd, wd;
@@ -171,7 +115,7 @@ int Box::watch()
   while(true)
   {
     sstream = new std::stringstream();
-    s_recv_in(*z_broadcast_, *z_boxoffice_push, fd, *sstream);
+    s_recv_in(*z_broadcast, *z_boxoffice_push, fd, *sstream);
     *sstream >> msg_type >> msg_signal;
     if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) 
     {
@@ -184,7 +128,7 @@ int Box::watch()
     std::stringstream message;
     message << SB_SIGTYPE_INOTIFY << " "
             << fsm::status_300    << " "
-            << box_num_;
+            << box_hash_;
     zmqpp::message* z_msg = new zmqpp::message();
     *z_msg << message.str();
     z_boxoffice_pull->send(*z_msg, ZMQ_SNDMORE);

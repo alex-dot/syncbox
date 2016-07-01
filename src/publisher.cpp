@@ -13,57 +13,21 @@
 #include <iostream>
 #include <boost/thread.hpp>
 
+Publisher::Publisher(zmqpp::context* z_ctx_, std::string endpoint_) :
+  Transmitter(z_ctx_),
+  z_heartbeater(nullptr),
+  z_publisher(nullptr),
+  endpoint(endpoint_) {
+    tac = (char*)"pub";
+    this->connectToHeartbeater();
+}
 
-Publisher::~Publisher()
-{
-  delete z_boxoffice_pull;
-  delete z_boxoffice_push;
-  delete z_publisher;
+Publisher::~Publisher() {
+  z_heartbeater->close();
+  z_publisher->close();
+
   delete z_heartbeater;
-  delete z_broadcast;
-}
-
-Publisher* Publisher::initialize(zmqpp::context* z_ctx_, 
-                                 std::string endpoint_)
-{
-  Publisher* pub = new Publisher(z_ctx_, endpoint_);
-
-  pub->connectToBroadcast();
-  pub->connectToBoxoffice();
-  pub->connectToHeartbeater();
-
-  return pub;
-}
-
-int Publisher::connectToBroadcast()
-{
-  // connect to process broadcast
-  z_broadcast = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
-  z_broadcast->connect("inproc://sb_broadcast");
-  z_broadcast->subscribe("");
-
-  return 0;
-}
-
-int Publisher::connectToBoxoffice()
-{
-  // open connection to send data to boxoffice
-  z_boxoffice_pull = new zmqpp::socket(*z_ctx, zmqpp::socket_type::push);
-  z_boxoffice_pull->connect("inproc://sb_boxoffice_pull_in");
-  // open connection to receive data from boxoffice
-  z_boxoffice_push = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
-  z_boxoffice_push->connect("inproc://sb_boxoffice_push_out");
-  z_boxoffice_push->subscribe("");
-
-  // send a heartbeat to boxoffice, so it knows the publisher is ready
-  if (SB_MSG_DEBUG) printf("pub: sending heartbeat...\n");
-  std::stringstream message;
-  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_ALIVE;
-  zmqpp::message z_msg;
-  z_msg << message.str();
-  z_boxoffice_pull->send(z_msg);
-
-  return 0;
+  delete z_publisher;
 }
 
 int Publisher::connectToHeartbeater()
@@ -71,27 +35,6 @@ int Publisher::connectToHeartbeater()
   // connect to process broadcast
   z_heartbeater = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
   z_heartbeater->connect("inproc://pub_hb_pair");
-
-  return 0;
-}
-
-int Publisher::sendExitSignal()
-{
-  // send exit signal to boxoffice
-  if (SB_MSG_DEBUG) printf("pub: sending exit signal...\n");
-  std::stringstream message;
-  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_EXIT;
-  zmqpp::message z_msg;
-  z_msg << message.str();
-  z_boxoffice_pull->send(z_msg);
-
-  if (SB_MSG_DEBUG) printf("pub: signal sent, exiting...\n");
-
-  z_publisher->close();
-  z_heartbeater->close();
-  z_broadcast->close();
-  z_boxoffice_pull->close();
-  z_boxoffice_push->close();
 
   return 0;
 }

@@ -16,14 +16,15 @@
 #include <zmqpp/zmqpp.hpp>
 
 #include "constants.hpp"
+#include "transmitter.hpp"
 #include "directory.hpp"
 #include "hash_tree.hpp"
 
-class Box
+class Box : public Transmitter
 {
   public:
     Box();
-    Box(boost::filesystem::path, int box_num);
+    Box(zmqpp::context* z_ctx_, boost::filesystem::path, Hash* box_hash);
     ~Box();
 
     HashTree* getHashTree() const;
@@ -32,21 +33,7 @@ class Box
     bool getChangedDirHashes(std::vector< std::shared_ptr<Hash> >& changed_hashes, 
                              const Box& left) const;
 
-    int setContext(zmqpp::context* z_ctx)
-    {
-      z_ctx_ = z_ctx;
-      if ( z_ctx_ == nullptr )
-        return 0;
-      else
-        return 1;
-
-      return -1;
-    }
-    int connectToBroadcast();
-    int connectToBoxoffice();
-    int sendExitSignal();
-
-    int watch();
+    int run();
 
     const std::string getBaseDir() const;
     const std::string getPathOfDirectory(int wd) const;
@@ -59,15 +46,11 @@ class Box
     void recursiveDirectoryFill(std::vector< std::shared_ptr<Hash> >& hashes, 
                                 std::vector<boost::filesystem::directory_entry>& dir);
 
-    zmqpp::context*                            z_ctx_;
-    zmqpp::socket*                             z_broadcast_;
-    zmqpp::socket*                             z_boxoffice_pull;
-    zmqpp::socket*                             z_boxoffice_push;
     boost::filesystem::path                    path_;
     std::unordered_map<std::string,Directory*> entries_;
     HashTree*                                  hash_tree_;
     std::unordered_map<int,Directory*>         watch_descriptors_;
-    int                                        box_num_;
+    Hash*                                      box_hash_;
 };
 
 #endif

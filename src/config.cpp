@@ -21,6 +21,7 @@ int Config::initialize(int argc, char* argv[])
 
     std::vector< std::string > nodes;
     std::vector< std::string > hostnames;
+    std::vector< std::string > box_strings;
     std::string                configfile;
 
     // parsing program options using boost::program_options
@@ -37,7 +38,7 @@ int Config::initialize(int argc, char* argv[])
     generic_options.add_options()
         ("node,n", po::value<std::vector< std::string >>(&nodes), 
             "Add node location to listen to (multiple arguments allowed)")
-        ("box,b", po::value<std::vector <std::string> >(&c->box_dirs_), 
+        ("box,b", po::value<std::vector <std::string> >(&box_strings), 
             "Add path of a directory to watch (multiple arguments allowed)")
         ("hostname,p", po::value<std::vector <std::string> >(&hostnames),
             "Add a name for this machine under which other nodes can reach it (multiple arguments allowed)")
@@ -69,7 +70,7 @@ int Config::initialize(int argc, char* argv[])
         po::notify(c->vm_);
     }
 
-    return c->doSanityCheck( &options, &nodes, &hostnames );
+    return c->doSanityCheck( &options, &nodes, &hostnames, &box_strings );
 }
 
 const std::vector< node_t >
@@ -80,14 +81,15 @@ const std::vector< std::string >
     Config::getPublisherEndpoints() const {
         return publisher_endpoints_;
 }
-const std::vector< std::string >
+const std::vector< box_t >
     Config::getBoxDirectories() const {
         return box_dirs_;
 }
 
 int Config::doSanityCheck(boost::program_options::options_description* options, 
                           std::vector<std::string>* nodes, 
-                          std::vector<std::string>* hostnames) {
+                          std::vector<std::string>* hostnames, 
+                          std::vector<std::string>* box_strings) {
 
     // check for help argument, print the help, and exit
     if (vm_.count("help")) {
@@ -193,20 +195,46 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
 
     // checking boxes
     if (SB_MSG_DEBUG) printf("config: checking boxes\n");
-    if ( this->box_dirs_.size() >= 1 ) {
+    if ( box_strings->size() >= 1 ) {
         std::vector< std::string >::iterator i;
-        for (i = this->box_dirs_.begin(); 
-             i != this->box_dirs_.end(); ++i)
+        for (i = box_strings->begin(); 
+             i != box_strings->end(); ++i)
         {
+            std::istringstream box_string(*i);
+            std::stringstream box_path_sstream;
+            std::string box_name_string, box_path, box_path_temp;
+            std::getline(box_string, box_name_string, '@');
+            Hash* box_name = new Hash(box_name_string);
+            std::getline(box_string, box_path_temp, '@');
+            box_path_sstream << box_path_temp;
+            while(std::getline(box_string, box_path_temp, '@')) {
+                box_path_sstream << "@" << box_path_temp;
+            }
+            box_path = box_path_sstream.str();
+
             // check if the box locations map to directories on the filesystem
-            if ( !boost::filesystem::is_directory(*i) ) {
-                std::cerr << "[E] " << *i << " is not a directory." << std::endl;
+            if ( !boost::filesystem::is_directory(box_path) ) {
+                std::cerr << "[E] " << box_path << " is not a directory." << std::endl;
                 return 1;
             }
+            // check if the box location is already mapped or the box name has already been claimed
+            for (std::vector<box_t>::iterator j = this->box_dirs_.begin();
+                 j != this->box_dirs_.end(); ++j) {
+                if (box_name == j->first) {
+                    std::cerr << "[E] " << box_name << " is already used." << std::endl;
+                    return 1;
+                }
+                if (box_path == j->second) {
+                    std::cerr << "[E] " << box_path << " is already mapped." << std::endl;
+                    return 1;
+                }
+            }
+
+            // add new box strings to Config
+            this->box_dirs_.push_back(
+                std::make_pair(box_name, box_path)
+            );
         }
-        // finally make the vector unique
-        i = std::unique( this->box_dirs_.begin(), this->box_dirs_.end() );
-        this->box_dirs_.resize( std::distance( this->box_dirs_.begin(), i ) );
     } else {
         perror("[E] No box locations supplied, exiting...");
         return 1;

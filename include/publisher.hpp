@@ -12,56 +12,28 @@
 
 #include <zmqpp/zmqpp.hpp>
 
-class Publisher
+#include "transmitter.hpp"
+
+class Publisher : public Transmitter
 {
   public:
     Publisher() :
-      z_ctx(nullptr),
-      z_boxoffice_pull(nullptr),
-      z_boxoffice_push(nullptr),
-      z_publisher(nullptr),
+      Transmitter(), 
       z_heartbeater(nullptr),
-      z_broadcast(nullptr),
-      endpoint("")
-      {};
-    Publisher(zmqpp::context* z_ctx_, std::string endpoint_) :
-      z_ctx(z_ctx_),
-      z_boxoffice_pull(nullptr),
-      z_boxoffice_push(nullptr),
       z_publisher(nullptr),
-      z_heartbeater(nullptr),
-      z_broadcast(nullptr),
-      endpoint(endpoint_)
+      endpoint()
       {};
+    Publisher(zmqpp::context* z_ctx_, std::string endpoint_);
     Publisher(const Publisher&);
     ~Publisher();
 
-    static Publisher* initialize(zmqpp::context* z_ctx_, 
-                                 std::string endpoint_);
-    int setContext(zmqpp::context* z_ctx_)
-    {
-      z_ctx = z_ctx_;
-      if ( z_ctx == nullptr )
-        return 0;
-      else
-        return 1;
-
-      return -1;
-    }
-    int sendExitSignal();
     int run();
 
   private:
-    int connectToBroadcast();
-    int connectToBoxoffice();
     int connectToHeartbeater();
 
-    zmqpp::context* z_ctx;
-    zmqpp::socket* z_boxoffice_pull;
-    zmqpp::socket* z_boxoffice_push;
-    zmqpp::socket* z_publisher;
     zmqpp::socket* z_heartbeater;
-    zmqpp::socket* z_broadcast;
+    zmqpp::socket* z_publisher;
     std::string endpoint;
 };
 

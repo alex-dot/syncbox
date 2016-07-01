@@ -82,7 +82,7 @@ class Boxoffice
 
     std::vector< node_t > subscribers; // endpoint and type
     std::vector< std::string > publishers;
-    std::unordered_map<int,Box*> boxes;
+    std::unordered_map<Hash*,Box*> boxes;
 
     std::vector<boost::thread*> pub_threads;
     std::vector<boost::thread*> hb_threads;

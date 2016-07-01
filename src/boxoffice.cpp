@@ -20,15 +20,10 @@
 void *publisher_thread(zmqpp::context*, std::string);
 void *heartbeater_thread(zmqpp::context*, fsm::status_t status);
 void *subscriber_thread(zmqpp::context*, std::string, int);
-void *box_thread(zmqpp::context* z_ctx, Box* box);
+void *box_thread(Box* box);
 
 Boxoffice::~Boxoffice()
 {
-  // deleting boxes
-  for (std::unordered_map<int,Box*>::iterator i = boxes.begin(); i != boxes.end(); ++i)
-    delete i->second;
-  boxes.clear();
-
   // deleting threads
   for (std::vector<boost::thread*>::iterator i = pub_threads.begin(); i != pub_threads.end(); ++i)
     delete *i;
@@ -129,20 +124,19 @@ int Boxoffice::setupConnectionToChildren()
 int Boxoffice::setupBoxes()
 {
   Config* conf = Config::getInstance();
-  std::vector<std::string> box_dirs = conf->getBoxDirectories();
+  std::vector< box_t > box_dirs = conf->getBoxDirectories();
 
-  int box_num = 0;
   box_threads.reserve(box_dirs.size());
   if (SB_MSG_DEBUG) printf("bo: opening %d box threads\n", (int)box_dirs.size());
-  for (std::vector<std::string>::iterator i = box_dirs.begin(); i != box_dirs.end(); ++i)
+  for (std::vector<box_t>::iterator i = box_dirs.begin(); i != box_dirs.end(); ++i)
   {
     // initializing the boxes here, so we can use file IO while it's thread 
     // still listens to inotify events
-    Box* box = new Box(*i, box_num);
-    boxes.insert(std::make_pair(box_num,box));
-    ++box_num;
+    Box* box = new Box(z_ctx, i->second, i->first);
+    boxes.insert(std::make_pair(i->first,box));
+
     // opening box thread
-    boost::thread* bt = new boost::thread(box_thread, z_ctx, box);
+    boost::thread* bt = new boost::thread(box_thread, box);
     box_threads.push_back(bt);
   }
   if (SB_MSG_DEBUG) printf("bo: opened %d box threads\n", (int)box_dirs.size());
@@ -420,8 +414,7 @@ int Boxoffice::updateHeartbeat(fsm::status_t new_status) {
 
 void *publisher_thread(zmqpp::context* z_ctx, std::string endpoint)
 {
-  Publisher* pub;
-  pub = Publisher::initialize(z_ctx, endpoint);
+  Publisher* pub = new Publisher(z_ctx, endpoint);
 
   pub->run();
   pub->sendExitSignal();
@@ -433,8 +426,7 @@ void *publisher_thread(zmqpp::context* z_ctx, std::string endpoint)
 
 void *heartbeater_thread(zmqpp::context* z_ctx, fsm::status_t status)
 {
-  Heartbeater* hb;
-  hb = Heartbeater::initialize(z_ctx, status);
+  Heartbeater* hb = new Heartbeater(z_ctx, status);
 
   hb->run();
   hb->sendExitSignal();
@@ -446,8 +438,7 @@ void *heartbeater_thread(zmqpp::context* z_ctx, fsm::status_t status)
 
 void *subscriber_thread(zmqpp::context* z_ctx, std::string endpoint, int sb_subtype)
 {
-  Subscriber* sub;
-  sub = Subscriber::initialize(z_ctx, endpoint, sb_subtype);
+  Subscriber* sub = new Subscriber(z_ctx, endpoint, sb_subtype);
 
   sub->run();
   sub->sendExitSignal();
@@ -457,15 +448,12 @@ void *subscriber_thread(zmqpp::context* z_ctx, std::string endpoint, int sb_subt
   return (NULL);
 }
 
-void *box_thread(zmqpp::context* z_ctx, Box* box)
+void *box_thread(Box* box)
 {
-  // although boxes have their own thread, it is only used for catching inotify
-  // signals
-  box->setContext(z_ctx);
-  box->connectToBroadcast();
-  box->connectToBoxoffice();
-  box->watch();
+  box->run();
   box->sendExitSignal();
+
+  delete box;
 
   return (NULL);
 }
