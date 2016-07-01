@@ -54,6 +54,8 @@ enum SB_BACKUP_TYPE {
 
 
 #define SB_CONFIG_FILE "~/.syncbox"
+#define SB_KEYSTORE_FILE "~/.ssh/syncbox_keystore"
+#define SB_PRIVATEKEY_FILE "~/.ssh/syncbox_privatekeys"
 
 // file message struct
 struct file_msg_string

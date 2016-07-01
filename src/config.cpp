@@ -13,6 +13,8 @@
 #include <boost/filesystem.hpp>
 #include <wordexp.h>
 #include <algorithm>
+#include <jsoncpp/json/json.h>
+#include <jsoncpp/json/reader.h>
 
 
 int Config::initialize(int argc, char* argv[])
@@ -23,15 +25,22 @@ int Config::initialize(int argc, char* argv[])
     std::vector< std::string > hostnames;
     std::vector< std::string > box_strings;
     std::string                configfile;
+    std::string                keystore_file;
+    std::string                private_key_file;
 
     // parsing program options using boost::program_options
     namespace po = boost::program_options;
 
     po::options_description cmdline_options("Generic options");
     cmdline_options.add_options()
-        ("help,h", "produce help message")
+        ("help,h", "Produce this help message")
         ("config,c", po::value<std::string>(&configfile),
             "Use supplied config file instead of default one")
+        ("keystore", po::value<std::string>(&keystore_file),
+            "Use supplied keystore file instead of default one")
+        ("privatekey", po::value<std::string>(&private_key_file),
+            "Use supplied privatekey file instead of default one")
+        ("create-private-keys", "Create new keypair for hostnames")
     ;
 
     po::options_description generic_options("Allowed options");
@@ -68,18 +77,42 @@ int Config::initialize(int argc, char* argv[])
     } else {
         po::store(po::parse_config_file(ifs, generic_options), c->vm_);
         po::notify(c->vm_);
+        ifs.close();
     }
 
-    return c->doSanityCheck( &options, &nodes, &hostnames, &box_strings );
+    // parse keystore file
+    wordexp_t expanded_keystore_file_path;
+    if (keystore_file.empty()) {
+        wordexp( SB_KEYSTORE_FILE, &expanded_keystore_file_path, 0 );
+    } else {
+        wordexp( keystore_file.c_str(), &expanded_keystore_file_path, 0 );
+    }
+    keystore_file = expanded_keystore_file_path.we_wordv[0];
+    wordfree(&expanded_keystore_file_path);
+
+    // parse privatekey file
+    wordexp_t expanded_privatekey_file_path;
+    if (private_key_file.empty()) {
+        wordexp( SB_PRIVATEKEY_FILE, &expanded_privatekey_file_path, 0 );
+    } else {
+        wordexp( private_key_file.c_str(), &expanded_privatekey_file_path, 0 );
+    }
+    private_key_file = expanded_privatekey_file_path.we_wordv[0];
+    wordfree(&expanded_privatekey_file_path);
+
+    int return_val;
+    return_val = c->doSanityCheck( &options, &nodes, &hostnames, &box_strings );
+    return_val = c->synchronizeKeystore( &keystore_file, &private_key_file );
+    return return_val;
 }
 
 const std::vector< node_t >
     Config::getSubscriberEndpoints() const {
         return subscribers_;
 }
-const std::vector< std::string >
+const std::vector< host_t >
     Config::getPublisherEndpoints() const {
-        return publisher_endpoints_;
+        return hosts_;
 }
 const std::vector< box_t >
     Config::getBoxDirectories() const {
@@ -175,14 +208,16 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 if ( sm[1].length() == 0 )
                     endpoint = "tcp://" + endpoint;
 
-                // add it to the config class for later use
-                this->publisher_endpoints_.push_back(endpoint);
+                host_t host;
+                host.endpoint = endpoint;
+                this->hosts_.push_back(host);
             } else if ( SB_MSG_DEBUG && std::regex_match( *i, 
                                    sm, 
                                    std::regex("(ipc://)(.*)")
                                  ) ) {
-                // add it to the config class for later use
-                this->publisher_endpoints_.push_back(*i);
+                host_t host;
+                host.endpoint = *i;
+                this->hosts_.push_back(host);
             } else {
                 std::cerr << "[E] Cannot process node '" << *i << "'" << std::endl;
                 return 1;
@@ -238,6 +273,75 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
     } else {
         perror("[E] No box locations supplied, exiting...");
         return 1;
+    }
+
+    return 0;
+}
+
+int Config::synchronizeKeystore( std::string* keystore_file, 
+                                 std::string* private_key_file ) {
+
+    // Getting all private keys for hostnames
+    // Generating new keypairs for hostnames on flag create-private-keys
+    Json::Value pks;
+    std::fstream f_pk( *private_key_file );
+    if ( !f_pk && !vm_.count("create-private-keys") ) {
+        std::cerr << "[E] Could not open the private key file. Please check "
+                  << "your permissions" << std::endl;
+        return 1;
+    } else if ( f_pk && vm_.count("create-private-keys") ) {
+        Json::Reader json_reader;
+        if ( !json_reader.parse(f_pk, pks) ) {
+            std::cerr << "[E] error parsing " << *private_key_file << std::endl;
+            return 1;
+        }
+        f_pk.close();
+    }
+
+    // Writing keypairs for hostnames on flag create-private-keys
+    if ( vm_.count("create-private-keys") ) {
+        f_pk.open( *private_key_file, std::fstream::out );
+        std::cout << "config: Generating keys for hosts" << std::endl;
+        for (std::vector<host_t>::iterator i = hosts_.begin(); 
+             i != hosts_.end(); ++i) {
+            if ( !pks.isMember(i->endpoint) ) {
+                i->keypair = zmqpp::curve::generate_keypair();
+                i->uid = new Hash(i->keypair.public_key);
+                pks[i->endpoint]["public_key"] = i->keypair.public_key;
+                pks[i->endpoint]["private_key"] = i->keypair.secret_key;
+            } else {
+                i->keypair.public_key = pks[i->endpoint].get("public_key", "").asString();
+                i->keypair.secret_key = pks[i->endpoint].get("private_key", "").asString();
+                i->uid = new Hash(i->keypair.public_key);
+            }
+        }
+        f_pk << pks << std::endl;
+        std::cout << "config: Successfully written keys to "
+                  << *private_key_file << std::endl;
+        f_pk.close();
+        return 1;
+    }
+
+    // Reading the keystore
+    std::ifstream if_ks( *keystore_file );
+    Json::Value ks;
+    if ( !if_ks ) {
+        std::cerr << "[E] Could not find the keystore. Please share all "
+                  << "public keys before starting syncbox" << std::endl;
+        return 1;
+    } else {
+        Json::Reader json_reader;
+        if ( !json_reader.parse(if_ks, ks) ) {
+            std::cerr << "[E] error parsing " << *keystore_file << std::endl;
+            return 1;
+        }
+        if_ks.close();
+    }
+
+    for ( std::vector<node_t>::iterator i = this->subscribers_.begin();
+          i != this->subscribers_.end(); ++i ) {
+        i->public_key = ks.get(i->endpoint, "").asString();
+        i->uid = new Hash(i->public_key);
     }
 
     return 0;

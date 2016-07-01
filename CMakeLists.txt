@@ -77,6 +77,25 @@ ELSE ( ZEROMQ_FOUND )
   MESSAGE ( FATAL_ERROR "Could not find ZeroMQ" )
 ENDIF ( ZEROMQ_FOUND )
 
+# JsonCPP
+FIND_PATH(JSONCPP_INCLUDE_DIR
+  NAMES json/features.h
+  PATH_SUFFIXES jsoncpp
+  PATHS /usr/include/ /usr/local/include/
+)
+FIND_LIBRARY(JSONCPP_LIBRARY
+  NAMES jsoncpp
+  PATHS /usr/lib /usr/local/lib
+)
+
+IF ( JSONCPP_INCLUDE_DIR AND JSONCPP_LIBRARY )
+  MESSAGE ( STATUS "Found JsonCpp:" )
+  MESSAGE ( STATUS "  (Headers)     ${JSONCPP_INCLUDE_DIR}" )
+  MESSAGE ( STATUS "  (Library)     ${JSONCPP_LIBRARY}" )
+ELSE ( JSONCPP_INCLUDE_DIR AND JSONCPP_LIBRARY )
+  MESSAGE ( FATAL_ERROR "Could not find JsonCpp" )
+ENDIF ( JSONCPP_INCLUDE_DIR AND JSONCPP_LIBRARY )
+
 # enable testing
 enable_testing()
 subdirs(test)

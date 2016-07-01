@@ -9,6 +9,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
+#include <zmqpp/curve.hpp>
 
 #include <hash.hpp>
 
@@ -17,6 +18,13 @@ struct node_t {
   std::pair<std::string,int> subscriber;
   uint32_t                   last_timestamp;
   uint16_t                   offset;
+  std::string                public_key;
+  Hash*                      uid;
+};
+struct host_t {
+  std::string           endpoint;
+  zmqpp::curve::keypair keypair;
+  Hash*                 uid;
 };
 typedef std::pair<Hash*,std::string> box_t;
 
@@ -37,7 +45,7 @@ class Config
     // Getters
     const std::vector< node_t >
         getSubscriberEndpoints() const;
-    const std::vector< std::string >
+    const std::vector< host_t >
         getPublisherEndpoints() const;
     const std::vector< box_t >
         getBoxDirectories() const;
@@ -48,14 +56,16 @@ class Config
 
     int doSanityCheck(boost::program_options::options_description* options, 
                       std::vector<std::string>* nodes,
-                      std::vector<std::string>* hostnames,
+                      std::vector<std::string>* hosts_,
                       std::vector<std::string>* box_strings);
+    int synchronizeKeystore( std::string* keystore_file, 
+                             std::string* private_key_file );
 
     boost::program_options::variables_map   vm_;
 
-    std::vector< node_t >       subscribers_;
-    std::vector< std::string >  publisher_endpoints_;
-    std::vector< box_t >        box_dirs_;
+    std::vector< node_t >  subscribers_;
+    std::vector< host_t >  hosts_;
+    std::vector< box_t >   box_dirs_;
 
 //    int                                        config_backup_type_;
 //    boost::filesystem::path                    backup_dir_;

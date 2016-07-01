@@ -151,10 +151,10 @@ int Boxoffice::setupPublishers()
 
   // opening publisher threads
   if (SB_MSG_DEBUG) printf("bo: opening %d publisher threads\n", (int)publishers.size());
-  for (std::vector< std::string >::iterator i = publishers.begin(); 
+  for (std::vector< host_t >::iterator i = publishers.begin(); 
         i != publishers.end(); ++i)
   {
-    boost::thread* pub_thread = new boost::thread(publisher_thread, z_ctx, *i);
+    boost::thread* pub_thread = new boost::thread(publisher_thread, z_ctx, i->endpoint);
     pub_threads.push_back(pub_thread);
   }
   if (SB_MSG_DEBUG) printf("bo: opened %d publisher threads\n", (int)pub_threads.size());
@@ -169,7 +169,7 @@ int Boxoffice::setupHeartbeaters()
 
   // opening heartbeater threads
   if (SB_MSG_DEBUG) printf("bo: opening %d heartbeater threads\n", (int)publishers.size());
-  for (std::vector< std::string >::iterator i = publishers.begin(); 
+  for (std::vector< host_t >::iterator i = publishers.begin(); 
         i != publishers.end(); ++i)
   {
     boost::thread* hb_thread = new boost::thread(heartbeater_thread, z_ctx, fsm::status_100);
