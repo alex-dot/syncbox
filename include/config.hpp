@@ -44,9 +44,13 @@ class Config
 
     // Getters
     const std::vector< node_t >
+        getSubscribers() const;
+    const std::vector< std::string >
         getSubscriberEndpoints() const;
     const std::vector< host_t >
-        getPublisherEndpoints() const;
+        getHosts() const;
+    const std::vector< std::string >
+        getHostEndpoints() const;
     const std::vector< box_t >
         getBoxDirectories() const;
 

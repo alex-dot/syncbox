@@ -107,12 +107,30 @@ int Config::initialize(int argc, char* argv[])
 }
 
 const std::vector< node_t >
-    Config::getSubscriberEndpoints() const {
+    Config::getSubscribers() const {
         return subscribers_;
 }
+const std::vector< std::string >
+  Config::getSubscriberEndpoints() const {
+    std::vector<std::string> endpoints(subscribers_.size());
+    for ( std::vector<node_t>::const_iterator i=subscribers_.begin();
+          i != subscribers_.end(); ++i ) {
+        endpoints.push_back( i->endpoint );
+    }
+    return endpoints;
+}
 const std::vector< host_t >
-    Config::getPublisherEndpoints() const {
+    Config::getHosts() const {
         return hosts_;
+}
+const std::vector< std::string >
+  Config::getHostEndpoints() const {
+    std::vector<std::string> endpoints(hosts_.size());
+    for ( std::vector<host_t>::const_iterator i=hosts_.begin();
+          i != hosts_.end(); ++i ) {
+        endpoints.push_back( i->endpoint );
+    }
+    return endpoints;
 }
 const std::vector< box_t >
     Config::getBoxDirectories() const {
