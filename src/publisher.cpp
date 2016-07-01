@@ -13,11 +13,11 @@
 #include <iostream>
 #include <boost/thread.hpp>
 
-Publisher::Publisher(zmqpp::context* z_ctx_, std::string endpoint_) :
+Publisher::Publisher(zmqpp::context* z_ctx_, host_t data_) :
   Transmitter(z_ctx_),
   z_heartbeater(nullptr),
   z_publisher(nullptr),
-  endpoint(endpoint_) {
+  data(data_) {
     tac = (char*)"pub";
     this->connectToHeartbeater();
 }
@@ -42,12 +42,12 @@ int Publisher::connectToHeartbeater()
 int Publisher::run()
 {
   // internal check if publisher was correctly initialized
-  if ( z_ctx == nullptr || endpoint.compare("") == 0 )
+  if ( z_ctx == nullptr || data.endpoint.compare("") == 0 )
     return 1;
 
   if (SB_MSG_DEBUG) printf("pub: starting pub socket and sending...\n");
   z_publisher = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pub);
-  z_publisher->bind(endpoint.c_str());
+  z_publisher->bind(data.endpoint.c_str());
 
   std::stringstream* sstream;
   int msg_type, msg_signal;

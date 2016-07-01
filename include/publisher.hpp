@@ -13,6 +13,7 @@
 #include <zmqpp/zmqpp.hpp>
 
 #include "transmitter.hpp"
+#include "config.hpp"
 
 class Publisher : public Transmitter
 {
@@ -21,9 +22,9 @@ class Publisher : public Transmitter
       Transmitter(), 
       z_heartbeater(nullptr),
       z_publisher(nullptr),
-      endpoint()
+      data()
       {};
-    Publisher(zmqpp::context* z_ctx_, std::string endpoint_);
+    Publisher(zmqpp::context* z_ctx_, host_t data_);
     Publisher(const Publisher&);
     ~Publisher();
 
@@ -34,7 +35,7 @@ class Publisher : public Transmitter
 
     zmqpp::socket* z_heartbeater;
     zmqpp::socket* z_publisher;
-    std::string endpoint;
+    host_t         data;
 };
 
 #endif

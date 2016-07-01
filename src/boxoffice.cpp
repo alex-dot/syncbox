@@ -17,7 +17,7 @@
 #include "heartbeater.hpp"
 #include "subscriber.hpp"
 
-void *publisher_thread(zmqpp::context*, std::string);
+void *publisher_thread(zmqpp::context*, host_t host);
 void *heartbeater_thread(zmqpp::context*, fsm::status_t status);
 void *subscriber_thread(zmqpp::context*, std::string, int);
 void *box_thread(Box* box);
@@ -154,7 +154,7 @@ int Boxoffice::setupPublishers()
   for (std::vector< host_t >::iterator i = publishers.begin(); 
         i != publishers.end(); ++i)
   {
-    boost::thread* pub_thread = new boost::thread(publisher_thread, z_ctx, i->endpoint);
+    boost::thread* pub_thread = new boost::thread(publisher_thread, z_ctx, *i);
     pub_threads.push_back(pub_thread);
   }
   if (SB_MSG_DEBUG) printf("bo: opened %d publisher threads\n", (int)pub_threads.size());
@@ -412,9 +412,9 @@ int Boxoffice::updateHeartbeat(fsm::status_t new_status) {
 
 
 
-void *publisher_thread(zmqpp::context* z_ctx, std::string endpoint)
+void *publisher_thread(zmqpp::context* z_ctx, host_t host)
 {
-  Publisher* pub = new Publisher(z_ctx, endpoint);
+  Publisher* pub = new Publisher(z_ctx, host);
 
   pub->run();
   pub->sendExitSignal();
