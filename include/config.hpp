@@ -14,12 +14,12 @@
 #include <hash.hpp>
 
 struct node_t {
-  std::string                endpoint;
-  std::pair<std::string,int> subscriber;
-  uint32_t                   last_timestamp;
-  uint16_t                   offset;
-  std::string                public_key;
-  Hash*                      uid;
+  std::string  endpoint;
+  int          sb_subtype;
+  uint32_t     last_timestamp;
+  uint16_t     offset;
+  std::string  public_key;
+  Hash*        uid;
 };
 struct host_t {
   std::string           endpoint;

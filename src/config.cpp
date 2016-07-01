@@ -159,7 +159,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 // add it to the config class for later use
                 node_t new_node;
                 new_node.endpoint = endpoint;
-                new_node.subscriber = std::make_pair( endpoint, SB_SUBTYPE_TCP_BIDIR );
+                new_node.sb_subtype = SB_SUBTYPE_TCP_BIDIR;
                 new_node.last_timestamp = 0;
                 new_node.offset = 0;
                 this->subscribers_.push_back( new_node );
@@ -170,7 +170,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 // add it to the config class for later use
                 node_t new_node;
                 new_node.endpoint = *i;
-                new_node.subscriber = std::make_pair( *i, SB_SUBTYPE_TCP_BIDIR );
+                new_node.sb_subtype = SB_SUBTYPE_TCP_BIDIR;
                 new_node.last_timestamp = 0;
                 new_node.offset = 0;
                 this->subscribers_.push_back( new_node );

@@ -13,11 +13,10 @@
 #include <iostream>
 #include <boost/thread.hpp>
 
-Subscriber::Subscriber(zmqpp::context* z_ctx_, std::string endpoint_, int sb_subtype_) :
+Subscriber::Subscriber(zmqpp::context* z_ctx_, node_t data_) :
   Transmitter(z_ctx_), 
   z_subscriber(nullptr),
-  endpoint(endpoint_),
-  sb_subtype(sb_subtype_) {
+  data(data_) {
     tac = (char*)"sub";
 }
 
@@ -30,13 +29,13 @@ Subscriber::~Subscriber()
 int Subscriber::run()
 {
   // internal check if subscriber was correctly initialized
-  if ( z_ctx == nullptr || endpoint.compare("") == 0
-      || ( sb_subtype != SB_SUBTYPE_TCP_BIDIR && sb_subtype != SB_SUBTYPE_TCP_UNIDIR ) )
+  if ( z_ctx == nullptr || data.endpoint.compare("") == 0
+      || ( data.sb_subtype != SB_SUBTYPE_TCP_BIDIR && data.sb_subtype != SB_SUBTYPE_TCP_UNIDIR ) )
     return 1;
 
   if (SB_MSG_DEBUG) printf("sub: receiving from publisher...\n");
   z_subscriber = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
-  z_subscriber->connect(endpoint.c_str());
+  z_subscriber->connect(data.endpoint.c_str());
   z_subscriber->subscribe("");
 
   std::stringstream* sstream;

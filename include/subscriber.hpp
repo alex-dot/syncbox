@@ -11,6 +11,7 @@
 #include <zmqpp/zmqpp.hpp>
 
 #include "transmitter.hpp"
+#include "config.hpp"
 
 class Subscriber : public Transmitter
 {
@@ -18,10 +19,9 @@ class Subscriber : public Transmitter
     Subscriber() :
       Transmitter(), 
       z_subscriber(nullptr),
-      endpoint(""),
-      sb_subtype(-1)
+      data()
       {};
-    Subscriber(zmqpp::context* z_ctx_, std::string endpoint_, int sb_subtype_);
+    Subscriber(zmqpp::context* z_ctx_, node_t data);
     Subscriber(const Subscriber&);
     ~Subscriber();
 
@@ -29,8 +29,7 @@ class Subscriber : public Transmitter
 
   private:
     zmqpp::socket* z_subscriber;
-    std::string endpoint;
-    int sb_subtype;
+    node_t         data;
 };
 
 #endif

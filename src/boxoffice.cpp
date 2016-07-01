@@ -19,7 +19,7 @@
 
 void *publisher_thread(zmqpp::context*, host_t host);
 void *heartbeater_thread(zmqpp::context*, fsm::status_t status);
-void *subscriber_thread(zmqpp::context*, std::string, int);
+void *subscriber_thread(zmqpp::context*, node_t node);
 void *box_thread(Box* box);
 
 Boxoffice::~Boxoffice()
@@ -189,8 +189,7 @@ int Boxoffice::setupSubscribers()
   {
     boost::thread* sub_thread = new boost::thread(subscriber_thread, 
                                                   z_ctx, 
-                                                  i->subscriber.first, 
-                                                  i->subscriber.second);
+                                                  *i);
     sub_threads.push_back(sub_thread);
   }
   if (SB_MSG_DEBUG) printf("bo: opened %d subscriber threads\n", (int)sub_threads.size());
@@ -436,9 +435,9 @@ void *heartbeater_thread(zmqpp::context* z_ctx, fsm::status_t status)
   return (NULL);
 }
 
-void *subscriber_thread(zmqpp::context* z_ctx, std::string endpoint, int sb_subtype)
+void *subscriber_thread(zmqpp::context* z_ctx, node_t node)
 {
-  Subscriber* sub = new Subscriber(z_ctx, endpoint, sb_subtype);
+  Subscriber* sub = new Subscriber(z_ctx, node);
 
   sub->run();
   sub->sendExitSignal();
