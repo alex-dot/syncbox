@@ -107,15 +107,24 @@ int Config::initialize(int argc, char* argv[])
 }
 
 const std::vector< node_t >
-    Config::getSubscribers() const {
-        return subscribers_;
+    Config::getNodes() const {
+        return nodes_;
 }
 const std::vector< std::string >
-  Config::getSubscriberEndpoints() const {
-    std::vector<std::string> endpoints(subscribers_.size());
-    for ( std::vector<node_t>::const_iterator i=subscribers_.begin();
-          i != subscribers_.end(); ++i ) {
+  Config::getNodeEndpoints() const {
+    std::vector<std::string> endpoints(nodes_.size());
+    for ( std::vector<node_t>::const_iterator i=nodes_.begin();
+          i != nodes_.end(); ++i ) {
         endpoints.push_back( i->endpoint );
+    }
+    return endpoints;
+}
+const std::vector< std::string >
+  Config::getNodePublicKeys() const {
+    std::vector<std::string> endpoints(nodes_.size());
+    for ( std::vector<node_t>::const_iterator i=nodes_.begin();
+          i != nodes_.end(); ++i ) {
+        endpoints.push_back( i->public_key );
     }
     return endpoints;
 }
@@ -123,14 +132,10 @@ const std::vector< host_t >
     Config::getHosts() const {
         return hosts_;
 }
-const std::vector< std::string >
-  Config::getHostEndpoints() const {
-    std::vector<std::string> endpoints(hosts_.size());
-    for ( std::vector<host_t>::const_iterator i=hosts_.begin();
-          i != hosts_.end(); ++i ) {
-        endpoints.push_back( i->endpoint );
-    }
-    return endpoints;
+// TODO this is a hack, remove
+const zmqpp::curve::keypair
+  Config::getHostKeypair() const {
+    return hosts_[0].keypair;
 }
 const std::vector< box_t >
     Config::getBoxDirectories() const {
@@ -180,7 +185,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 new_node.sb_subtype = SB_SUBTYPE_TCP_BIDIR;
                 new_node.last_timestamp = 0;
                 new_node.offset = 0;
-                this->subscribers_.push_back( new_node );
+                this->nodes_.push_back( new_node );
             } else if ( SB_MSG_DEBUG && std::regex_match( *i, 
                                    sm, 
                                    std::regex("(ipc://)(.*)")
@@ -191,7 +196,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 new_node.sb_subtype = SB_SUBTYPE_TCP_BIDIR;
                 new_node.last_timestamp = 0;
                 new_node.offset = 0;
-                this->subscribers_.push_back( new_node );
+                this->nodes_.push_back( new_node );
             } else {
                 std::cerr << "[E] Cannot process node '" << *i << "'" << std::endl;
                 return 1;
@@ -307,7 +312,7 @@ int Config::synchronizeKeystore( std::string* keystore_file,
         std::cerr << "[E] Could not open the private key file. Please check "
                   << "your permissions" << std::endl;
         return 1;
-    } else if ( f_pk && vm_.count("create-private-keys") ) {
+    } else {
         Json::Reader json_reader;
         if ( !json_reader.parse(f_pk, pks) ) {
             std::cerr << "[E] error parsing " << *private_key_file << std::endl;
@@ -338,6 +343,14 @@ int Config::synchronizeKeystore( std::string* keystore_file,
                   << *private_key_file << std::endl;
         f_pk.close();
         return 1;
+    } else {
+        for (std::vector<host_t>::iterator i = hosts_.begin(); 
+             i != hosts_.end(); ++i) {
+            i->keypair.public_key = pks[i->endpoint].get("public_key", "").asString();
+            i->keypair.secret_key = pks[i->endpoint].get("private_key", "").asString();
+            i->uid = new Hash(i->keypair.public_key);
+        }
+        f_pk.close();
     }
 
     // Reading the keystore
@@ -356,8 +369,8 @@ int Config::synchronizeKeystore( std::string* keystore_file,
         if_ks.close();
     }
 
-    for ( std::vector<node_t>::iterator i = this->subscribers_.begin();
-          i != this->subscribers_.end(); ++i ) {
+    for ( std::vector<node_t>::iterator i = this->nodes_.begin();
+          i != this->nodes_.end(); ++i ) {
         i->public_key = ks.get(i->endpoint, "").asString();
         i->uid = new Hash(i->public_key);
     }

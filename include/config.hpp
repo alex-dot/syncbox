@@ -1,7 +1,7 @@
 /* 
  * The config singleton provides an interface to load and save config files
  * as well as providing access to single settings
- * These settings are uniform for all boxes and subscribers. 
+ * These settings are uniform for all hosts, nodes and boxes. 
  */
 
 #ifndef SB_CONFIG_HPP
@@ -13,6 +13,7 @@
 
 #include <hash.hpp>
 
+// TODO What if I have multiple publishers? Nodes must have a way to query the correct host keypair...
 struct node_t {
   std::string  endpoint;
   int          sb_subtype;
@@ -44,13 +45,18 @@ class Config
 
     // Getters
     const std::vector< node_t >
-        getSubscribers() const;
+        getNodes() const;
     const std::vector< std::string >
-        getSubscriberEndpoints() const;
+        getNodeEndpoints() const;
+    const std::vector< std::string >
+        getNodePublicKeys() const;
     const std::vector< host_t >
         getHosts() const;
     const std::vector< std::string >
         getHostEndpoints() const;
+    // TODO this is a hack, remove
+    const zmqpp::curve::keypair
+        getHostKeypair() const;
     const std::vector< box_t >
         getBoxDirectories() const;
 
@@ -67,7 +73,7 @@ class Config
 
     boost::program_options::variables_map   vm_;
 
-    std::vector< node_t >  subscribers_;
+    std::vector< node_t >  nodes_;
     std::vector< host_t >  hosts_;
     std::vector< box_t >   box_dirs_;
 

@@ -34,7 +34,12 @@ int Subscriber::run()
     return 1;
 
   if (SB_MSG_DEBUG) printf("sub: receiving from publisher...\n");
+  Config* conf = Config::getInstance();
+  zmqpp::curve::keypair host_keypair = conf->getHostKeypair();
   z_subscriber = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
+  z_subscriber->set(zmqpp::socket_option::curve_server_key, data.public_key);
+  z_subscriber->set(zmqpp::socket_option::curve_public_key, host_keypair.public_key);
+  z_subscriber->set(zmqpp::socket_option::curve_secret_key, host_keypair.secret_key);
   z_subscriber->connect(data.endpoint.c_str());
   z_subscriber->subscribe("");
 
