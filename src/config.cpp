@@ -113,7 +113,7 @@ const std::vector< node_t >
 }
 const std::vector< std::string >
   Config::getNodeEndpoints() const {
-    std::vector<std::string> endpoints(nodes_.size());
+    std::vector<std::string> endpoints;
     for ( std::vector<node_t>::const_iterator i=nodes_.begin();
           i != nodes_.end(); ++i ) {
         endpoints.push_back( i->endpoint );
@@ -122,7 +122,7 @@ const std::vector< std::string >
 }
 const std::vector< std::string >
   Config::getNodePublicKeys() const {
-    std::vector<std::string> endpoints(nodes_.size());
+    std::vector<std::string> endpoints;
     for ( std::vector<node_t>::const_iterator i=nodes_.begin();
           i != nodes_.end(); ++i ) {
         endpoints.push_back( i->public_key );
