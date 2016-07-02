@@ -102,6 +102,7 @@ int Config::initialize(int argc, char* argv[])
 
     int return_val;
     return_val = c->doSanityCheck( &options, &nodes, &hostnames, &box_strings );
+    if ( return_val != 0 ) return return_val;
     return_val = c->synchronizeKeystore( &keystore_file, &private_key_file );
     return return_val;
 }
