@@ -49,7 +49,6 @@ int Publisher::run()
   zmqpp::auth authenticator(*z_ctx);
   if (SB_MSG_DEBUG) authenticator.set_verbose (true);
   authenticator.configure_domain("*");
-  authenticator.allow("*");
 
   Config* conf = Config::getInstance();
   std::vector<std::string> node_endpoints = conf->getNodePublicKeys();
