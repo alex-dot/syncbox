@@ -36,19 +36,19 @@ Box::Box(zmqpp::context* z_ctx_, boost::filesystem::path p, Hash* box_hash) :
   {
     tac = (char*)"box";
     Directory* baseDir = new Directory(p);
-    std::vector< std::shared_ptr<Hash> > hashes;
+    std::vector< std::shared_ptr<Hash> >* hashes = new std::vector< std::shared_ptr<Hash> >;
 
     std::shared_ptr<Hash> hash(new Hash());
     baseDir->makeDirectoryHash(hash);
     entries_[hash->getHash()] = baseDir;
-    hashes.push_back(hash);
+    hashes->push_back(hash);
 
     std::vector<boost::filesystem::directory_entry> dirs;
     baseDir->fillDirectory(path_, dirs);
     recursiveDirectoryFill(hashes, dirs);
 
     HashTree* temp_ht = new HashTree();
-    temp_ht->makeHashTree(hashes);
+    temp_ht->makeHashTree(*hashes);
     std::swap(hash_tree_,temp_ht);
     delete temp_ht;
   }
@@ -66,9 +66,11 @@ Box::~Box()
   delete hash_tree_;
 }
 
-void Box::recursiveDirectoryFill(std::vector< std::shared_ptr<Hash> >& hashes, std::vector<boost::filesystem::directory_entry>& dirs)
+void Box::recursiveDirectoryFill(
+  std::vector< std::shared_ptr<Hash> >* hashes,
+  const std::vector<boost::filesystem::directory_entry>& dirs)
 {
-  for ( std::vector<boost::filesystem::directory_entry>::iterator i = 
+  for ( std::vector<boost::filesystem::directory_entry>::const_iterator i = 
         dirs.begin(); i != dirs.end();
         ++i )
   {
@@ -76,7 +78,7 @@ void Box::recursiveDirectoryFill(std::vector< std::shared_ptr<Hash> >& hashes, s
     std::shared_ptr<Hash> hash(new Hash());
     directory->makeDirectoryHash(hash);
     entries_.insert(std::make_pair(hash->getHash(),directory));
-    hashes.push_back(hash);
+    hashes->push_back(hash);
     std::vector<boost::filesystem::directory_entry> temp_dirs;
     directory->fillDirectory(*i, temp_dirs);
     recursiveDirectoryFill(hashes, temp_dirs);
@@ -88,10 +90,10 @@ bool Box::checkBoxChange(const Box& left) const
 {
   return (left.getHashTree()->getTopHash() == hash_tree_->getTopHash()) ? false : true;
 }
-bool Box::getChangedDirHashes(std::vector< std::shared_ptr<Hash> >& changed_hashes, 
+bool Box::getChangedDirHashes(std::vector< std::shared_ptr<Hash> >* changed_hashes, 
                               const Box& left) const
 {
-  return hash_tree_->getChangedHashes(changed_hashes, *(left.getHashTree()));
+  return hash_tree_->getChangedHashes(*changed_hashes, *(left.getHashTree()));
 }
 
 int Box::run()
