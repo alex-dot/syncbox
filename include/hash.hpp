@@ -5,7 +5,7 @@
  *  dkjandjkawndjkawndkjawndkajn
  * 
  * \author    Alexander Herr
- * \date      2014-2016
+ * \date      2016
  * \copyright GNU Public License v3 or higher. 
  */
 
@@ -30,7 +30,7 @@ typedef char unsigned byte;  // this should probably appear elsewhere?
  */
 struct HexCharStruct {
     unsigned char c;
-    HexCharStruct(unsigned char _c) : c(_c) { }
+    explicit HexCharStruct(unsigned char _c) : c(_c) { }
 };
 inline std::ostream& operator<<(std::ostream& o, const HexCharStruct& hs) {
     return (o << std::setw(2) << std::setfill('0') << std::hex
@@ -54,7 +54,7 @@ inline HexCharStruct hex(unsigned char _c) {
 class Hash {
  public:
     Hash();
-    Hash(const std::string& string);
+    explicit Hash(const std::string& string);
     ~Hash();
 
     void makeHash(const std::string& string);
