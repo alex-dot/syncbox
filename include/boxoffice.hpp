@@ -41,6 +41,8 @@ class Boxoffice
   private:
     Boxoffice() :
       state_(fsm::ready_state),
+      file_list_(),
+      node_reply_counter_(0),
       z_ctx(nullptr),
       z_bo_main(nullptr),
       z_router(nullptr),
@@ -77,6 +79,7 @@ class Boxoffice
     fsm::state_t state_;
 
     std::vector< std::string > file_list_;
+    int node_reply_counter_;
 
     zmqpp::context* z_ctx;
     zmqpp::socket* z_bo_main;
