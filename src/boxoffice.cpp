@@ -298,27 +298,7 @@ int Boxoffice::runRouter()
     }
 
     if ( msg_type == SB_SIGTYPE_INOTIFY || msg_type == SB_SIGTYPE_SUB ) {
-
-      // fsm variables
-      fsm::status_t status = (fsm::status_t)msg_signal;
-      fsm::event_t event = fsm::get_event_by_status_code(status);
-
-      if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
-        state_, event, status);
-      if ( fsm::check_event(state_, event, status) ) {
-        fsm::state_t new_state = fsm::get_new_state(state_, event, status);
-        if ( state_ != new_state ) {
-          fsm::action_t action = fsm::get_action(state_, event, status);
-          performAction(event, action, status);
-          if (SB_MSG_DEBUG) printf("bo: updating self to state %d\n", 
-            fsm::get_new_state(state_, event, status));
-          state_ = new_state;
-        }
-
-      } else {
-        if (SB_MSG_DEBUG) printf("bo: unhandled event, ignoring...\n");
-      }
-
+      processEvent((fsm::status_t)msg_signal);
     }
 
     delete sstream;
@@ -327,7 +307,30 @@ int Boxoffice::runRouter()
   return 0;
 }
 
-int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::status_t received_status) {
+int Boxoffice::processEvent(fsm::status_t const status) {
+  fsm::event_t event = fsm::get_event_by_status_code(status);
+
+  if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
+    state_, event, status);
+  if ( fsm::check_event(state_, event, status) ) {
+
+    fsm::state_t new_state = fsm::get_new_state(state_, event, status);
+    if ( state_ != new_state ) {
+      fsm::action_t action = fsm::get_action(state_, event, status);
+      performAction(event, action, status);
+      if (SB_MSG_DEBUG) printf("bo: updating self to state %d\n", 
+        fsm::get_new_state(state_, event, status));
+      state_ = new_state;
+    }
+
+  } else {
+    if (SB_MSG_DEBUG) printf("bo: unhandled event, ignoring...\n");
+  }
+}
+
+int Boxoffice::performAction(fsm::event_t const event, 
+                             fsm::action_t const action, 
+                             fsm::status_t const received_status) const {
 
   switch (action) {
     case fsm::send_heartbeat_action: {
@@ -343,7 +346,7 @@ int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::stat
   return 0;
 }
 
-int Boxoffice::updateHeartbeat(fsm::status_t new_status) {
+int Boxoffice::updateHeartbeat(fsm::status_t const new_status) const {
   if (SB_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
   std::stringstream message;
   message << SB_SIGTYPE_FSM << " " << new_status;
