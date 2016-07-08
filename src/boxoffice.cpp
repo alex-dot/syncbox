@@ -219,57 +219,6 @@ int Boxoffice::checkChildren() {
   return 0;
 }
 
-int Boxoffice::runRouter()
-{ 
-  // standard variables
-  zmqpp::message z_msg;
-  int msg_type, msg_signal;
-  std::stringstream* sstream;
-
-  if (SB_MSG_DEBUG) printf("bo: waiting for input from subscribers and watchers\n");
-  while(true)
-  {
-    // waiting for subscriber or inotify input
-    sstream = new std::stringstream();
-    s_recv(*z_router, *z_bo_main, *sstream);
-    *sstream >> msg_type >> msg_signal;
-    if ( msg_type == SB_SIGTYPE_LIFE    && msg_signal == SB_SIGLIFE_INTERRUPT ) 
-    {
-      delete sstream;
-      break;
-    }
-
-std::cout << "bo: received something" << std::endl;
-    if ( msg_type == SB_SIGTYPE_INOTIFY || msg_type == SB_SIGTYPE_SUB ) {
-
-      // fsm variables
-      fsm::status_t status = (fsm::status_t)msg_signal;
-      fsm::event_t event = fsm::get_event_by_status_code(status);
-
-      if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
-        state_, event, status);
-      if ( fsm::check_event(state_, event, status) ) {
-        fsm::state_t new_state = fsm::get_new_state(state_, event, status);
-        if ( state_ != new_state ) {
-          fsm::action_t action = fsm::get_action(state_, event, status);
-          performAction(event, action, status);
-          if (SB_MSG_DEBUG) printf("bo: updating self to state %d\n", 
-            fsm::get_new_state(state_, event, status));
-          state_ = new_state;
-        }
-
-      } else {
-        if (SB_MSG_DEBUG) printf("bo: unhandled event, ignoring...\n");
-      }
-
-    }
-
-    delete sstream;
-  }
-
-  return 0;
-}
-
 int Boxoffice::closeConnections()
 {
   // standard variables
@@ -289,19 +238,6 @@ int Boxoffice::closeConnections()
     delete sstream;
   }
   if (SB_MSG_DEBUG) printf("bo: all subscribers, publishers, heartbeaters and boxes exited\n");
-
-/*  // if return_val != 0, the pub got interrupted, so it will sent the exit signal again
-  if ( return_value != 0 ) 
-  {
-    // query again for exit signal
-    if (SB_MSG_DEBUG) printf("bo: waiting for publisher to send exit signal\n");
-    std::stringstream* sstream = new std::stringstream();
-    int msg_type, msg_signal;
-    s_recv(*z_pub_pair, *z_broadcast, *sstream);
-    *sstream >> msg_type >> msg_signal;
-    if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_EXIT ) return 1;
-    delete sstream;
-  }*/
 
   // closing broadcast socket
   // we check if the sockets are nullptrs, but z_broadcast is never
@@ -341,6 +277,55 @@ int Boxoffice::closeConnections()
   return return_value;
 }
 
+int Boxoffice::runRouter()
+{ 
+  // standard variables
+  zmqpp::message z_msg;
+  int msg_type, msg_signal;
+  std::stringstream* sstream;
+
+  if (SB_MSG_DEBUG) printf("bo: waiting for input from subscribers and watchers\n");
+  while(true)
+  {
+    // waiting for subscriber or inotify input
+    sstream = new std::stringstream();
+    s_recv(*z_router, *z_bo_main, *sstream);
+    *sstream >> msg_type >> msg_signal;
+    if ( msg_type == SB_SIGTYPE_LIFE    && msg_signal == SB_SIGLIFE_INTERRUPT ) 
+    {
+      delete sstream;
+      break;
+    }
+
+    if ( msg_type == SB_SIGTYPE_INOTIFY || msg_type == SB_SIGTYPE_SUB ) {
+
+      // fsm variables
+      fsm::status_t status = (fsm::status_t)msg_signal;
+      fsm::event_t event = fsm::get_event_by_status_code(status);
+
+      if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
+        state_, event, status);
+      if ( fsm::check_event(state_, event, status) ) {
+        fsm::state_t new_state = fsm::get_new_state(state_, event, status);
+        if ( state_ != new_state ) {
+          fsm::action_t action = fsm::get_action(state_, event, status);
+          performAction(event, action, status);
+          if (SB_MSG_DEBUG) printf("bo: updating self to state %d\n", 
+            fsm::get_new_state(state_, event, status));
+          state_ = new_state;
+        }
+
+      } else {
+        if (SB_MSG_DEBUG) printf("bo: unhandled event, ignoring...\n");
+      }
+
+    }
+
+    delete sstream;
+  }
+
+  return 0;
+}
 
 int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::status_t received_status) {
 
@@ -354,46 +339,6 @@ int Boxoffice::performAction(fsm::event_t event, fsm::action_t action, fsm::stat
       if (SB_MSG_DEBUG) printf("bo: could not perform action: %d\n", action);
       break;
   }
-
-  /*
-  // helper variables
-  int box_num, wd, cookie;
-  uint32_t mask;
-  std::string filename, line;
-  std::stringstream* sstream_line;
-  std::string path;
-
-  // reading inotify message
-  sstream->seekg(0, std::stringstream::beg);
-  std::getline(*sstream, line);      // signal frame
-  sstream_line = new std::stringstream(line);
-  *sstream_line >> msg_type >> msg_signal >> box_num;
-  delete sstream_line;
-  std::getline(*sstream, line);      // info frame
-  sstream_line = new std::stringstream(line);
-  *sstream_line >> wd >> mask >> cookie;
-  delete sstream_line;
-  std::getline(*sstream, filename);  // filename frame
-
-  // getting the path
-  Box* box = boxes[box_num];
-  std::string file_path = box->getBaseDir();
-  file_path += box->getPathOfDirectory(wd);
-  if ( file_path.back() != '/' ) file_path += "/";
-  file_path += filename;
-
-  if (SB_MSG_DEBUG) printf("bo: %s\n", file_path.c_str());
-
-  zmqpp::message z_msg( file_path.length()+6 );
-  snprintf(
-    (char*) z_msg.data(), 
-    file_path.length()+7, 
-    "%d %d %s", 
-    SB_SIGTYPE_FSM, 
-    new_status, 
-    file_path.c_str());
-  z_bo_pub->send(z_msg);
-  */
 
   return 0;
 }
