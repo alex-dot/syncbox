@@ -9,6 +9,7 @@
 #include <vector>
 #include <utility>
 #include <fstream>
+#include <sys/inotify.h>
 #include "cryptopp/aes.h"
 
 #include "constants.hpp"
@@ -297,7 +298,11 @@ int Boxoffice::runRouter()
       break;
     }
 
-    if ( msg_type == SB_SIGTYPE_INOTIFY || msg_type == SB_SIGTYPE_SUB ) {
+    if ( msg_type == SB_SIGTYPE_INOTIFY ) {
+      std::string base_dir, path;
+      *sstream >> path;
+      processEvent((fsm::status_t)msg_signal, path);
+    } else if ( msg_type == SB_SIGTYPE_SUB ) {
       processEvent((fsm::status_t)msg_signal);
     }
 
@@ -307,12 +312,27 @@ int Boxoffice::runRouter()
   return 0;
 }
 
-int Boxoffice::processEvent(fsm::status_t const status) {
+int Boxoffice::processEvent(fsm::status_t const status, std::string const path) {
   fsm::event_t event = fsm::get_event_by_status_code(status);
 
   if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
     state_, event, status);
   if ( fsm::check_event(state_, event, status) ) {
+
+    // if the event was new_local_file_event, add the path of the file to the queue;
+    // if the state was announcing_new_file_state, we need to check if the reported 
+    // file is the same as the last one, otherwise we would push the same file
+    // twice
+    if ( event == fsm::new_local_file_event
+      && state_ == fsm::announcing_new_file_state ) {
+      std::vector<std::string>::iterator iter;
+      iter = std::find( file_list_.begin(), file_list_.end(), path );
+      if ( iter != file_list_.end() ) {
+        file_list_.push_back(path);
+      } 
+    } else if ( path != "" ) {
+      file_list_.push_back(path);
+    }
 
     fsm::state_t new_state = fsm::get_new_state(state_, event, status);
     if ( state_ != new_state ) {
@@ -326,6 +346,12 @@ int Boxoffice::processEvent(fsm::status_t const status) {
   } else {
     if (SB_MSG_DEBUG) printf("bo: unhandled event, ignoring...\n");
   }
+
+  return 0;
+}
+int Boxoffice::processEvent(fsm::status_t const status) {
+  processEvent(status, "");
+  return 0;
 }
 
 int Boxoffice::performAction(fsm::event_t const event, 

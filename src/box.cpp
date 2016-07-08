@@ -127,15 +127,16 @@ int Box::run()
     std::string infomessage = sstream->str();
     std::stringstream message;
     message << SB_SIGTYPE_INOTIFY << " "
-            << fsm::status_300    << " "
-            << box_hash_;
+            << fsm::status_300    << " ";
+//            << box_hash_;
     zmqpp::message* z_msg = new zmqpp::message();
-    *z_msg << message.str();
-    z_boxoffice_pull->send(*z_msg, ZMQ_SNDMORE);
-    delete z_msg;
+//    *z_msg << message.str();
+//    z_boxoffice_pull->send(*z_msg, ZMQ_SNDMORE);
+//    delete z_msg;
 
+    message << getBaseDir() << "/";
     message << infomessage.c_str();
-    z_msg = new zmqpp::message();
+//    z_msg = new zmqpp::message();
     *z_msg << message.str();
     z_boxoffice_pull->send(*z_msg);
     delete z_msg;

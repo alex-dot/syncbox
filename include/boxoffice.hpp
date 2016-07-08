@@ -68,11 +68,14 @@ class Boxoffice
     int runRouter();
     int closeConnections();
 
+    int processEvent(fsm::status_t const status, std::string const path);
     int processEvent(fsm::status_t const status);
     int performAction(fsm::event_t const, fsm::action_t const, fsm::status_t const) const;
     int updateHeartbeat(fsm::status_t const) const;
 
     fsm::state_t state_;
+
+    std::vector< std::string > file_list_;
 
     zmqpp::context* z_ctx;
     zmqpp::socket* z_bo_main;

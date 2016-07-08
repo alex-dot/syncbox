@@ -135,12 +135,8 @@ void s_recv_in(zmqpp::socket &broadcast, zmqpp::socket &socket, int fd, std::str
     while( i < length )
     {
       struct inotify_event* event;
-      event = (struct inotify_event*) &buffer[0];
-      sstream << event->wd     << " "
-              << event->mask   << " "
-              << event->cookie << " "
-              << event->len    << "\n"
-              << event->name;
+      event = (struct inotify_event*) &buffer[i];
+      sstream << event->name;
       i += SB_IN_EVENT_SIZE + event->len;
       if ( i < length ) sstream << "\n";
     }
