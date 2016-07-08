@@ -375,12 +375,19 @@ int Boxoffice::performAction(fsm::event_t const event,
 int Boxoffice::updateHeartbeat(fsm::status_t const new_status) const {
   if (SB_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
   std::stringstream message;
-  message << SB_SIGTYPE_FSM << " " << new_status;
+  std::string hb_message = prepareHeartbeatMessage();
+  message << SB_SIGTYPE_FSM << " " << new_status << " " << hb_message;
   zmqpp::message z_msg;
   z_msg << message.str();
   z_bo_hb->send(z_msg);
 
   return 0;
+}
+
+std::string const Boxoffice::prepareHeartbeatMessage() const {
+  std::string message = "";
+
+  return message;
 }
 
 

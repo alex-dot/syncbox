@@ -16,7 +16,8 @@
 Heartbeater::Heartbeater(zmqpp::context* z_ctx_, fsm::status_t status) :
   Transmitter(z_ctx_),
   z_heartbeater(nullptr), 
-  current_status_(status) {
+  current_status_(status),
+  current_message_("") {
     tac = (char*)"hb";
     this->connectToPublisher();
 }
@@ -58,17 +59,17 @@ int Heartbeater::run()
       if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
       if ( msg_type == SB_SIGTYPE_FSM ) {
         current_status_ = (fsm::status_t)msg_signal;
+        *sstream >> current_message_;
       }
     }
 
     if (SB_MSG_DEBUG) printf("hb: sending hb status code %d\n", (int)current_status_);
 
     // send a message
-    std::string infomessage = "info";
     std::stringstream message;
     message << (int)SB_SIGTYPE_PUB  << " "
             << (int)current_status_ << " "
-            << infomessage.c_str();
+            << current_message_.c_str();
     zmqpp::message z_msg;
     z_msg << message.str();
     z_heartbeater->send(z_msg);

@@ -72,6 +72,7 @@ class Boxoffice
     int processEvent(fsm::status_t const status);
     int performAction(fsm::event_t const, fsm::action_t const, fsm::status_t const) const;
     int updateHeartbeat(fsm::status_t const) const;
+    std::string const prepareHeartbeatMessage() const;
 
     fsm::state_t state_;
 

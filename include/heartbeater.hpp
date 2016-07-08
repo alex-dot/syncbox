@@ -22,7 +22,8 @@ class Heartbeater : public Transmitter
     Heartbeater() :
       Transmitter(),
       z_heartbeater(nullptr), 
-      current_status_(fsm::status_100)
+      current_status_(fsm::status_100),
+      current_message_("")
       {};
     Heartbeater(zmqpp::context* z_ctx_, fsm::status_t status);
     Heartbeater(const Heartbeater&);
@@ -35,6 +36,7 @@ class Heartbeater : public Transmitter
 
     zmqpp::socket* z_heartbeater;
     fsm::status_t current_status_;
+    std::string   current_message_;
 };
 
 #endif
