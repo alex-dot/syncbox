@@ -99,7 +99,7 @@ int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &socket2, zmqpp::socket 
     }
     if ( poller.events(z_items[1]) & ZMQ_POLLIN )
     {
-      socket.receive(z_msg);
+      socket2.receive(z_msg);
       int parts = z_msg.parts();
       for (int i = 0; i < parts; ++i)
       {
