@@ -7,6 +7,9 @@
  *  The Box gets defined and added by the user. It is the base files
  *  class through which syncbox handles all files in a given directory.
  *
+ * \todo      create new wd on newly created directories;
+ *            subdirectory expansion
+ *
  * \author    Alexander Herr
  * \date      2016
  * \copyright GNU Public License v3 or higher. 

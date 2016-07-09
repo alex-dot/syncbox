@@ -301,6 +301,7 @@ int Boxoffice::runRouter()
     if ( msg_type == SB_SIGTYPE_INOTIFY ) {
       std::string box_hash, path;
       *sstream >> box_hash >> path;
+      std::cout << path << std::endl;
       processEvent((fsm::status_t)msg_signal, path);
     } else if ( msg_type == SB_SIGTYPE_SUB ) {
       processEvent((fsm::status_t)msg_signal);

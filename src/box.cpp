@@ -110,6 +110,7 @@ int Box::run()
   {
     wd = inotify_add_watch( fd, i->second->getAbsolutePath().c_str(), SB_IN_EVENT_MASK );
     watch_descriptors_.insert(std::make_pair(wd,i->second));
+    std::cout << "box: wd " << wd << " path " << i->second->getAbsolutePath().c_str() << std::endl;
   }
 
   std::stringstream* sstream;
@@ -126,7 +127,11 @@ int Box::run()
     }
 
     // sending inotify event
-    std::string infomessage = sstream->str();
+    int wd;
+    std::string dir_path, name;
+    *sstream >> wd >> name;
+    dir_path = watch_descriptors_[wd]->getPath();
+
     std::stringstream message;
     message << SB_SIGTYPE_INOTIFY << " "
             << fsm::status_300    << " ";
@@ -137,7 +142,8 @@ int Box::run()
 //    delete z_msg;
 
     message << box_hash_ << " ";
-    message << infomessage.c_str();
+    message << dir_path << "/";
+    message << name.c_str();
 //    z_msg = new zmqpp::message();
     *z_msg << message.str();
     z_boxoffice_pull->send(*z_msg);
