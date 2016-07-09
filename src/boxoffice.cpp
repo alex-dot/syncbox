@@ -299,8 +299,8 @@ int Boxoffice::runRouter()
     }
 
     if ( msg_type == SB_SIGTYPE_INOTIFY ) {
-      std::string base_dir, path;
-      *sstream >> path;
+      std::string box_hash, path;
+      *sstream >> box_hash >> path;
       processEvent((fsm::status_t)msg_signal, path);
     } else if ( msg_type == SB_SIGTYPE_SUB ) {
       processEvent((fsm::status_t)msg_signal);

@@ -136,7 +136,7 @@ int Box::run()
 //    z_boxoffice_pull->send(*z_msg, ZMQ_SNDMORE);
 //    delete z_msg;
 
-    message << getBaseDir() << "/";
+    message << box_hash_ << " ";
     message << infomessage.c_str();
 //    z_msg = new zmqpp::message();
     *z_msg << message.str();
