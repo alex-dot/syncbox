@@ -32,7 +32,7 @@
 class Box : public Transmitter {
  public:
     Box();
-    Box(zmqpp::context* z_ctx_, boost::filesystem::path, Hash* box_hash);
+    Box(zmqpp::context* z_ctx_, boost::filesystem::path, std::string box_hash);
     ~Box();
 
     HashTree* getHashTree() const;
@@ -60,7 +60,7 @@ class Box : public Transmitter {
     std::unordered_map<std::string, Directory*> entries_;
     HashTree*                                   hash_tree_;
     std::unordered_map<int, Directory*>         watch_descriptors_;
-    Hash*                                       box_hash_;
+    std::string                                 box_hash_;
 };
 
 #endif  // INCLUDE_BOX_HPP_

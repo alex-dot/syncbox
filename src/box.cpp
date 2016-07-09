@@ -27,7 +27,7 @@ Box::Box() :
   box_hash_()
   {}
 
-Box::Box(zmqpp::context* z_ctx_, boost::filesystem::path p, Hash* box_hash) :
+Box::Box(zmqpp::context* z_ctx_, boost::filesystem::path p, std::string box_hash) :
   Transmitter(z_ctx_),
   path_(p),
   entries_(),

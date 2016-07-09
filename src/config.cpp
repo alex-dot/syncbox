@@ -107,25 +107,25 @@ int Config::initialize(int argc, char* argv[])
     return return_val;
 }
 
-const std::vector< node_t >
+const std::unordered_map< std::string, node_t >
     Config::getNodes() const {
         return nodes_;
 }
 const std::vector< std::string >
   Config::getNodeEndpoints() const {
     std::vector<std::string> endpoints;
-    for ( std::vector<node_t>::const_iterator i=nodes_.begin();
+    for ( std::unordered_map< std::string, node_t >::const_iterator i=nodes_.begin();
           i != nodes_.end(); ++i ) {
-        endpoints.push_back( i->endpoint );
+        endpoints.push_back( i->second.endpoint );
     }
     return endpoints;
 }
 const std::vector< std::string >
   Config::getNodePublicKeys() const {
     std::vector<std::string> endpoints;
-    for ( std::vector<node_t>::const_iterator i=nodes_.begin();
+    for ( std::unordered_map< std::string, node_t >::const_iterator i=nodes_.begin();
           i != nodes_.end(); ++i ) {
-        endpoints.push_back( i->public_key );
+        endpoints.push_back( i->second.public_key );
     }
     return endpoints;
 }
@@ -186,7 +186,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 new_node.sb_subtype = SB_SUBTYPE_TCP_BIDIR;
                 new_node.last_timestamp = 0;
                 new_node.offset = 0;
-                this->nodes_.push_back( new_node );
+                this->nodes_vec_.push_back( new_node );
             } else if ( SB_MSG_DEBUG && std::regex_match( *i, 
                                    sm, 
                                    std::regex("(ipc://)(.*)")
@@ -197,7 +197,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 new_node.sb_subtype = SB_SUBTYPE_TCP_BIDIR;
                 new_node.last_timestamp = 0;
                 new_node.offset = 0;
-                this->nodes_.push_back( new_node );
+                this->nodes_vec_.push_back( new_node );
             } else {
                 std::cerr << "[E] Cannot process node '" << *i << "'" << std::endl;
                 return 1;
@@ -263,7 +263,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
             std::stringstream box_path_sstream;
             std::string box_name_string, box_path, box_path_temp;
             std::getline(box_string, box_name_string, '@');
-            Hash* box_name = new Hash(box_name_string);
+            Hash box_name(box_name_string);
             std::getline(box_string, box_path_temp, '@');
             box_path_sstream << box_path_temp;
             while(std::getline(box_string, box_path_temp, '@')) {
@@ -279,8 +279,8 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
             // check if the box location is already mapped or the box name has already been claimed
             for (std::vector<box_t>::iterator j = this->boxes_.begin();
                  j != this->boxes_.end(); ++j) {
-                if (box_name == j->uid) {
-                    std::cerr << "[E] " << box_name << " is already used." << std::endl;
+                if (box_name.getHash() == j->uid) {
+                    std::cerr << "[E] " << box_name.getHash() << " is already used." << std::endl;
                     return 1;
                 }
                 if (box_path == j->base_path) {
@@ -291,7 +291,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
 
             // add new box strings to Config
             box_t new_box;
-            new_box.uid = box_name;
+            new_box.uid = box_name.getHash();
             new_box.base_path = box_path;
             this->boxes_.push_back( new_box );
         }
@@ -331,13 +331,13 @@ int Config::synchronizeKeystore( std::string* keystore_file,
              i != hosts_.end(); ++i) {
             if ( !pks.isMember(i->endpoint) ) {
                 i->keypair = zmqpp::curve::generate_keypair();
-                i->uid = new Hash(i->keypair.public_key);
+                i->uid = Hash(i->keypair.public_key).getHash();
                 pks[i->endpoint]["public_key"] = i->keypair.public_key;
                 pks[i->endpoint]["private_key"] = i->keypair.secret_key;
             } else {
                 i->keypair.public_key = pks[i->endpoint].get("public_key", "").asString();
                 i->keypair.secret_key = pks[i->endpoint].get("private_key", "").asString();
-                i->uid = new Hash(i->keypair.public_key);
+                i->uid = Hash(i->keypair.public_key).getHash();
             }
         }
         f_pk << pks << std::endl;
@@ -350,7 +350,7 @@ int Config::synchronizeKeystore( std::string* keystore_file,
              i != hosts_.end(); ++i) {
             i->keypair.public_key = pks[i->endpoint].get("public_key", "").asString();
             i->keypair.secret_key = pks[i->endpoint].get("private_key", "").asString();
-            i->uid = new Hash(i->keypair.public_key);
+            i->uid = Hash(i->keypair.public_key).getHash();
         }
         f_pk.close();
     }
@@ -371,10 +371,11 @@ int Config::synchronizeKeystore( std::string* keystore_file,
         if_ks.close();
     }
 
-    for ( std::vector<node_t>::iterator i = this->nodes_.begin();
-          i != this->nodes_.end(); ++i ) {
+    for ( std::vector<node_t>::iterator i = this->nodes_vec_.begin();
+          i != this->nodes_vec_.end(); ++i ) {
         i->public_key = ks.get(i->endpoint, "").asString();
-        i->uid = new Hash(i->public_key);
+        i->uid = Hash(i->public_key).getHash();
+        nodes_.insert( std::make_pair(i->uid, *i) );
     }
 
     return 0;

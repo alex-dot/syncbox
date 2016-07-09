@@ -70,11 +70,10 @@ class Boxoffice
     int runRouter();
     int closeConnections();
 
-    int processEvent(fsm::status_t const status, std::string const path);
-    int processEvent(fsm::status_t const status);
+    int processEvent(fsm::status_t const status, std::string const message);
     int performAction(fsm::event_t const, fsm::action_t const, fsm::status_t const) const;
     int updateHeartbeat(fsm::status_t const) const;
-    std::string const prepareHeartbeatMessage() const;
+    void prepareHeartbeatMessage(std::stringstream& message) const;
 
     fsm::state_t state_;
 
@@ -88,9 +87,9 @@ class Boxoffice
     zmqpp::socket* z_bo_hb;
     zmqpp::socket* z_broadcast;
 
-    std::vector< node_t > subscribers; // endpoint and type
+    std::unordered_map< std::string, node_t > subscribers; // endpoint and type
     std::vector< host_t > publishers;
-    std::unordered_map<Hash*,Box*> boxes;
+    std::unordered_map< std::string, Box* > boxes;
 
     std::vector<boost::thread*> pub_threads;
     std::vector<boost::thread*> hb_threads;

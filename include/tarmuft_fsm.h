@@ -112,7 +112,7 @@ typedef enum {
 static inline event_t
   get_event_by_status_code(status_t status) {
     if ( status == status_100 ) {
-        return node_only_sends_heartbeats_event;
+        return received_heartbeat_event;
     } else if ( status == status_110 ) {
         return received_heartbeat_event;
     } else if ( status == status_111 ) {
@@ -182,6 +182,8 @@ static inline bool
         if ( event == new_local_file_event && status == status_300 ) {
             return true;
         } else if ( event == new_local_file_with_more_event && status == status_304 ) {
+            return true;
+        } else if ( event == received_heartbeat_event && status == status_100 ) {
             return true;
         } else if ( event == received_heartbeat_event && status == status_120 ) {
             return true;
@@ -498,6 +500,8 @@ static inline action_t
             return send_heartbeat_action;
         } else if ( event == new_local_file_with_more_event && status == status_304 ) {
             return send_heartbeat_action;
+        } else if ( event == received_heartbeat_event && status == status_100 ) {
+            return send_heartbeat_action;
         } else if ( event == received_heartbeat_event && status == status_120 ) {
             return send_heartbeat_action;
         } else if ( event == received_heartbeat_event && status == status_124 ) {
@@ -813,6 +817,8 @@ static inline status_t
             return status_120;
         } else if ( event == new_local_file_with_more_event && received_status == status_304 ) {
             return status_124;
+        } else if ( event == received_heartbeat_event && received_status == status_100 ) {
+            return status_100;
         } else if ( event == received_heartbeat_event && received_status == status_120 ) {
             return status_121;
         } else if ( event == received_heartbeat_event && received_status == status_124 ) {
@@ -1128,6 +1134,8 @@ static inline state_t
             return announcing_new_file_state;
         } else if ( event == new_local_file_with_more_event && received_status == status_304 ) {
             return announcing_new_file_with_more_state;
+        } else if ( event == received_heartbeat_event && received_status == status_100 ) {
+            return ready_state;
         } else if ( event == received_heartbeat_event && received_status == status_120 ) {
             return acknowledging_new_file_state;
         } else if ( event == received_heartbeat_event && received_status == status_124 ) {

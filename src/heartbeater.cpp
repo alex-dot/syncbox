@@ -80,9 +80,13 @@ int Heartbeater::run()
     if (SB_MSG_DEBUG) printf("hb: sending hb status code %d\n", (int)current_status_);
 
     // send a message
+    int64_t timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+      std::chrono::system_clock::now().time_since_epoch()
+    ).count();
     std::stringstream message;
     message << (int)SB_SIGTYPE_PUB  << " "
             << (int)current_status_ << " "
+            << timestamp            << " "
             << current_message_.c_str();
     zmqpp::message z_msg;
     z_msg << message.str();

@@ -65,18 +65,18 @@ enum SB_BACKUP_TYPE {
 struct node_t {
   std::string  endpoint;
   int          sb_subtype;
-  uint32_t     last_timestamp;
-  uint16_t     offset;
+  int64_t      last_timestamp;
+  int16_t      offset;
   std::string  public_key;
-  Hash*        uid;
+  std::string  uid;
 };
 struct host_t {
   std::string           endpoint;
   zmqpp::curve::keypair keypair;
-  Hash*                 uid;
+  std::string           uid;
 };
 struct box_t {
-  Hash*       uid;
+  std::string uid;
   std::string base_path;
 };
 

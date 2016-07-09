@@ -59,7 +59,7 @@ int Publisher::run()
 
   if (SB_MSG_DEBUG) printf("pub: starting pub socket and sending...\n");
   z_publisher = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pub);
-  z_publisher->set(zmqpp::socket_option::identity, data.uid->getHash());
+  z_publisher->set(zmqpp::socket_option::identity, data.uid);
   z_publisher->set(zmqpp::socket_option::curve_server, 1);
   z_publisher->set(zmqpp::socket_option::curve_secret_key, data.keypair.secret_key);
   z_publisher->bind(data.endpoint.c_str());

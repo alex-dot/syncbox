@@ -185,12 +185,12 @@ int Boxoffice::setupSubscribers()
 {
   // opening subscriber threads
   if (SB_MSG_DEBUG) printf("bo: opening %d subscriber threads\n", (int)subscribers.size());
-  for (std::vector< node_t >::iterator i = subscribers.begin(); 
+  for (std::unordered_map< std::string, node_t >::iterator i = subscribers.begin(); 
         i != subscribers.end(); ++i)
   {
     boost::thread* sub_thread = new boost::thread(subscriber_thread, 
                                                   z_ctx, 
-                                                  *i);
+                                                  i->second);
     sub_threads.push_back(sub_thread);
   }
   if (SB_MSG_DEBUG) printf("bo: opened %d subscriber threads\n", (int)sub_threads.size());
@@ -304,7 +304,8 @@ int Boxoffice::runRouter()
       std::cout << path << std::endl;
       processEvent((fsm::status_t)msg_signal, path);
     } else if ( msg_type == SB_SIGTYPE_SUB ) {
-      processEvent((fsm::status_t)msg_signal);
+      std::string message = sstream->str();
+      processEvent((fsm::status_t)msg_signal, message);
     }
 
     delete sstream;
@@ -313,28 +314,51 @@ int Boxoffice::runRouter()
   return 0;
 }
 
-int Boxoffice::processEvent(fsm::status_t const status, std::string const path) {
+int Boxoffice::processEvent(fsm::status_t const status, std::string const message) {
   fsm::event_t event = fsm::get_event_by_status_code(status);
 
   if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
     state_, event, status);
   if ( fsm::check_event(state_, event, status) ) {
 
+    // STATUS_100
+    // if the received status was simply 100, just update the corresponding node
+    if ( status == fsm::status_100 ) {
+      std::stringstream sstream;
+      sstream << message;
+      int msg_type, msg_signal;
+      std::string node_uid;
+      int64_t node_timestamp, local_timestamp;
+      int16_t offset;
+      sstream >> msg_type >> msg_signal >> node_uid >> node_timestamp;
+
+      subscribers[node_uid].last_timestamp = node_timestamp;
+      local_timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+        std::chrono::system_clock::now().time_since_epoch()
+      ).count();
+      offset = local_timestamp - subscribers[node_uid].last_timestamp;
+      subscribers[node_uid].offset = offset;
+    }
+
+    // NEW_LOCAL_FILE_EVENT
     // if the event was new_local_file_event, add the path of the file to the queue;
     // if the state was announcing_new_file_state, we need to check if the reported 
     // file is the same as the last one, otherwise we would push the same file
-    // twice
+    // twice; TODO if a file was created and immediately deleted, that file should 
+    // be removed and - if necessary - the state should be reverted
     if ( event == fsm::new_local_file_event
       && state_ == fsm::announcing_new_file_state ) {
       std::vector<std::string>::iterator iter;
-      iter = std::find( file_list_.begin(), file_list_.end(), path );
+      iter = std::find( file_list_.begin(), file_list_.end(), message );
       if ( iter != file_list_.end() ) {
-        file_list_.push_back(path);
+        file_list_.push_back(message);
       } 
-    } else if ( path != "" ) {
-      file_list_.push_back(path);
+    } else if ( event == fsm::new_local_file_event ) {
+      file_list_.push_back(message);
     }
 
+
+    // FSM CONTINUE
     fsm::state_t new_state = fsm::get_new_state(state_, event, status);
     if ( state_ != new_state ) {
       fsm::action_t action = fsm::get_action(state_, event, status);
@@ -348,10 +372,6 @@ int Boxoffice::processEvent(fsm::status_t const status, std::string const path) 
     if (SB_MSG_DEBUG) printf("bo: unhandled event, ignoring...\n");
   }
 
-  return 0;
-}
-int Boxoffice::processEvent(fsm::status_t const status) {
-  processEvent(status, "");
   return 0;
 }
 
@@ -376,8 +396,8 @@ int Boxoffice::performAction(fsm::event_t const event,
 int Boxoffice::updateHeartbeat(fsm::status_t const new_status) const {
   if (SB_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
   std::stringstream message;
-  std::string hb_message = prepareHeartbeatMessage();
-  message << SB_SIGTYPE_FSM << " " << new_status << " " << hb_message;
+  message << SB_SIGTYPE_FSM << " " << new_status << " ";
+  prepareHeartbeatMessage(message);
   zmqpp::message z_msg;
   z_msg << message.str();
   z_bo_hb->send(z_msg);
@@ -385,10 +405,8 @@ int Boxoffice::updateHeartbeat(fsm::status_t const new_status) const {
   return 0;
 }
 
-std::string const Boxoffice::prepareHeartbeatMessage() const {
-  std::string message = "";
-
-  return message;
+void Boxoffice::prepareHeartbeatMessage(std::stringstream& message) const {
+  message << "";
 }
 
 

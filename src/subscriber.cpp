@@ -63,6 +63,7 @@ int Subscriber::run()
     std::stringstream message;
     message << SB_SIGTYPE_SUB << " "
             << msg_signal     << " "
+            << data.uid       << " "
             << infomessage.c_str();
     zmqpp::message z_msg;
     z_msg << message.str();
