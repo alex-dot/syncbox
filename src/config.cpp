@@ -139,8 +139,8 @@ const zmqpp::curve::keypair
     return hosts_[0].keypair;
 }
 const std::vector< box_t >
-    Config::getBoxDirectories() const {
-        return box_dirs_;
+    Config::getBoxes() const {
+        return boxes_;
 }
 
 int Config::doSanityCheck(boost::program_options::options_description* options, 
@@ -277,22 +277,23 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 return 1;
             }
             // check if the box location is already mapped or the box name has already been claimed
-            for (std::vector<box_t>::iterator j = this->box_dirs_.begin();
-                 j != this->box_dirs_.end(); ++j) {
-                if (box_name == j->first) {
+            for (std::vector<box_t>::iterator j = this->boxes_.begin();
+                 j != this->boxes_.end(); ++j) {
+                if (box_name == j->uid) {
                     std::cerr << "[E] " << box_name << " is already used." << std::endl;
                     return 1;
                 }
-                if (box_path == j->second) {
+                if (box_path == j->base_path) {
                     std::cerr << "[E] " << box_path << " is already mapped." << std::endl;
                     return 1;
                 }
             }
 
             // add new box strings to Config
-            this->box_dirs_.push_back(
-                std::make_pair(box_name, box_path)
-            );
+            box_t new_box;
+            new_box.uid = box_name;
+            new_box.base_path = box_path;
+            this->boxes_.push_back( new_box );
         }
     } else {
         perror("[E] No box locations supplied, exiting...");

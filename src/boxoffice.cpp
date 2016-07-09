@@ -125,7 +125,7 @@ int Boxoffice::setupConnectionToChildren()
 int Boxoffice::setupBoxes()
 {
   Config* conf = Config::getInstance();
-  std::vector< box_t > box_dirs = conf->getBoxDirectories();
+  std::vector< box_t > box_dirs = conf->getBoxes();
 
   box_threads.reserve(box_dirs.size());
   if (SB_MSG_DEBUG) printf("bo: opening %d box threads\n", (int)box_dirs.size());
@@ -133,8 +133,8 @@ int Boxoffice::setupBoxes()
   {
     // initializing the boxes here, so we can use file IO while it's thread 
     // still listens to inotify events
-    Box* box = new Box(z_ctx, i->second, i->first);
-    boxes.insert(std::make_pair(i->first,box));
+    Box* box = new Box(z_ctx, i->base_path, i->uid);
+    boxes.insert(std::make_pair(i->uid,box));
 
     // opening box thread
     boost::thread* bt = new boost::thread(box_thread, box);

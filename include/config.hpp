@@ -7,6 +7,7 @@
 #ifndef SB_CONFIG_HPP
 #define SB_CONFIG_HPP
 
+#include <vector>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <zmqpp/curve.hpp>
@@ -27,7 +28,10 @@ struct host_t {
   zmqpp::curve::keypair keypair;
   Hash*                 uid;
 };
-typedef std::pair<Hash*,std::string> box_t;
+struct box_t {
+  Hash*       uid;
+  std::string base_path;
+};
 
 class Config
 {
@@ -58,7 +62,7 @@ class Config
     const zmqpp::curve::keypair
         getHostKeypair() const;
     const std::vector< box_t >
-        getBoxDirectories() const;
+        getBoxes() const;
 
   private:
     Config() {};
@@ -75,7 +79,7 @@ class Config
 
     std::vector< node_t >  nodes_;
     std::vector< host_t >  hosts_;
-    std::vector< box_t >   box_dirs_;
+    std::vector< box_t >   boxes_;
 
 //    int                                        config_backup_type_;
 //    boost::filesystem::path                    backup_dir_;
