@@ -16,15 +16,19 @@
 Heartbeater::Heartbeater(zmqpp::context* z_ctx_, fsm::status_t status) :
   Transmitter(z_ctx_),
   z_heartbeater(nullptr), 
+  z_boxoffice_hb_push(nullptr),
   current_status_(status),
   current_message_("") {
     tac = (char*)"hb";
+    this->connectToBoxofficeHB();
     this->connectToPublisher();
 }
 
 Heartbeater::~Heartbeater() {
+  z_boxoffice_hb_push->close();
   z_heartbeater->close();
 
+  delete z_boxoffice_hb_push;
   delete z_heartbeater;
 }
 
@@ -33,6 +37,16 @@ int Heartbeater::connectToPublisher()
   // connect to process broadcast
   z_heartbeater = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
   z_heartbeater->connect("inproc://pub_hb_pair");
+
+  return 0;
+}
+
+int Heartbeater::connectToBoxofficeHB()
+{
+  // open connection to receive HB data from boxoffice
+  z_boxoffice_hb_push = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
+  z_boxoffice_hb_push->connect("inproc://sb_boxoffice_hb_push_out");
+  z_boxoffice_hb_push->subscribe("");
 
   return 0;
 }
@@ -52,7 +66,7 @@ int Heartbeater::run()
   {
     // waiting for boxoffice input in non-blocking mode
     sstream = new std::stringstream();
-    int z_return = s_recv_noblock(*z_boxoffice_push, *z_broadcast, *sstream, 2000);
+    int z_return = s_recv_noblock(*z_boxoffice_push, *z_boxoffice_hb_push, *z_broadcast, *sstream, 2000);
 
     if ( z_return != 0 ) {
       *sstream >> msg_type >> msg_signal;

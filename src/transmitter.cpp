@@ -62,7 +62,7 @@ int Transmitter::connectToBoxoffice()
   z_boxoffice_pull->connect("inproc://sb_boxoffice_pull_in");
   // open connection to receive data from boxoffice
   z_boxoffice_push = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
-  z_boxoffice_push->connect("inproc://sb_boxoffice_hb_push_out");
+  z_boxoffice_push->connect("inproc://sb_boxoffice_push_out");
   z_boxoffice_push->subscribe("");
 
   // send a heartbeat to boxoffice, so it knows the heartbeater is ready

@@ -72,18 +72,20 @@ void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, zmqpp::socket &hear
 }
 
 // wrapper for polling on one socket while simultaneously polling the broadcast, but non-blocking
-int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &sstream, int timeout)
+int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &socket2, zmqpp::socket &broadcast, std::stringstream &sstream, int timeout)
 {
   int return_val;
   zmqpp::message z_msg;
   zmq_pollitem_t z_items[] = {
     { static_cast<void *>(socket),    0, ZMQ_POLLIN, 0 },
+    { static_cast<void *>(socket2),   0, ZMQ_POLLIN, 0 },
     { static_cast<void *>(broadcast), 0, ZMQ_POLLIN, 0 }
   };
 
   zmqpp::poller poller;
   poller.add(z_items[0]);
   poller.add(z_items[1]);
+  poller.add(z_items[2]);
 
   if ( poller.poll(timeout) ) {
     if ( poller.events(z_items[0]) & ZMQ_POLLIN )
@@ -96,6 +98,15 @@ int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &broadcast, std::strings
       }
     }
     if ( poller.events(z_items[1]) & ZMQ_POLLIN )
+    {
+      socket.receive(z_msg);
+      int parts = z_msg.parts();
+      for (int i = 0; i < parts; ++i)
+      {
+        sstream << z_msg.get(0);
+      }
+    }
+    if ( poller.events(z_items[2]) & ZMQ_POLLIN )
     {
       broadcast.receive(z_msg);
       sstream << z_msg.get(0);

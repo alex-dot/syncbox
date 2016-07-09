@@ -69,7 +69,7 @@ struct file_msg_string
 void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &sstream);
 void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, zmqpp::socket &heartbeat, std::stringstream &sstream);
 // wrapper for polling on one socket while simultaneously polling the broadcast, but non-blocking
-int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &sstream, int timeout);
+int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &socket2, zmqpp::socket &broadcast, std::stringstream &sstream, int timeout);
 // wrapper for polling on inotify event while simultaneously polling the broadcast
 void s_recv_in(zmqpp::socket &broadcast, zmqpp::socket &socket, int fd, std::stringstream &sstream);
 
