@@ -12,27 +12,6 @@
 #include <boost/program_options.hpp>
 #include <zmqpp/curve.hpp>
 
-#include <hash.hpp>
-
-// TODO What if I have multiple publishers? Nodes must have a way to query the correct host keypair...
-struct node_t {
-  std::string  endpoint;
-  int          sb_subtype;
-  uint32_t     last_timestamp;
-  uint16_t     offset;
-  std::string  public_key;
-  Hash*        uid;
-};
-struct host_t {
-  std::string           endpoint;
-  zmqpp::curve::keypair keypair;
-  Hash*                 uid;
-};
-struct box_t {
-  Hash*       uid;
-  std::string base_path;
-};
-
 class Config
 {
   public:

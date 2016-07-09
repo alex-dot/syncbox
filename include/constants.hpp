@@ -9,10 +9,13 @@
 #include <sstream>
 #include <iostream>
 #include <zmqpp/zmqpp.hpp>
+#include <zmqpp/curve.hpp>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/inotify.h>
 #include <ctime>
+
+#include <hash.hpp>
 
 enum SB_SIGTYPE {
   SB_SIGTYPE_LIFE,
@@ -57,12 +60,24 @@ enum SB_BACKUP_TYPE {
 #define SB_KEYSTORE_FILE "~/.ssh/syncbox_keystore"
 #define SB_PRIVATEKEY_FILE "~/.ssh/syncbox_privatekeys"
 
-// file message struct
-struct file_msg_string
-{
-  std::string tag;
-  std::time_t time;
-  std::string text;
+// basic structs
+// TODO What if I have multiple publishers? Nodes must have a way to query the correct host keypair...
+struct node_t {
+  std::string  endpoint;
+  int          sb_subtype;
+  uint32_t     last_timestamp;
+  uint16_t     offset;
+  std::string  public_key;
+  Hash*        uid;
+};
+struct host_t {
+  std::string           endpoint;
+  zmqpp::curve::keypair keypair;
+  Hash*                 uid;
+};
+struct box_t {
+  Hash*       uid;
+  std::string base_path;
 };
 
 // wrapper for polling on one socket while simultaneously polling the broadcast
