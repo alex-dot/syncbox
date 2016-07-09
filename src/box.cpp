@@ -110,7 +110,6 @@ int Box::run()
   {
     wd = inotify_add_watch( fd, i->second->getAbsolutePath().c_str(), SB_IN_EVENT_MASK );
     watch_descriptors_.insert(std::make_pair(wd,i->second));
-    std::cout << "box: wd " << wd << " path " << i->second->getAbsolutePath().c_str() << std::endl;
   }
 
   std::stringstream* sstream;
