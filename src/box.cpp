@@ -130,7 +130,7 @@ int Box::run()
     int wd;
     std::string dir_path, name;
     *sstream >> wd >> name;
-    dir_path = watch_descriptors_[wd]->getPath();
+    dir_path = getPathOfDirectory(wd);
 
     std::stringstream message;
     message << SB_SIGTYPE_INOTIFY << " "
@@ -163,14 +163,7 @@ const std::string Box::getPathOfDirectory(int wd) const
 {
   Directory* dir = watch_descriptors_.at(wd);
   std::string path_string = dir->getAbsolutePath();
-//  std::cout << "new path" << std::endl;
-//  std::cout << path_string.length() << std::endl;
-//  std::cout << path_string << std::endl;
   path_string = path_string.substr(this->getBaseDir().length());
-//  std::cout << path_string.length() << std::endl;
-//  std::cout << path_string << std::endl;
-//  std::cout << this->getBaseDir() << std::endl;
-//  std::cout << this->getBaseDir().length() << std::endl << std::endl;
   return path_string;
 }
 const std::string Box::getAbsolutePathOfDirectory(int wd) const
