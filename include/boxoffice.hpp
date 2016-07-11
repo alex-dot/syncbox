@@ -71,7 +71,7 @@ class Boxoffice
     int runRouter();
     int closeConnections();
 
-    int processEvent(fsm::status_t status, std::string const message);
+    int processEvent(fsm::status_t status, std::stringstream* message);
     int performAction(fsm::event_t const, fsm::action_t const, fsm::status_t const) const;
     int updateHeartbeat(fsm::status_t const) const;
     void prepareHeartbeatMessage(std::stringstream& message) const;

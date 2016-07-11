@@ -299,15 +299,7 @@ int Boxoffice::runRouter()
       break;
     }
 
-    if ( msg_type == SB_SIGTYPE_INOTIFY ) {
-      std::string box_hash, path;
-      *sstream >> box_hash >> path;
-      std::cout << path << std::endl;
-      processEvent((fsm::status_t)msg_signal, path);
-    } else if ( msg_type == SB_SIGTYPE_SUB ) {
-      std::string message = sstream->str();
-      processEvent((fsm::status_t)msg_signal, message);
-    }
+    processEvent((fsm::status_t)msg_signal, sstream);
 
     delete sstream;
   }
@@ -315,7 +307,8 @@ int Boxoffice::runRouter()
   return 0;
 }
 
-int Boxoffice::processEvent(fsm::status_t status, std::string const message) {
+int Boxoffice::processEvent(fsm::status_t status, 
+                            std::stringstream* sstream) {
   fsm::event_t event = fsm::get_event_by_status_code(status);
 
   if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
@@ -328,13 +321,10 @@ int Boxoffice::processEvent(fsm::status_t status, std::string const message) {
         // STATUS_100
         // if the received status was simply 100, just update the corresponding node
         case fsm::status_100: {
-          std::stringstream sstream;
-          sstream << message;
-          int msg_type, msg_signal;
           std::string node_uid;
           int64_t node_timestamp, local_timestamp;
           int16_t offset;
-          sstream >> msg_type >> msg_signal >> node_uid >> node_timestamp;
+          *sstream >> node_uid >> node_timestamp;
 
           subscribers[node_uid].last_timestamp = node_timestamp;
           local_timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
@@ -375,16 +365,18 @@ int Boxoffice::processEvent(fsm::status_t status, std::string const message) {
     // file is the same as the last one, otherwise we would push the same file
     // twice; TODO if a file was created and immediately deleted, that file should 
     // be removed and - if necessary - the state should be reverted
-    if ( event == fsm::new_local_file_event
-      && state_ == fsm::announcing_new_file_state ) {
-      std::vector<std::string>::iterator iter;
-      iter = std::find( file_list_.begin(), file_list_.end(), message );
-      if ( iter != file_list_.end() ) {
-        file_list_.push_back(message);
+    if ( event == fsm::new_local_file_event ) {
+      std::string box_hash, path;
+      *sstream >> box_hash >> path;
+      if ( state_ == fsm::announcing_new_file_state ) {
+        std::vector<std::string>::iterator iter;
+        iter = std::find( file_list_.begin(), file_list_.end(), path );
+        if ( iter != file_list_.end() ) {
+          file_list_.push_back(path);
+        }
+      } else {
+        file_list_.push_back(path);
       }
-      node_reply_counter_ = 0;
-    } else if ( event == fsm::new_local_file_event ) {
-      file_list_.push_back(message);
       node_reply_counter_ = 0;
     }
 
