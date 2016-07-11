@@ -43,6 +43,7 @@ class Boxoffice
       state_(fsm::ready_state),
       file_list_(),
       node_reply_counter_(0),
+      total_node_number_(0),
       z_ctx(nullptr),
       z_bo_main(nullptr),
       z_router(nullptr),
@@ -70,7 +71,7 @@ class Boxoffice
     int runRouter();
     int closeConnections();
 
-    int processEvent(fsm::status_t const status, std::string const message);
+    int processEvent(fsm::status_t status, std::string const message);
     int performAction(fsm::event_t const, fsm::action_t const, fsm::status_t const) const;
     int updateHeartbeat(fsm::status_t const) const;
     void prepareHeartbeatMessage(std::stringstream& message) const;
@@ -79,6 +80,7 @@ class Boxoffice
 
     std::vector< std::string > file_list_;
     int node_reply_counter_;
+    int total_node_number_;
 
     zmqpp::context* z_ctx;
     zmqpp::socket* z_bo_main;

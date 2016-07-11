@@ -192,6 +192,7 @@ int Boxoffice::setupSubscribers()
                                                   z_ctx, 
                                                   i->second);
     sub_threads.push_back(sub_thread);
+    ++total_node_number_;
   }
   if (SB_MSG_DEBUG) printf("bo: opened %d subscriber threads\n", (int)sub_threads.size());
 
@@ -314,30 +315,58 @@ int Boxoffice::runRouter()
   return 0;
 }
 
-int Boxoffice::processEvent(fsm::status_t const status, std::string const message) {
+int Boxoffice::processEvent(fsm::status_t status, std::string const message) {
   fsm::event_t event = fsm::get_event_by_status_code(status);
 
   if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
     state_, event, status);
   if ( fsm::check_event(state_, event, status) ) {
 
-    // STATUS_100
-    // if the received status was simply 100, just update the corresponding node
-    if ( status == fsm::status_100 ) {
-      std::stringstream sstream;
-      sstream << message;
-      int msg_type, msg_signal;
-      std::string node_uid;
-      int64_t node_timestamp, local_timestamp;
-      int16_t offset;
-      sstream >> msg_type >> msg_signal >> node_uid >> node_timestamp;
+    // RECEIVED_HEARTBEAT_EVENT
+    if ( event == fsm::received_heartbeat_event ) {
+      switch ( status ) {
+        // STATUS_100
+        // if the received status was simply 100, just update the corresponding node
+        case fsm::status_100: {
+          std::stringstream sstream;
+          sstream << message;
+          int msg_type, msg_signal;
+          std::string node_uid;
+          int64_t node_timestamp, local_timestamp;
+          int16_t offset;
+          sstream >> msg_type >> msg_signal >> node_uid >> node_timestamp;
 
-      subscribers[node_uid].last_timestamp = node_timestamp;
-      local_timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-        std::chrono::system_clock::now().time_since_epoch()
-      ).count();
-      offset = local_timestamp - subscribers[node_uid].last_timestamp;
-      subscribers[node_uid].offset = offset;
+          subscribers[node_uid].last_timestamp = node_timestamp;
+          local_timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+            std::chrono::system_clock::now().time_since_epoch()
+          ).count();
+          offset = local_timestamp - subscribers[node_uid].last_timestamp;
+          subscribers[node_uid].offset = offset;
+
+          break;
+        }
+        // STATUS_121
+        // waiting for all nodes to reply, so increment node_reply_counter_
+        // until all nodes replied, then manually change the status
+        case fsm::status_121: {
+          ++node_reply_counter_;
+
+          if ( node_reply_counter_ == total_node_number_ ) {
+            node_reply_counter_ = -1;
+            status = fsm::status_122;
+            event = fsm::get_event_by_status_code(status);
+            if ( !fsm::check_event(state_, event, status) ) {
+              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
+              return 1;
+            }
+          }
+
+          break;
+        }
+
+        default:
+          break;
+        }
     }
 
     // NEW_LOCAL_FILE_EVENT
@@ -352,9 +381,11 @@ int Boxoffice::processEvent(fsm::status_t const status, std::string const messag
       iter = std::find( file_list_.begin(), file_list_.end(), message );
       if ( iter != file_list_.end() ) {
         file_list_.push_back(message);
-      } 
+      }
+      node_reply_counter_ = 0;
     } else if ( event == fsm::new_local_file_event ) {
       file_list_.push_back(message);
+      node_reply_counter_ = 0;
     }
 
 
