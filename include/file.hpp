@@ -20,6 +20,7 @@
 //#include "constants.hpp"
 
 #define SB_MAXIMUM_PATH_LENGTH 128
+#define SB_MAXIMUM_FILE_PACKAGE_SIZE 4096
 
 /**
  * \brief Small class for condensing file information.
@@ -27,6 +28,7 @@
  * Small class for condensing file information.
  *
  * \todo handling directories
+ * \todo handle offsete at write
  */
 class File {
  public:
@@ -44,17 +46,25 @@ class File {
     const std::string getPath() const;
     boost::filesystem::perms getMode() const;
     int32_t getMtime() const;
+    int64_t getSize() const;
 
     void setMode(boost::filesystem::perms mode);
     void setMtime(int32_t mtime);
-
     void storeMetadata() const;
+    void resize(int64_t size);
+
+    int readFileData(char* data,
+                     int64_t* size,
+                     const int64_t offset) const;
+    void storeFileData(const char* data, const int64_t size) const;
 
  private:
+    boost::filesystem::path                  bpath_;
     std::array<char, SB_MAXIMUM_PATH_LENGTH> path_;
     boost::filesystem::perms                 mode_;
     int32_t                                  mtime_;
     boost::filesystem::file_type             type_;
+    int64_t                                  size_;
 
     void checkArguments(const std::string& path, const bool create) const;
 
