@@ -53,9 +53,12 @@ class File {
     void storeMetadata() const;
     void resize(int64_t size);
 
-    int readFileData(char* data,
-                     int64_t* size,
-                     const int64_t offset) const;
+    int64_t readFileData(char* data,
+                         const int64_t size,
+                         int64_t offset,
+                         bool* more) const;
+    int64_t readFileData(char* data, int64_t offset) const;
+    int64_t readFileData(char* data, int64_t offset, bool* more) const;
     void storeFileData(const char* data, const int64_t size) const;
 
  private:

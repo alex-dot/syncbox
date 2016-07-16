@@ -11,6 +11,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <utility>
 #include <stdexcept>
 #include <iomanip>
 
@@ -141,32 +142,37 @@ void File::resize(int64_t size) {
     throw boost::filesystem::filesystem_error("", bpath_, ec);
 }
 
-int File::readFileData(char* data,
-                       int64_t* size,
-                       const int64_t offset) const {
+int64_t File::readFileData(char* data,
+                           const int64_t size,
+                           int64_t offset,
+                           bool* more) const {
   boost::filesystem::ifstream ifs(bpath_);
 
   int64_t data_size;
-  if (size_ <= SB_MAXIMUM_FILE_PACKAGE_SIZE && size_ <= *size) {
+  if (size_ <= SB_MAXIMUM_FILE_PACKAGE_SIZE && size_ <= size) {
     ifs.read(data, size_);
     data_size = size_;
-  } else if (*size < SB_MAXIMUM_FILE_PACKAGE_SIZE) {
-    ifs.read(data, *size);
-    data_size = *size;
+  } else if (size < SB_MAXIMUM_FILE_PACKAGE_SIZE) {
+    ifs.read(data, size);
+    data_size = size;
   } else {
     ifs.read(data, SB_MAXIMUM_FILE_PACKAGE_SIZE);
     data_size = SB_MAXIMUM_FILE_PACKAGE_SIZE;
   }
-  int64_t* new_size = new int64_t(data_size);
-  std::swap(size, new_size);
-  delete new_size;
 
   ifs.close();
 
-  if (offset + *size < size_) {
-    return 1;
+  if (offset + size < size_) {
+    *more = true;
   }
-  return 0;
+
+  return data_size;
+}
+int64_t File::readFileData(char* data, int64_t offset) const {
+  return readFileData(data, SB_MAXIMUM_FILE_PACKAGE_SIZE, offset, new bool());
+}
+int64_t File::readFileData(char* data, int64_t offset, bool* more) const {
+  return readFileData(data, SB_MAXIMUM_FILE_PACKAGE_SIZE, offset, more);
 }
 
 void File::storeFileData(const char* data, const int64_t size) const {
@@ -189,6 +195,7 @@ std::ostream& operator<<(std::ostream& ostream, const File& f) {
   ostream << path << " "
     << std::setfill('0') << std::setw(4)  << f.mode_  << " "
     << std::setfill('0') << std::setw(32) << f.mtime_ << " "
+    << std::setfill('0') << std::setw(64) << f.size_  << " "
     << std::setfill('0') << std::setw(1)  << f.type_;
   return ostream;
 }
@@ -201,8 +208,11 @@ std::istream& operator>>(std::istream& istream, File& f) {
   f.bpath_ = boost::filesystem::path(path);
 
   int p, t;
-  istream >> p >> f.mtime_ >> t;
+  int64_t size;
+  istream >> p >> f.mtime_ >> size >> t;
   f.mode_ = boost::filesystem::perms(p);
   f.type_ = boost::filesystem::file_type(t);
+
+  f.resize(size);
   return istream;
 }
