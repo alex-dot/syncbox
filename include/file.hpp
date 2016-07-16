@@ -28,7 +28,6 @@
  * Small class for condensing file information.
  *
  * \todo handling directories
- * \todo handle offsete at write
  */
 class File {
  public:
@@ -53,13 +52,19 @@ class File {
     void storeMetadata() const;
     void resize(int64_t size);
 
+    void openFile();
+    void closeFile();
+
     int64_t readFileData(char* data,
                          const int64_t size,
                          int64_t offset,
-                         bool* more) const;
-    int64_t readFileData(char* data, int64_t offset) const;
-    int64_t readFileData(char* data, int64_t offset, bool* more) const;
-    void storeFileData(const char* data, const int64_t size) const;
+                         bool* more);
+    int64_t readFileData(char* data, int64_t offset);
+    int64_t readFileData(char* data, int64_t offset, bool* more);
+
+    void storeFileData(const char* data,
+                       const int64_t size,
+                       int64_t offset);
 
  private:
     boost::filesystem::path                  bpath_;
@@ -68,6 +73,7 @@ class File {
     int32_t                                  mtime_;
     boost::filesystem::file_type             type_;
     int64_t                                  size_;
+    std::fstream                             fstream_;
 
     void checkArguments(const std::string& path, const bool create) const;
 

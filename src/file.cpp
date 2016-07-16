@@ -21,14 +21,16 @@ File::File() :
             mode_(),
             mtime_(),
             type_(),
-            size_() {}
+            size_(),
+            fstream_() {}
 File::File(const std::string& path, const bool create) :
             bpath_(),
             path_(),
             mode_(),
             mtime_(),
             type_(),
-            size_() {
+            size_(),
+            fstream_() {
   bpath_ = boost::filesystem::path(path);
   checkArguments(path, create);
 
@@ -51,7 +53,8 @@ File::File(const std::string& path,
             mode_(mode),
             mtime_(mtime),
             type_(),
-            size_() {
+            size_(),
+            fstream_() {
   bpath_ = boost::filesystem::path(path);
   checkArguments(path, create);
 
@@ -68,7 +71,8 @@ File::File(const std::string& path, const File& file, const bool create) :
             mode_(),
             mtime_(),
             type_(),
-            size_() {
+            size_(),
+            fstream_() {
   bpath_ = boost::filesystem::path(path);
   checkArguments(path, create);
 
@@ -83,7 +87,10 @@ File::File(const std::string& path, const File& file, const bool create) :
     resize(file.getSize());
   }
 }
-File::~File() {}
+File::~File() {
+  if (fstream_.is_open())
+    fstream_.close();
+}
 
 void File::checkArguments(const std::string& path, const bool create) const {
   // check if the path is not too long
@@ -142,50 +149,66 @@ void File::resize(int64_t size) {
     throw boost::filesystem::filesystem_error("", bpath_, ec);
 }
 
+void File::openFile() {
+  fstream_.open(bpath_.string(), std::ios_base::in | std::ios_base::out);
+}
+void File::closeFile() {
+  fstream_.close();
+}
+
 int64_t File::readFileData(char* data,
                            const int64_t size,
                            int64_t offset,
-                           bool* more) const {
-  boost::filesystem::ifstream ifs(bpath_);
+                           bool* more) {
+  if (!fstream_.is_open())
+    openFile();
 
   int64_t data_size;
   if (size_ <= SB_MAXIMUM_FILE_PACKAGE_SIZE && size_ <= size) {
-    ifs.read(data, size_);
+    fstream_.seekg(offset, std::ios_base::beg);
+    fstream_.read(data, size_);
     data_size = size_;
   } else if (size < SB_MAXIMUM_FILE_PACKAGE_SIZE) {
-    ifs.read(data, size);
+    fstream_.seekg(offset, std::ios_base::beg);
+    fstream_.read(data, size);
     data_size = size;
   } else {
-    ifs.read(data, SB_MAXIMUM_FILE_PACKAGE_SIZE);
+    fstream_.seekg(offset, std::ios_base::beg);
+    fstream_.read(data, SB_MAXIMUM_FILE_PACKAGE_SIZE);
     data_size = SB_MAXIMUM_FILE_PACKAGE_SIZE;
   }
 
-  ifs.close();
-
   if (offset + size < size_) {
     *more = true;
+  } else {
+    *more = false;
   }
 
   return data_size;
 }
-int64_t File::readFileData(char* data, int64_t offset) const {
+int64_t File::readFileData(char* data, int64_t offset) {
   return readFileData(data, SB_MAXIMUM_FILE_PACKAGE_SIZE, offset, new bool());
 }
-int64_t File::readFileData(char* data, int64_t offset, bool* more) const {
+int64_t File::readFileData(char* data, int64_t offset, bool* more) {
   return readFileData(data, SB_MAXIMUM_FILE_PACKAGE_SIZE, offset, more);
 }
 
-void File::storeFileData(const char* data, const int64_t size) const {
-  boost::filesystem::ofstream ofs(bpath_);
+void File::storeFileData(const char* data,
+                         const int64_t size,
+                         int64_t offset) {
+  if (!fstream_.is_open())
+    openFile();
 
   if (size_ <= SB_MAXIMUM_FILE_PACKAGE_SIZE && size_ <= size) {
-    ofs.write(data, size_);
+    fstream_.seekp(offset, std::ios_base::beg);
+    fstream_.write(data, size_);
   } else if (size < SB_MAXIMUM_FILE_PACKAGE_SIZE) {
-    ofs.write(data, size);
+    fstream_.seekp(offset, std::ios_base::beg);
+    fstream_.write(data, size);
   } else {
-    ofs.write(data, SB_MAXIMUM_FILE_PACKAGE_SIZE);
+    fstream_.seekp(offset, std::ios_base::beg);
+    fstream_.write(data, SB_MAXIMUM_FILE_PACKAGE_SIZE);
   }
-  ofs.close();
 
   boost::filesystem::last_write_time(bpath_, static_cast<time_t>(mtime_));
 }
