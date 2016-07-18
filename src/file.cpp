@@ -252,10 +252,12 @@ std::ostream& operator<<(std::ostream& ostream, const File& f) {
   ostream << path << " "
     << std::setfill('0') << std::setw(4)  << f.mode_  << " "
     << std::setfill('0') << std::setw(32) << f.mtime_ << " "
-    << std::setfill('0') << std::setw(64) << f.size_  << " "
     << std::setfill('0') << std::setw(1)  << f.type_;
+  if (f.type_ == boost::filesystem::regular_file)
+    ostream << " " << std::setfill('0') << std::setw(64) << f.size_;
   return ostream;
 }
+
 std::istream& operator>>(std::istream& istream, File& f) {
   std::string path;
   istream >> path;
@@ -265,14 +267,16 @@ std::istream& operator>>(std::istream& istream, File& f) {
   f.bpath_ = boost::filesystem::path(path);
 
   int p, t;
-  int64_t size;
-  istream >> p >> f.mtime_ >> size >> t;
+  istream >> p >> f.mtime_ >> t;
   f.mode_ = boost::filesystem::perms(p);
   f.type_ = boost::filesystem::file_type(t);
 
   f.checkArguments(path, f.type_, true);
 
-  if (f.type_ == boost::filesystem::regular_file)
+  if (f.type_ == boost::filesystem::regular_file) {
+    int64_t size;
+    istream >> size;
     f.resize(size);
+  }
   return istream;
 }
