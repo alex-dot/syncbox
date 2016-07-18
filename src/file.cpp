@@ -16,7 +16,10 @@
 #include <stdexcept>
 #include <iomanip>
 
-File::File() :
+File::File(const std::string& box_path,
+           Hash* box_hash) :
+            box_path_(box_path),
+            box_hash_(box_hash),
             bpath_(),
             path_(),
             mode_(),
@@ -24,9 +27,13 @@ File::File() :
             type_(),
             size_(),
             fstream_() {}
-File::File(const std::string& path,
+File::File(const std::string& box_path,
+           Hash* box_hash,
+           const std::string& path,
            const boost::filesystem::file_type type,
            const bool create) :
+            box_path_(box_path),
+            box_hash_(box_hash),
             bpath_(),
             path_(),
             mode_(),
@@ -34,7 +41,7 @@ File::File(const std::string& path,
             type_(type),
             size_(),
             fstream_() {
-  bpath_ = boost::filesystem::path(path);
+  bpath_ = boost::filesystem::path(box_path+path);
   checkArguments(path, type, create);
 
   std::copy(path.begin(), path.end(), path_.begin());
@@ -47,11 +54,15 @@ File::File(const std::string& path,
       size_ = boost::filesystem::file_size(bpath_);
   }
 }
-File::File(const std::string& path,
-           const bool create,
+File::File(const std::string& box_path,
+           Hash* box_hash,
+           const std::string& path,
            const boost::filesystem::perms mode,
            const boost::filesystem::file_type type,
-           const uint32_t mtime) :
+           const uint32_t mtime,
+           const bool create) :
+            box_path_(box_path),
+            box_hash_(box_hash),
             bpath_(),
             path_(),
             mode_(mode),
@@ -59,7 +70,7 @@ File::File(const std::string& path,
             type_(type),
             size_(),
             fstream_() {
-  bpath_ = boost::filesystem::path(path);
+  bpath_ = boost::filesystem::path(box_path+path);
   checkArguments(path, type, create);
 
   std::copy(path.begin(), path.end(), path_.begin());
@@ -67,7 +78,13 @@ File::File(const std::string& path,
   if (create)
     storeMetadata();
 }
-File::File(const std::string& path, const File& file, const bool create) :
+File::File(const std::string& box_path,
+           Hash* box_hash,
+           const std::string& path,
+           const File& file,
+           const bool create) :
+            box_path_(box_path),
+            box_hash_(box_hash),
             bpath_(),
             path_(),
             mode_(),
@@ -75,7 +92,7 @@ File::File(const std::string& path, const File& file, const bool create) :
             type_(),
             size_(),
             fstream_() {
-  bpath_ = boost::filesystem::path(path);
+  bpath_ = boost::filesystem::path(box_path+path);
   checkArguments(path, file.getType(), create);
 
   std::copy(path.begin(), path.end(), path_.begin());
@@ -249,6 +266,8 @@ void File::storeFileData(const char* data,
 }
 
 std::ostream& operator<<(std::ostream& ostream, const File& f) {
+  ostream << f.box_hash_->getHash() << " ";
+
   std::string path(f.path_.begin(), f.path_.end());
   ostream.write(path.c_str(), SB_MAXIMUM_PATH_LENGTH);
 
@@ -271,13 +290,19 @@ std::ostream& operator<<(std::ostream& ostream, const File& f) {
 }
 
 std::istream& operator>>(std::istream& istream, File& f) {
+  if (f.box_hash_ == nullptr || f.box_path_.length() == 0)
+    throw std::out_of_range("Box info not found, File object probably not correctly initialised.");
+
+  int g = istream.tellg();
+  istream.seekg(g+1);
+
   char* path_c = new char[SB_MAXIMUM_PATH_LENGTH];
   istream.read(path_c, SB_MAXIMUM_PATH_LENGTH);
   for (int i = 0; i < SB_MAXIMUM_PATH_LENGTH; ++i) {
     f.path_[i] = path_c[i];
   }
   std::string path(f.path_.begin(), f.path_.end());
-  f.bpath_ = boost::filesystem::path(path);
+  f.bpath_ = boost::filesystem::path(f.box_path_+path);
 
   char* mode_c = new char[2];
   istream.read(mode_c, 2);
