@@ -276,6 +276,8 @@ std::istream& operator>>(std::istream& istream, File& f) {
   for (int i = 0; i < SB_MAXIMUM_PATH_LENGTH; ++i) {
     f.path_[i] = path_c[i];
   }
+  std::string path(f.path_.begin(), f.path_.end());
+  f.bpath_ = boost::filesystem::path(path);
 
   char* mode_c = new char[2];
   istream.read(mode_c, 2);
@@ -293,9 +295,6 @@ std::istream& operator>>(std::istream& istream, File& f) {
   istream.read(mtime, 4);
   f.mtime_ = be32toh((int32_t)*mtime);
 
-  // double constructed string so it's just as long as it needs to
-  std::string path(std::string(f.path_.begin(), f.path_.end()).c_str());
-  f.bpath_ = boost::filesystem::path(path);
   f.checkArguments(path, f.type_, true);
 
   if (f.type_ == boost::filesystem::regular_file) {
