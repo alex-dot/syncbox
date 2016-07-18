@@ -27,25 +27,33 @@
  *
  * Small class for condensing file information.
  *
- * \todo handling directories
+ * \todo handling parent directory not found
+ * \todo adding box path/hash completion
+ * \todo store numbers in bytes, not characters
  */
 class File {
  public:
     File();
-    File(const std::string& path, const bool create);
+    File(const std::string& path,
+         const boost::filesystem::file_type type,
+         const bool create);
     File(const std::string& path,
          const bool create,
          const boost::filesystem::perms mode,
+         const boost::filesystem::file_type type,
          const int32_t mtime);
-    explicit File(const std::string& path) : File(path, false) {}
+    explicit File(const std::string& path)
+      : File(path, boost::filesystem::regular_file, false) {}
     File(const std::string& path, const File& file, const bool create);
-    File(const std::string& path, const File& file) : File(path, file, false) {}
+    File(const std::string& path, const File& file)
+      : File(path, file, false) {}
     ~File();
 
     const std::string getPath() const;
     boost::filesystem::perms getMode() const;
     int32_t getMtime() const;
     int64_t getSize() const;
+    boost::filesystem::file_type getType() const;
 
     void setMode(boost::filesystem::perms mode);
     void setMtime(int32_t mtime);
@@ -75,7 +83,11 @@ class File {
     int64_t                                  size_;
     std::fstream                             fstream_;
 
-    void checkArguments(const std::string& path, const bool create) const;
+    void checkArguments(const std::string& path,
+                        const boost::filesystem::file_type type,
+                        const bool create) const;
+    void checkArguments(const std::string& path,
+                        const bool create) const;
 
     friend std::ostream& operator<<(std::ostream& ostream, const File& f);
     friend std::istream& operator>>(std::istream& istream, File& f);

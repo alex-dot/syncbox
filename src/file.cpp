@@ -23,44 +23,45 @@ File::File() :
             type_(),
             size_(),
             fstream_() {}
-File::File(const std::string& path, const bool create) :
+File::File(const std::string& path,
+           const boost::filesystem::file_type type,
+           const bool create) :
             bpath_(),
             path_(),
             mode_(),
             mtime_(),
-            type_(),
+            type_(type),
             size_(),
             fstream_() {
   bpath_ = boost::filesystem::path(path);
-  checkArguments(path, create);
+  checkArguments(path, type, create);
 
   std::copy(path.begin(), path.end(), path_.begin());
 
-  if (!create) {
+  if (boost::filesystem::exists(bpath_) || !create) {
     mtime_ = boost::filesystem::last_write_time(bpath_);
     boost::filesystem::file_status stat = boost::filesystem::status(bpath_);
     mode_ = stat.permissions();
-    type_ = stat.type();
-    size_ = boost::filesystem::file_size(bpath_);
+    if (boost::filesystem::is_regular_file(bpath_))
+      size_ = boost::filesystem::file_size(bpath_);
   }
 }
 File::File(const std::string& path,
            const bool create,
            const boost::filesystem::perms mode,
+           const boost::filesystem::file_type type,
            const int32_t mtime) :
             bpath_(),
             path_(),
             mode_(mode),
             mtime_(mtime),
-            type_(),
+            type_(type),
             size_(),
             fstream_() {
   bpath_ = boost::filesystem::path(path);
-  checkArguments(path, create);
+  checkArguments(path, type, create);
 
   std::copy(path.begin(), path.end(), path_.begin());
-  boost::filesystem::file_status stat = boost::filesystem::status(bpath_);
-  type_ = stat.type();
 
   if (create)
     storeMetadata();
@@ -74,11 +75,10 @@ File::File(const std::string& path, const File& file, const bool create) :
             size_(),
             fstream_() {
   bpath_ = boost::filesystem::path(path);
-  checkArguments(path, create);
+  checkArguments(path, file.getType(), create);
 
   std::copy(path.begin(), path.end(), path_.begin());
-  boost::filesystem::file_status stat = boost::filesystem::status(bpath_);
-  type_ = stat.type();
+  type_ = file.getType();
   mode_ = file.getMode();
   mtime_ = file.getMtime();
 
@@ -92,7 +92,9 @@ File::~File() {
     fstream_.close();
 }
 
-void File::checkArguments(const std::string& path, const bool create) const {
+void File::checkArguments(const std::string& path,
+                          const boost::filesystem::file_type type,
+                          const bool create) const {
   // check if the path is not too long
   if (path.length() > SB_MAXIMUM_PATH_LENGTH) {
     std::stringstream error_msg;
@@ -106,13 +108,31 @@ void File::checkArguments(const std::string& path, const bool create) const {
   // check if the file exists
   boost::system::error_code ec;
   if (!boost::filesystem::exists(bpath_, ec)) {
-    if (!create) {
-      throw boost::filesystem::filesystem_error("", bpath_, ec);
+    if (create) {
+      switch (type) {
+        case (boost::filesystem::regular_file) : {
+          boost::filesystem::ofstream ofs(bpath_);
+          ofs.close();
+          break;
+        }
+
+        case (boost::filesystem::directory_file) : {
+          boost::filesystem::create_directory(bpath_);
+          break;
+        }
+
+        default : {
+          throw boost::filesystem::filesystem_error("", bpath_, ec);
+        }
+      }
     } else {
-      boost::filesystem::ofstream ofs(bpath_);
-      ofs.close();
+      throw boost::filesystem::filesystem_error("", bpath_, ec);
     }
   }
+}
+void File::checkArguments(const std::string& path,
+                          const bool create) const {
+  checkArguments(path, boost::filesystem::regular_file, create);
 }
 
 const std::string File::getPath() const {
@@ -127,6 +147,9 @@ int32_t File::getMtime() const {
 }
 int64_t File::getSize() const {
   return size_;
+}
+boost::filesystem::file_type File::getType() const {
+  return type_;
 }
 
 void File::setMode(boost::filesystem::perms mode) {
@@ -236,6 +259,9 @@ std::istream& operator>>(std::istream& istream, File& f) {
   f.mode_ = boost::filesystem::perms(p);
   f.type_ = boost::filesystem::file_type(t);
 
-  f.resize(size);
+  f.checkArguments(path, f.type_, true);
+
+  if (f.type_ == boost::filesystem::regular_file)
+    f.resize(size);
   return istream;
 }
