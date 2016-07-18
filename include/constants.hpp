@@ -60,6 +60,9 @@ enum SB_BACKUP_TYPE {
 #define SB_KEYSTORE_FILE "~/.ssh/syncbox_keystore"
 #define SB_PRIVATEKEY_FILE "~/.ssh/syncbox_privatekeys"
 
+#define SB_MAXIMUM_PATH_LENGTH 128
+#define SB_MAXIMUM_FILE_PACKAGE_SIZE 4096
+
 // basic structs
 // TODO What if I have multiple publishers? Nodes must have a way to query the correct host keypair...
 struct node_t {

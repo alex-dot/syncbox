@@ -7,6 +7,7 @@ add_executable(syncbox  main.cpp
                         box.cpp
                         hash_tree.cpp
                         hash.cpp
+                        file.cpp
                         boxoffice.cpp
                         publisher.cpp
                         heartbeater.cpp

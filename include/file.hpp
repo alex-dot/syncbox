@@ -1,8 +1,12 @@
 /**
  * \file      file.hpp
- * \brief     Small class for condensing file information.
+ * \brief     Class for File-IO. 
  *
- *  Small class for condensing file information.
+ *  A class to construct C++ streams from and to, as well as 
+ *  writing metadata and data to disk using OS features. 
+ *  Needs the path and Hash of a Box the file belongs to, 
+ *  constructs the File's path from the box_path and a relative
+ *  path supplied. 
  * 
  * \author    Alexander Herr
  * \date      2016
@@ -17,16 +21,17 @@
 #include <ios>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
-//#include "constants.hpp"
+#include "constants.hpp"
 #include "hash.hpp"
 
-#define SB_MAXIMUM_PATH_LENGTH 128
-#define SB_MAXIMUM_FILE_PACKAGE_SIZE 4096
-
 /**
- * \brief Small class for condensing file information.
+ * \brief Class for File-IO. 
  *
- * Small class for condensing file information.
+ *  A class to construct C++ streams from and to, as well as 
+ *  writing metadata and data to disk using OS features. 
+ *  Needs the path and Hash of a Box the file belongs to, 
+ *  constructs the File's path from the box_path and a relative
+ *  path supplied. 
  */
 class File {
  public:
