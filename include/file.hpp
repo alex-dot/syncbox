@@ -27,7 +27,6 @@
  *
  * Small class for condensing file information.
  *
- * \todo handling parent directory not found
  * \todo adding box path/hash completion
  * \todo store numbers in bytes, not characters
  */

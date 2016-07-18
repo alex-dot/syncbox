@@ -115,7 +115,7 @@ void File::checkArguments(const std::string& path,
       else
         bpath_parent = bpath_.parent_path();
 
-      if (boost::filesystem::exists(bpath_, ec)) {
+      if (boost::filesystem::exists(bpath_parent, ec)) {
         switch (type) {
           case (boost::filesystem::regular_file) : {
             boost::filesystem::ofstream ofs(bpath_);
