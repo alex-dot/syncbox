@@ -28,7 +28,6 @@
  * Small class for condensing file information.
  *
  * \todo adding box path/hash completion
- * \todo store numbers in bytes, not characters
  */
 class File {
  public:
@@ -40,7 +39,7 @@ class File {
          const bool create,
          const boost::filesystem::perms mode,
          const boost::filesystem::file_type type,
-         const int32_t mtime);
+         const uint32_t mtime);
     explicit File(const std::string& path)
       : File(path, boost::filesystem::regular_file, false) {}
     File(const std::string& path, const File& file, const bool create);
@@ -50,36 +49,36 @@ class File {
 
     const std::string getPath() const;
     boost::filesystem::perms getMode() const;
-    int32_t getMtime() const;
-    int64_t getSize() const;
+    uint32_t getMtime() const;
+    uint64_t getSize() const;
     boost::filesystem::file_type getType() const;
 
     void setMode(boost::filesystem::perms mode);
-    void setMtime(int32_t mtime);
+    void setMtime(uint32_t mtime);
     void storeMetadata() const;
-    void resize(int64_t size);
+    void resize(uint64_t size);
 
     void openFile();
     void closeFile();
 
-    int64_t readFileData(char* data,
-                         const int64_t size,
-                         int64_t offset,
+    uint64_t readFileData(char* data,
+                         const uint64_t size,
+                         uint64_t offset,
                          bool* more);
-    int64_t readFileData(char* data, int64_t offset);
-    int64_t readFileData(char* data, int64_t offset, bool* more);
+    uint64_t readFileData(char* data, uint64_t offset);
+    uint64_t readFileData(char* data, uint64_t offset, bool* more);
 
     void storeFileData(const char* data,
-                       const int64_t size,
-                       int64_t offset);
+                       const uint64_t size,
+                       uint64_t offset);
 
  private:
     boost::filesystem::path                  bpath_;
     std::array<char, SB_MAXIMUM_PATH_LENGTH> path_;
     boost::filesystem::perms                 mode_;
-    int32_t                                  mtime_;
+    uint32_t                                 mtime_;
     boost::filesystem::file_type             type_;
-    int64_t                                  size_;
+    uint64_t                                 size_;
     std::fstream                             fstream_;
 
     void checkArguments(const std::string& path,

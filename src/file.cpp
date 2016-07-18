@@ -8,6 +8,7 @@
 
 #include "file.hpp"
 
+#include <endian.h>
 #include <string>
 #include <sstream>
 #include <algorithm>
@@ -50,7 +51,7 @@ File::File(const std::string& path,
            const bool create,
            const boost::filesystem::perms mode,
            const boost::filesystem::file_type type,
-           const int32_t mtime) :
+           const uint32_t mtime) :
             bpath_(),
             path_(),
             mode_(mode),
@@ -153,10 +154,10 @@ const std::string File::getPath() const {
 boost::filesystem::perms File::getMode() const {
   return mode_;
 }
-int32_t File::getMtime() const {
+uint32_t File::getMtime() const {
   return mtime_;
 }
-int64_t File::getSize() const {
+uint64_t File::getSize() const {
   return size_;
 }
 boost::filesystem::file_type File::getType() const {
@@ -166,7 +167,7 @@ boost::filesystem::file_type File::getType() const {
 void File::setMode(boost::filesystem::perms mode) {
   mode_ = mode;
 }
-void File::setMtime(int32_t mtime) {
+void File::setMtime(uint32_t mtime) {
   mtime_ = mtime;
 }
 
@@ -175,7 +176,7 @@ void File::storeMetadata() const {
   boost::filesystem::last_write_time(bpath_, static_cast<time_t>(mtime_));
 }
 
-void File::resize(int64_t size) {
+void File::resize(uint64_t size) {
   size_ = size;
   boost::system::error_code ec;
   boost::filesystem::resize_file(bpath_, size_, ec);
@@ -190,14 +191,14 @@ void File::closeFile() {
   fstream_.close();
 }
 
-int64_t File::readFileData(char* data,
-                           const int64_t size,
-                           int64_t offset,
+uint64_t File::readFileData(char* data,
+                           const uint64_t size,
+                           uint64_t offset,
                            bool* more) {
   if (!fstream_.is_open())
     openFile();
 
-  int64_t data_size;
+  uint64_t data_size;
   if (size_ <= SB_MAXIMUM_FILE_PACKAGE_SIZE && size_ <= size) {
     fstream_.seekg(offset, std::ios_base::beg);
     fstream_.read(data, size_);
@@ -220,16 +221,16 @@ int64_t File::readFileData(char* data,
 
   return data_size;
 }
-int64_t File::readFileData(char* data, int64_t offset) {
+uint64_t File::readFileData(char* data, uint64_t offset) {
   return readFileData(data, SB_MAXIMUM_FILE_PACKAGE_SIZE, offset, new bool());
 }
-int64_t File::readFileData(char* data, int64_t offset, bool* more) {
+uint64_t File::readFileData(char* data, uint64_t offset, bool* more) {
   return readFileData(data, SB_MAXIMUM_FILE_PACKAGE_SIZE, offset, more);
 }
 
 void File::storeFileData(const char* data,
-                         const int64_t size,
-                         int64_t offset) {
+                         const uint64_t size,
+                         uint64_t offset) {
   if (!fstream_.is_open())
     openFile();
 
@@ -249,34 +250,60 @@ void File::storeFileData(const char* data,
 
 std::ostream& operator<<(std::ostream& ostream, const File& f) {
   std::string path(f.path_.begin(), f.path_.end());
-  ostream << path << " "
-    << std::setfill('0') << std::setw(4)  << f.mode_  << " "
-    << std::setfill('0') << std::setw(32) << f.mtime_ << " "
-    << std::setfill('0') << std::setw(1)  << f.type_;
-  if (f.type_ == boost::filesystem::regular_file)
-    ostream << " " << std::setfill('0') << std::setw(64) << f.size_;
+  ostream.write(path.c_str(), SB_MAXIMUM_PATH_LENGTH);
+
+  uint16_t mode = htobe16(f.mode_);
+  ostream.write((const char*)&mode, 2);
+
+  ostream.write((const char*)&f.type_, 1);
+
+  uint32_t mtime = htobe32(f.mtime_);
+  ostream.write((const char*)&mtime, 4);
+
+  if (f.type_ == boost::filesystem::regular_file) {
+    uint64_t size = htobe64(f.size_);
+    char* size_char = new char[8];
+    std::memcpy(size_char, &size, 8);
+    ostream.write(size_char, 8);
+  }
+
   return ostream;
 }
 
 std::istream& operator>>(std::istream& istream, File& f) {
-  std::string path;
-  istream >> path;
-  std::array<char, SB_MAXIMUM_PATH_LENGTH> new_path;
-  std::copy(path.begin(), path.end(), new_path.begin());
-  f.path_.swap(new_path);
+  char* path_c = new char[SB_MAXIMUM_PATH_LENGTH];
+  istream.read(path_c, SB_MAXIMUM_PATH_LENGTH);
+  for (int i = 0; i < SB_MAXIMUM_PATH_LENGTH; ++i) {
+    f.path_[i] = path_c[i];
+  }
+
+  char* mode_c = new char[2];
+  istream.read(mode_c, 2);
+  int16_t mode;
+  std::memcpy(&mode, mode_c, 2);
+  f.mode_ = boost::filesystem::perms(be16toh(mode));
+
+  char* type_c = new char[1];
+  istream.read(type_c, 1);
+  int8_t type;
+  std::memcpy(&type, type_c, 1);
+  f.type_ = boost::filesystem::file_type(type);
+
+  char* mtime = new char[4];
+  istream.read(mtime, 4);
+  f.mtime_ = be32toh((int32_t)*mtime);
+
+  // double constructed string so it's just as long as it needs to
+  std::string path(std::string(f.path_.begin(), f.path_.end()).c_str());
   f.bpath_ = boost::filesystem::path(path);
-
-  int p, t;
-  istream >> p >> f.mtime_ >> t;
-  f.mode_ = boost::filesystem::perms(p);
-  f.type_ = boost::filesystem::file_type(t);
-
   f.checkArguments(path, f.type_, true);
 
   if (f.type_ == boost::filesystem::regular_file) {
-    int64_t size;
-    istream >> size;
-    f.resize(size);
+    char* size_c = new char[8];
+    istream.read(size_c, 8);
+    uint64_t size;
+    std::memcpy(&size, size_c, 8);
+    f.resize(be64toh(size));
   }
   return istream;
 }
