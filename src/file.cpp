@@ -109,21 +109,32 @@ void File::checkArguments(const std::string& path,
   boost::system::error_code ec;
   if (!boost::filesystem::exists(bpath_, ec)) {
     if (create) {
-      switch (type) {
-        case (boost::filesystem::regular_file) : {
-          boost::filesystem::ofstream ofs(bpath_);
-          ofs.close();
-          break;
-        }
+      boost::filesystem::path bpath_parent;
+      if (path.back() == '/')
+        bpath_parent = bpath_.parent_path().parent_path();
+      else
+        bpath_parent = bpath_.parent_path();
 
-        case (boost::filesystem::directory_file) : {
-          boost::filesystem::create_directory(bpath_);
-          break;
-        }
+      if (boost::filesystem::exists(bpath_, ec)) {
+        switch (type) {
+          case (boost::filesystem::regular_file) : {
+            boost::filesystem::ofstream ofs(bpath_);
+            ofs.close();
+            break;
+          }
 
-        default : {
-          throw boost::filesystem::filesystem_error("", bpath_, ec);
+          case (boost::filesystem::directory_file) : {
+            boost::filesystem::create_directory(bpath_);
+            break;
+          }
+
+          default : {
+            throw boost::filesystem::filesystem_error("", bpath_, ec);
+          }
         }
+      } else {
+        throw boost::filesystem::filesystem_error(
+          "Parent directory does not exist", bpath_, ec);
       }
     } else {
       throw boost::filesystem::filesystem_error("", bpath_, ec);
