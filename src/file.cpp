@@ -41,7 +41,7 @@ File::File(const std::string& box_path,
             type_(type),
             size_(),
             fstream_() {
-  bpath_ = boost::filesystem::path(box_path+path);
+  bpath_ = boost::filesystem::path(constructPath(box_path, path));
   checkArguments(path, type, create);
 
   std::copy(path.begin(), path.end(), path_.begin());
@@ -70,7 +70,7 @@ File::File(const std::string& box_path,
             type_(type),
             size_(),
             fstream_() {
-  bpath_ = boost::filesystem::path(box_path+path);
+  bpath_ = boost::filesystem::path(constructPath(box_path, path));
   checkArguments(path, type, create);
 
   std::copy(path.begin(), path.end(), path_.begin());
@@ -92,7 +92,7 @@ File::File(const std::string& box_path,
             type_(),
             size_(),
             fstream_() {
-  bpath_ = boost::filesystem::path(box_path+path);
+  bpath_ = boost::filesystem::path(constructPath(box_path, path));
   checkArguments(path, file.getType(), create);
 
   std::copy(path.begin(), path.end(), path_.begin());
@@ -265,6 +265,21 @@ void File::storeFileData(const char* data,
   boost::filesystem::last_write_time(bpath_, static_cast<time_t>(mtime_));
 }
 
+const std::string File::constructPath(const std::string box_path,
+                                      const std::string path) const {
+  std::string complete_path;
+  if (box_path.back() != '/' && path.back() != '/') {
+    complete_path = box_path + '/' + path;
+  } else if (box_path.back() == '/' && path.back() == '/') {
+    std::string box_path_temp = box_path;
+    box_path_temp.pop_back();
+    complete_path = box_path_temp + '/' + path;
+  } else {
+    complete_path = box_path + path;
+  }
+  return complete_path;
+}
+
 std::ostream& operator<<(std::ostream& ostream, const File& f) {
   ostream << f.box_hash_->getHash() << " ";
 
@@ -302,7 +317,7 @@ std::istream& operator>>(std::istream& istream, File& f) {
     f.path_[i] = path_c[i];
   }
   std::string path(f.path_.begin(), f.path_.end());
-  f.bpath_ = boost::filesystem::path(f.box_path_+path);
+  f.bpath_ = boost::filesystem::path(f.constructPath(f.box_path_, path));
 
   char* mode_c = new char[2];
   istream.read(mode_c, 2);

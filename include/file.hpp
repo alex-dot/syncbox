@@ -27,8 +27,6 @@
  * \brief Small class for condensing file information.
  *
  * Small class for condensing file information.
- *
- * \todo adding box path/hash completion
  */
 class File {
  public:
@@ -104,6 +102,9 @@ class File {
                         const bool create) const;
     void checkArguments(const std::string& path,
                         const bool create) const;
+
+    const std::string constructPath(const std::string box_path,
+                                    const std::string path) const;
 
     friend std::ostream& operator<<(std::ostream& ostream, const File& f);
     friend std::istream& operator>>(std::istream& istream, File& f);
