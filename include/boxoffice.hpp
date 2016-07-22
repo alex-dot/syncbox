@@ -73,9 +73,14 @@ class Boxoffice
     int closeConnections();
 
     int processEvent(fsm::status_t status, std::stringstream* message);
-    int performAction(fsm::event_t const, fsm::action_t const, fsm::status_t const) const;
-    int updateHeartbeat(fsm::status_t const) const;
-    void prepareHeartbeatMessage(std::stringstream& message) const;
+    int performAction(fsm::event_t const event,
+                      fsm::action_t const action,
+                      fsm::status_t const received_status,
+                      fsm::state_t const new_state) const;
+    int updateHeartbeat(fsm::status_t const new_status,
+                        fsm::state_t const new_state) const;
+    void prepareHeartbeatMessage(std::stringstream* message,
+                                 fsm::state_t const new_state) const;
 
     fsm::state_t state_;
 

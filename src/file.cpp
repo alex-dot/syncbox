@@ -26,6 +26,7 @@ File::File(const std::string& box_path,
             mtime_(),
             type_(),
             size_(),
+            deleted_file_(false),
             fstream_() {}
 File::File(const std::string& box_path,
            Hash* box_hash,
@@ -40,6 +41,7 @@ File::File(const std::string& box_path,
             mtime_(),
             type_(type),
             size_(),
+            deleted_file_(false),
             fstream_() {
   bpath_ = boost::filesystem::path(constructPath(box_path, path));
   checkArguments(path, type, create);
@@ -69,6 +71,7 @@ File::File(const std::string& box_path,
             mtime_(mtime),
             type_(type),
             size_(),
+            deleted_file_(false),
             fstream_() {
   bpath_ = boost::filesystem::path(constructPath(box_path, path));
   checkArguments(path, type, create);
@@ -91,6 +94,7 @@ File::File(const std::string& box_path,
             mtime_(),
             type_(),
             size_(),
+            deleted_file_(false),
             fstream_() {
   bpath_ = boost::filesystem::path(constructPath(box_path, path));
   checkArguments(path, file.getType(), create);
@@ -105,6 +109,19 @@ File::File(const std::string& box_path,
     resize(file.getSize());
   }
 }
+File::File(const std::string& box_path,
+           Hash* box_hash,
+           const bool deleted_file) :
+            box_path_(box_path),
+            box_hash_(box_hash),
+            bpath_(),
+            path_(),
+            mode_(),
+            mtime_(),
+            type_(),
+            size_(),
+            deleted_file_(deleted_file),
+            fstream_() {}
 File::~File() {
   if (fstream_.is_open())
     fstream_.close();
@@ -212,6 +229,8 @@ uint64_t File::readFileData(char* data,
                            const uint64_t size,
                            uint64_t offset,
                            bool* more) {
+  if (deleted_file_) return 0;
+
   if (!fstream_.is_open())
     openFile();
 
@@ -248,6 +267,8 @@ uint64_t File::readFileData(char* data, uint64_t offset, bool* more) {
 void File::storeFileData(const char* data,
                          const uint64_t size,
                          uint64_t offset) {
+  if (deleted_file_) return;
+
   if (!fstream_.is_open())
     openFile();
 
@@ -283,6 +304,11 @@ const std::string File::constructPath(const std::string box_path,
 std::ostream& operator<<(std::ostream& ostream, const File& f) {
   ostream << f.box_hash_->getHash() << " ";
 
+  if (f.deleted_file_) {
+    ostream << "IN_DELETE";
+    return ostream;
+  }
+
   std::string path(f.path_.begin(), f.path_.end());
   ostream.write(path.c_str(), SB_MAXIMUM_PATH_LENGTH);
 
@@ -317,6 +343,12 @@ std::istream& operator>>(std::istream& istream, File& f) {
     f.path_[i] = path_c[i];
   }
   std::string path(f.path_.begin(), f.path_.end());
+
+  if (path == "IN_DELETE") {
+    f.deleted_file_ = true;
+    return istream;
+  }
+
   f.bpath_ = boost::filesystem::path(f.constructPath(f.box_path_, path));
 
   char* mode_c = new char[2];

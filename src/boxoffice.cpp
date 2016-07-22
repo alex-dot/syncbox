@@ -369,8 +369,9 @@ int Boxoffice::processEvent(fsm::status_t status,
     // twice; TODO if a file was created and immediately deleted, that file should 
     // be removed and - if necessary - the state should be reverted
     if ( event == fsm::new_local_file_event ) {
+      int inotify_mask;
       std::string box_hash, path;
-      *sstream >> box_hash >> path;
+      *sstream >> inotify_mask >> box_hash >> path;
 
       if ( path.length() > 128 ) {
         std::cerr << "[E]: filepath is too long, syncbox only supports "
@@ -382,7 +383,13 @@ int Boxoffice::processEvent(fsm::status_t status,
       Box* box = boxes[box_hash];
       Hash* hash = new Hash();
       hash->initializeHash(box_hash);
-      File* new_file = new File(box->getBaseDir(), hash, path);
+      File* new_file;
+      if (((inotify_mask & IN_DELETE) == IN_DELETE)
+       || ((inotify_mask & IN_DELETE_SELF) == IN_DELETE_SELF)) {
+        new_file = new File(box->getBaseDir(), hash, true);
+      } else {
+        new_file = new File(box->getBaseDir(), hash, path);
+      }
       if ( state_ == fsm::announcing_new_file_state ) {
         std::vector<File*>::iterator iter;
         iter = std::find(file_list_.begin(), file_list_.end(), new_file);
@@ -400,7 +407,7 @@ int Boxoffice::processEvent(fsm::status_t status,
     fsm::state_t new_state = fsm::get_new_state(state_, event, status);
     if ( state_ != new_state ) {
       fsm::action_t action = fsm::get_action(state_, event, status);
-      performAction(event, action, status);
+      performAction(event, action, status, new_state);
       if (SB_MSG_DEBUG) printf("bo: updating self to state %d\n", 
         fsm::get_new_state(state_, event, status));
       state_ = new_state;
@@ -415,12 +422,13 @@ int Boxoffice::processEvent(fsm::status_t status,
 
 int Boxoffice::performAction(fsm::event_t const event, 
                              fsm::action_t const action, 
-                             fsm::status_t const received_status) const {
+                             fsm::status_t const received_status,
+                             fsm::state_t const new_state) const {
 
   switch (action) {
     case fsm::send_heartbeat_action: {
       fsm::status_t new_status = fsm::get_heartbeat_status(state_, event, received_status);
-      updateHeartbeat(new_status);
+      updateHeartbeat(new_status, new_state);
       break;
     }
     default:
@@ -431,27 +439,33 @@ int Boxoffice::performAction(fsm::event_t const event,
   return 0;
 }
 
-int Boxoffice::updateHeartbeat(fsm::status_t const new_status) const {
+int Boxoffice::updateHeartbeat(fsm::status_t const new_status,
+                               fsm::state_t const new_state) const {
   if (SB_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
-  std::stringstream message;
-  message << SB_SIGTYPE_FSM << " " << new_status << " ";
-  prepareHeartbeatMessage(message);
+  std::stringstream* message = new std::stringstream();
+  *message << SB_SIGTYPE_FSM << " " << new_status << " ";
+  prepareHeartbeatMessage(message, new_state);
   zmqpp::message z_msg;
-  z_msg << message.str();
+  z_msg << message->str();
   z_bo_hb->send(z_msg);
+  delete message;
 
   return 0;
 }
 
-void Boxoffice::prepareHeartbeatMessage(std::stringstream& message) const {
-  message << "";
+void Boxoffice::prepareHeartbeatMessage(std::stringstream* message, 
+                                        fsm::state_t const new_state) const {
+  *message << "";
 
-  if ( state_ == fsm::sending_new_file_metadata_state
-    || state_ == fsm::sending_new_file_metadata_with_more_state
-    || state_ == fsm::sending_new_file_state
-    || state_ == fsm::sending_new_file_with_more_state ) {
+  if ( new_state == fsm::sending_new_file_metadata_state
+    || new_state == fsm::sending_new_file_metadata_with_more_state
+    || new_state == fsm::sending_new_file_state
+    || new_state == fsm::sending_new_file_with_more_alpha_state
+    || new_state == fsm::sending_new_file_with_more_beta_state
+    || new_state == fsm::sending_file_metadata_change_state
+    || new_state == fsm::sending_file_metadata_change_with_more_state) {
     File* current_file = file_list_.front();
-    message << *current_file;
+    *message << *current_file;
   }
 }
 

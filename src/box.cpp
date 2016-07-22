@@ -131,19 +131,18 @@ int Box::run()
     *sstream >> wd >> name;
     dir_path = getPathOfDirectory(wd);
 
+    int inotify_mask = msg_signal;
+
+
     std::stringstream message;
     message << SB_SIGTYPE_INOTIFY << " "
-            << fsm::status_300    << " ";
-//            << box_hash_;
-    zmqpp::message* z_msg = new zmqpp::message();
-//    *z_msg << message.str();
-//    z_boxoffice_pull->send(*z_msg, ZMQ_SNDMORE);
-//    delete z_msg;
+            << fsm::status_300    << " "
+            << inotify_mask       << " "
+            << box_hash_          << " "
+            << dir_path           << "/"
+            << name.c_str();
 
-    message << box_hash_ << " ";
-    message << dir_path << "/";
-    message << name.c_str();
-//    z_msg = new zmqpp::message();
+    zmqpp::message* z_msg = new zmqpp::message();
     *z_msg << message.str();
     z_boxoffice_pull->send(*z_msg);
     delete z_msg;

@@ -35,7 +35,6 @@
  */
 class File {
  public:
-//    File() {}
     File(const std::string& box_path,
          Hash* box_hash);
     File(const std::string& box_path,
@@ -65,6 +64,9 @@ class File {
          const std::string& path,
          const File& file)
       : File(box_path, box_hash, path, file, false) {}
+    File(const std::string& box_path,
+         Hash* box_hash,
+         const bool deleted_file);
     // Since the copy-constructor of std::fstream is explicitly deleted,
     // this Class' copy-constructor should also be explicitly deleted
     File(const File& f) = delete;
@@ -104,6 +106,7 @@ class File {
     uint32_t                                 mtime_;
     boost::filesystem::file_type             type_;
     uint64_t                                 size_;
+    bool                                     deleted_file_;
     std::fstream                             fstream_;
 
     void checkArguments(const std::string& path,
