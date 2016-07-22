@@ -356,6 +356,24 @@ int Boxoffice::processEvent(fsm::status_t status,
 
           break;
         }
+        // STATUS_161
+        // waiting for all nodes to reply, so increment node_reply_counter_
+        // until all nodes replied, then manually change the status
+        case fsm::status_161: {
+          ++node_reply_counter_;
+
+          if ( node_reply_counter_ == total_node_number_ ) {
+            node_reply_counter_ = -1;
+            status = fsm::status_162;
+            event = fsm::get_event_by_status_code(status);
+            if ( !fsm::check_event(state_, event, status) ) {
+              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
+              return 1;
+            }
+          }
+
+          break;
+        }
 
         default:
           break;
