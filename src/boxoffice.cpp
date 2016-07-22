@@ -12,6 +12,7 @@
 #include <sys/inotify.h>
 #include "cryptopp/aes.h"
 
+#include "file.hpp"
 #include "constants.hpp"
 #include "boxoffice.hpp"
 #include "publisher.hpp"
@@ -299,9 +300,11 @@ int Boxoffice::runRouter()
       break;
     }
 
-    processEvent((fsm::status_t)msg_signal, sstream);
+    int ret_val = processEvent((fsm::status_t)msg_signal, sstream);
 
     delete sstream;
+
+    if (ret_val != 0) return ret_val;
   }
 
   return 0;
@@ -368,14 +371,26 @@ int Boxoffice::processEvent(fsm::status_t status,
     if ( event == fsm::new_local_file_event ) {
       std::string box_hash, path;
       *sstream >> box_hash >> path;
+
+      if ( path.length() > 128 ) {
+        std::cerr << "[E]: filepath is too long, syncbox only supports "
+                  << "files up to 128 characters (including subdirectories, "
+                  << "excluding the base path)" << std::endl;
+        return 1;
+      }
+
+      Box* box = boxes[box_hash];
+      Hash* hash = new Hash();
+      hash->initializeHash(box_hash);
+      File* new_file = new File(box->getBaseDir(), hash, path);
       if ( state_ == fsm::announcing_new_file_state ) {
-        std::vector<std::string>::iterator iter;
-        iter = std::find( file_list_.begin(), file_list_.end(), path );
+        std::vector<File*>::iterator iter;
+        iter = std::find(file_list_.begin(), file_list_.end(), new_file);
         if ( iter != file_list_.end() ) {
-          file_list_.push_back(path);
+          file_list_.push_back(new_file);
         }
       } else {
-        file_list_.push_back(path);
+        file_list_.push_back(new_file);
       }
       node_reply_counter_ = 0;
     }
@@ -430,6 +445,14 @@ int Boxoffice::updateHeartbeat(fsm::status_t const new_status) const {
 
 void Boxoffice::prepareHeartbeatMessage(std::stringstream& message) const {
   message << "";
+
+  if ( state_ == fsm::sending_new_file_metadata_state
+    || state_ == fsm::sending_new_file_metadata_with_more_state
+    || state_ == fsm::sending_new_file_state
+    || state_ == fsm::sending_new_file_with_more_state ) {
+    File* current_file = file_list_.front();
+    message << *current_file;
+  }
 }
 
 

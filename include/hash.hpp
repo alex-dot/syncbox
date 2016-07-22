@@ -58,6 +58,7 @@ class Hash {
     ~Hash();
 
     void makeHash(const std::string& string);
+    void initializeHash(const std::string& hash_string);
     const std::string& getHash() const;
 
  private:

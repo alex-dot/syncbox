@@ -16,6 +16,7 @@
 #include <utility>
 #include <unordered_map>
 
+#include "file.hpp"
 #include "box.hpp"
 #include "config.hpp"
 
@@ -78,7 +79,7 @@ class Boxoffice
 
     fsm::state_t state_;
 
-    std::vector< std::string > file_list_;
+    std::vector< File* > file_list_;
     int node_reply_counter_;
     int total_node_number_;
 

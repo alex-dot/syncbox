@@ -268,9 +268,9 @@ void File::storeFileData(const char* data,
 const std::string File::constructPath(const std::string box_path,
                                       const std::string path) const {
   std::string complete_path;
-  if (box_path.back() != '/' && path.back() != '/') {
+  if (box_path.back() != '/' && path.front() != '/') {
     complete_path = box_path + '/' + path;
-  } else if (box_path.back() == '/' && path.back() == '/') {
+  } else if (box_path.back() == '/' && path.front() == '/') {
     std::string box_path_temp = box_path;
     box_path_temp.pop_back();
     complete_path = box_path_temp + '/' + path;

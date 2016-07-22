@@ -43,6 +43,9 @@ void Hash::makeHash(const std::string& string) {
     }
     hash_ = stream.str();
 }
+void Hash::initializeHash(const std::string& hash_string) {
+    hash_ = hash_string;
+}
 const std::string& Hash::getHash() const {
   return hash_;
 }
