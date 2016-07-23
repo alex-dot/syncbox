@@ -111,6 +111,8 @@ File::File(const std::string& box_path,
 }
 File::File(const std::string& box_path,
            Hash* box_hash,
+           const std::string& path,
+           const bool create,
            const bool deleted_file) :
             box_path_(box_path),
             box_hash_(box_hash),
@@ -121,7 +123,10 @@ File::File(const std::string& box_path,
             type_(),
             size_(),
             deleted_file_(deleted_file),
-            fstream_() {}
+            fstream_() {
+  std::copy(path.begin(), path.end(), path_.begin());
+  (void)create;  // suppressing warning about not using variable
+}
 File::~File() {
   if (fstream_.is_open())
     fstream_.close();
@@ -196,6 +201,9 @@ uint64_t File::getSize() const {
 }
 boost::filesystem::file_type File::getType() const {
   return type_;
+}
+bool File::isToBeDeleted() const {
+  return deleted_file_;
 }
 
 void File::setMode(boost::filesystem::perms mode) {
@@ -307,13 +315,13 @@ const std::string File::constructPath(const std::string box_path,
 std::ostream& operator<<(std::ostream& ostream, const File& f) {
   ostream << f.box_hash_->getHash() << " ";
 
+  std::string path(f.path_.begin(), f.path_.end());
+  ostream.write(path.c_str(), SB_MAXIMUM_PATH_LENGTH);
+
   if (f.deleted_file_) {
     ostream << "IN_DELETE";
     return ostream;
   }
-
-  std::string path(f.path_.begin(), f.path_.end());
-  ostream.write(path.c_str(), SB_MAXIMUM_PATH_LENGTH);
 
   uint16_t mode = htobe16(f.mode_);
   ostream.write((const char*)&mode, 2);
@@ -347,9 +355,20 @@ std::istream& operator>>(std::istream& istream, File& f) {
   }
   std::string path(f.path_.begin(), f.path_.end());
 
-  if (path == "IN_DELETE") {
+  char* deleted = new char[9];
+  istream.read(deleted, 9);
+  if (std::strcmp(deleted, "IN_DELETE")) {
     f.deleted_file_ = true;
+    f.bpath_ = boost::filesystem::path(f.constructPath(f.box_path_, path));
+    if (boost::filesystem::exists(f.bpath_)) {
+      boost::system::error_code ec;
+      boost::filesystem::remove(f.bpath_, ec);
+      if (ec != 0)
+        throw boost::filesystem::filesystem_error("", f.bpath_, ec);
+    }
     return istream;
+  } else {
+    istream.seekg(g-9);
   }
 
   f.bpath_ = boost::filesystem::path(f.constructPath(f.box_path_, path));

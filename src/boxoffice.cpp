@@ -407,8 +407,10 @@ int Boxoffice::processEvent(fsm::status_t status,
             hash->initializeHash(box_hash);
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
-            new_file->storeMetadata();
-            new_file->resize();
+            if (!new_file->isToBeDeleted()) {
+              new_file->storeMetadata();
+              new_file->resize();
+            }
 
             status = fsm::status_173;
             event = fsm::get_event_by_status_code(status);
@@ -465,7 +467,7 @@ int Boxoffice::processEvent(fsm::status_t status,
       File* new_file;
       if (((inotify_mask & IN_DELETE) == IN_DELETE)
        || ((inotify_mask & IN_DELETE_SELF) == IN_DELETE_SELF)) {
-        new_file = new File(box->getBaseDir(), hash, true);
+        new_file = new File(box->getBaseDir(), hash, path, false, true);
       } else {
         new_file = new File(box->getBaseDir(), hash, path);
       }

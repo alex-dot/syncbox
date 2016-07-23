@@ -66,6 +66,8 @@ class File {
       : File(box_path, box_hash, path, file, false) {}
     File(const std::string& box_path,
          Hash* box_hash,
+         const std::string& path,
+         const bool create,
          const bool deleted_file);
     // Since the copy-constructor of std::fstream is explicitly deleted,
     // this Class' copy-constructor should also be explicitly deleted
@@ -77,6 +79,7 @@ class File {
     uint32_t getMtime() const;
     uint64_t getSize() const;
     boost::filesystem::file_type getType() const;
+    bool isToBeDeleted() const;
 
     void setMode(boost::filesystem::perms mode);
     void setMtime(uint32_t mtime);
