@@ -78,10 +78,10 @@ int Publisher::run()
 
     // send a message
     std::string infomessage;
-    *sstream >> infomessage;
-    if (SB_MSG_DEBUG) printf("pub: %d %s\n", msg_signal, infomessage.c_str());
+    std::getline(*sstream, infomessage);
     std::stringstream message;
-    message << msg_signal << " " << infomessage.c_str();
+    message << std::to_string(msg_signal) << infomessage;
+    if (SB_MSG_DEBUG) printf("pub: %s\n", message.str().c_str());
     zmqpp::message z_msg;
     z_msg << message.str();
     z_publisher->send(z_msg);

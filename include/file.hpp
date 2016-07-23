@@ -81,7 +81,8 @@ class File {
     void setMode(boost::filesystem::perms mode);
     void setMtime(uint32_t mtime);
     void storeMetadata() const;
-    void resize(uint64_t size);
+    void resize(uint64_t const size);
+    void resize();
 
     void openFile();
     void closeFile();

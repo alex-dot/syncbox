@@ -210,12 +210,15 @@ void File::storeMetadata() const {
   boost::filesystem::last_write_time(bpath_, static_cast<time_t>(mtime_));
 }
 
-void File::resize(uint64_t size) {
+void File::resize(uint64_t const size) {
   size_ = size;
   boost::system::error_code ec;
   boost::filesystem::resize_file(bpath_, size_, ec);
   if (ec != 0)
     throw boost::filesystem::filesystem_error("", bpath_, ec);
+}
+void File::resize() {
+  resize(size_);
 }
 
 void File::openFile() {
@@ -374,7 +377,6 @@ std::istream& operator>>(std::istream& istream, File& f) {
     istream.read(size_c, 8);
     uint64_t size;
     std::memcpy(&size, size_c, 8);
-    f.resize(be64toh(size));
   }
   return istream;
 }

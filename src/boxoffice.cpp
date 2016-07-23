@@ -345,7 +345,7 @@ int Boxoffice::processEvent(fsm::status_t status,
           ++node_reply_counter_;
 
           if ( node_reply_counter_ == total_node_number_ ) {
-            node_reply_counter_ = -1;
+            node_reply_counter_ = 0;
             status = fsm::status_122;
             event = fsm::get_event_by_status_code(status);
             if ( !fsm::check_event(state_, event, status) ) {
@@ -363,7 +363,7 @@ int Boxoffice::processEvent(fsm::status_t status,
           ++node_reply_counter_;
 
           if ( node_reply_counter_ == total_node_number_ ) {
-            node_reply_counter_ = -1;
+            node_reply_counter_ = 0;
             status = fsm::status_162;
             event = fsm::get_event_by_status_code(status);
             if ( !fsm::check_event(state_, event, status) ) {
@@ -375,18 +375,94 @@ int Boxoffice::processEvent(fsm::status_t status,
           break;
         }
 
+        // STATUS_141
+        // waiting for all nodes to reply, so increment node_reply_counter_
+        // until all nodes replied, then manually change the status to 150
+        case fsm::status_141: {
+          ++node_reply_counter_;
+
+          if ( node_reply_counter_ == total_node_number_ ) {
+            node_reply_counter_ = -1;
+            status = fsm::status_172;
+            event = fsm::get_event_by_status_code(status);
+            if ( !fsm::check_event(state_, event, status) ) {
+              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
+              return 1;
+            }
+          }
+
+          break;
+        }
+
+        // STATUS_130
+        // waiting for file metadata
+        case fsm::status_130: {
+          std::string message;
+          getline(*sstream, message);
+          std::cout << "bo: " << message << std::endl;
+
+          break;
+        }
+        // STATUS_170
+        // receiving file metadata
+        case fsm::status_170: {
+          if (state_ == fsm::receiving_file_metadata_change_state) {
+            std::string box_hash;
+            int timestamp;
+            *sstream >> timestamp >> box_hash;
+
+            Box* box = boxes[box_hash];
+            Hash* hash = new Hash();
+            hash->initializeHash(box_hash);
+            File* new_file = new File(box->getBaseDir(), hash);
+            *sstream >> *new_file;
+            new_file->storeMetadata();
+            new_file->resize();
+
+            status = fsm::status_173;
+            event = fsm::get_event_by_status_code(status);
+            if ( !fsm::check_event(state_, event, status) ) {
+              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
+              return 1;
+            }
+          }
+
+          break;
+        }
+
+        // STATUS_150
+        // when receiving 150 in ready_state_, return to normal heartbeat
+        case fsm::status_150: {
+          if ( state_ == fsm::ready_state ) {
+            status = fsm::status_100;
+            event = fsm::get_event_by_status_code(status);
+            if ( !fsm::check_event(state_, event, status) ) {
+              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
+              return 1;
+            }
+            fsm::action_t action = fsm::get_action(state_, event, status);
+            performAction(event, action, status, state_);
+          }
+
+          break;
+        }
+
         default:
           break;
         }
     }
 
-    // NEW_LOCAL_FILE_EVENT
+    // NEW_LOCAL_FILE_EVENT || LOCAL_FILE_METADATA_CHANGE_EVENT
+    // NEW_LOCAL_FILE_EVENT_WITH_MORE || LOCAL_FILE_METADATA_CHANGE_EVENT_WITH_MORE
     // if the event was new_local_file_event, add the path of the file to the queue;
     // if the state was announcing_new_file_state, we need to check if the reported 
     // file is the same as the last one, otherwise we would push the same file
     // twice; TODO if a file was created and immediately deleted, that file should 
     // be removed and - if necessary - the state should be reverted
-    if ( event == fsm::new_local_file_event ) {
+    if ( event == fsm::new_local_file_event
+      || event == fsm::new_local_file_with_more_event
+      || event == fsm::local_file_metadata_change_event
+      || event == fsm::local_file_metadata_change_with_more_event ) {
       int inotify_mask;
       std::string box_hash, path;
       *sstream >> inotify_mask >> box_hash >> path;

@@ -73,7 +73,7 @@ int Heartbeater::run()
       if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
       if ( msg_type == SB_SIGTYPE_FSM ) {
         current_status_ = (fsm::status_t)msg_signal;
-        *sstream >> current_message_;
+        std::getline(*sstream, current_message_);
       }
     }
 
@@ -84,10 +84,10 @@ int Heartbeater::run()
       std::chrono::system_clock::now().time_since_epoch()
     ).count();
     std::stringstream message;
-    message << (int)SB_SIGTYPE_PUB  << " "
-            << (int)current_status_ << " "
-            << timestamp            << " "
-            << current_message_.c_str();
+    message << std::to_string((int)SB_SIGTYPE_PUB)  << " "
+            << std::to_string((int)current_status_) << " "
+            << "12" // timestamp
+            << current_message_;
     zmqpp::message z_msg;
     z_msg << message.str();
     z_heartbeater->send(z_msg);

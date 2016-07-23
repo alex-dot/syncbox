@@ -134,13 +134,13 @@ int Box::run()
     int inotify_mask = msg_signal;
     // fsm::event_t event;
     fsm::status_t status;
-    if (        ((inotify_mask & IN_CREATE)      == IN_CREATE)
-             || ((inotify_mask & IN_MODIFY)      == IN_MODIFY)
+    if (        ((inotify_mask & IN_MODIFY)      == IN_MODIFY)
              || ((inotify_mask & IN_MOVE)        == IN_MOVE)
              || ((inotify_mask & IN_MOVE_SELF)   == IN_MOVE_SELF) ) {
       // event = fsm::new_local_file_event;
       status = fsm::status_300;
-    } else if ( ((inotify_mask & IN_ATTRIB)      == IN_ATTRIB)
+    } else if ( ((inotify_mask & IN_CREATE)      == IN_CREATE)
+             || ((inotify_mask & IN_ATTRIB)      == IN_ATTRIB)
              || ((inotify_mask & IN_DELETE)      == IN_DELETE)
              || ((inotify_mask & IN_DELETE_SELF) == IN_DELETE_SELF) ) {
       // event = fsm::local_file_metadata_change_event;
