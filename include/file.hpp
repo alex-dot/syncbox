@@ -51,9 +51,12 @@ class File {
          const bool create);
     File(const std::string& box_path,
          Hash* box_hash,
-         const std::string& path)
-      : File(box_path, box_hash, path,
-             boost::filesystem::regular_file, false) {}
+         const std::string& path);
+    File(const std::string& box_path,
+         Hash* box_hash,
+         const std::string& path,
+         const boost::filesystem::file_type type)
+      : File(box_path, box_hash, path, type, false) {}
     File(const std::string& box_path,
          Hash* box_hash,
          const std::string& path,
@@ -80,12 +83,14 @@ class File {
     uint64_t getSize() const;
     boost::filesystem::file_type getType() const;
     bool isToBeDeleted() const;
+    bool exists() const;
 
     void setMode(boost::filesystem::perms mode);
     void setMtime(uint32_t mtime);
     void storeMetadata() const;
     void resize(uint64_t const size);
     void resize();
+    void create();
 
     void openFile();
     void closeFile();

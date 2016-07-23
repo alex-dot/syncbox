@@ -111,6 +111,37 @@ File::File(const std::string& box_path,
 }
 File::File(const std::string& box_path,
            Hash* box_hash,
+           const std::string& path) :
+            box_path_(box_path),
+            box_hash_(box_hash),
+            bpath_(),
+            path_(),
+            mode_(),
+            mtime_(),
+            type_(),
+            size_(),
+            deleted_file_(false),
+            fstream_() {
+  bpath_ = boost::filesystem::path(constructPath(box_path, path));
+
+  boost::system::error_code ec;
+  if (boost::filesystem::exists(bpath_, ec)) {
+    mtime_ = boost::filesystem::last_write_time(bpath_);
+    boost::filesystem::file_status stat = boost::filesystem::status(bpath_);
+    mode_ = stat.permissions();
+    type_ = stat.type();
+    if (boost::filesystem::is_regular_file(bpath_))
+      size_ = boost::filesystem::file_size(bpath_);
+  } else {
+    throw boost::filesystem::filesystem_error("", bpath_, ec);
+  }
+
+  checkArguments(path, type_, false);
+
+  std::copy(path.begin(), path.end(), path_.begin());
+}
+File::File(const std::string& box_path,
+           Hash* box_hash,
            const std::string& path,
            const bool create,
            const bool deleted_file) :
@@ -154,16 +185,19 @@ void File::checkArguments(const std::string& path,
         bpath_parent = bpath_.parent_path().parent_path();
       else
         bpath_parent = bpath_.parent_path();
+      std::cout << "f: " << type << std::endl;
 
       if (boost::filesystem::exists(bpath_parent, ec)) {
         switch (type) {
           case (boost::filesystem::regular_file) : {
+      std::cout << "f: " << "reg" << std::endl;
             boost::filesystem::ofstream ofs(bpath_);
             ofs.close();
             break;
           }
 
           case (boost::filesystem::directory_file) : {
+      std::cout << "f: " << "dir" << std::endl;
             boost::filesystem::create_directory(bpath_);
             break;
           }
@@ -205,6 +239,9 @@ boost::filesystem::file_type File::getType() const {
 bool File::isToBeDeleted() const {
   return deleted_file_;
 }
+bool File::exists() const {
+  return boost::filesystem::exists(bpath_);
+}
 
 void File::setMode(boost::filesystem::perms mode) {
   mode_ = mode;
@@ -219,14 +256,27 @@ void File::storeMetadata() const {
 }
 
 void File::resize(uint64_t const size) {
-  size_ = size;
-  boost::system::error_code ec;
-  boost::filesystem::resize_file(bpath_, size_, ec);
-  if (ec != 0)
-    throw boost::filesystem::filesystem_error("", bpath_, ec);
+  if (type_ == boost::filesystem::regular_file) {
+    size_ = size;
+    boost::system::error_code ec;
+    boost::filesystem::resize_file(bpath_, size_, ec);
+    if (ec != 0)
+      throw boost::filesystem::filesystem_error("", bpath_, ec);
+  }
 }
 void File::resize() {
   resize(size_);
+}
+void File::create() {
+    std::cout << "file: 1" << std::endl;
+  if (type_ == boost::filesystem::regular_file) {
+    openFile();
+  } else if (type_ == boost::filesystem::directory_file) {
+    std::cout << "file: creating directory" << std::endl;
+    boost::filesystem::create_directory(bpath_);
+  } else {
+    throw std::range_error("Tried to create file of unsupported filetype. ");
+  }
 }
 
 void File::openFile() {
@@ -305,9 +355,9 @@ const std::string File::constructPath(const std::string box_path,
   } else if (box_path.back() == '/' && path.front() == '/') {
     std::string box_path_temp = box_path;
     box_path_temp.pop_back();
-    complete_path = box_path_temp + '/' + path;
+    complete_path = box_path_temp + path;
   } else {
-    complete_path = box_path + path;
+    complete_path = box_path + '/' + path;
   }
   return complete_path;
 }
@@ -326,13 +376,19 @@ std::ostream& operator<<(std::ostream& ostream, const File& f) {
   uint16_t mode = htobe16(f.mode_);
   ostream.write((const char*)&mode, 2);
 
-  ostream.write((const char*)&f.type_, 1);
+  uint8_t type = uint8_t(f.type_);
+  ostream.write((const char*)&type, 1);
 
   uint32_t mtime = htobe32(f.mtime_);
   ostream.write((const char*)&mtime, 4);
 
   if (f.type_ == boost::filesystem::regular_file) {
     uint64_t size = htobe64(f.size_);
+    char* size_char = new char[8];
+    std::memcpy(size_char, &size, 8);
+    ostream.write(size_char, 8);
+  } else {
+    uint64_t size = htobe64(0);
     char* size_char = new char[8];
     std::memcpy(size_char, &size, 8);
     ostream.write(size_char, 8);
@@ -345,8 +401,7 @@ std::istream& operator>>(std::istream& istream, File& f) {
   if (f.box_hash_ == nullptr || f.box_path_.length() == 0)
     throw std::out_of_range("Box info not found, File object probably not correctly initialised.");
 
-  int g = istream.tellg();
-  istream.seekg(g+1);
+  istream.seekg(1, std::ios_base::cur);
 
   char* path_c = new char[SB_MAXIMUM_PATH_LENGTH];
   istream.read(path_c, SB_MAXIMUM_PATH_LENGTH);
@@ -357,7 +412,7 @@ std::istream& operator>>(std::istream& istream, File& f) {
 
   char* deleted = new char[9];
   istream.read(deleted, 9);
-  if (std::strcmp(deleted, "IN_DELETE")) {
+  if (std::strcmp(deleted, "IN_DELETE") == 0) {
     f.deleted_file_ = true;
     f.bpath_ = boost::filesystem::path(f.constructPath(f.box_path_, path));
     if (boost::filesystem::exists(f.bpath_)) {
@@ -368,26 +423,28 @@ std::istream& operator>>(std::istream& istream, File& f) {
     }
     return istream;
   } else {
-    istream.seekg(g-9);
+    istream.seekg(-15, std::ios_base::end);
   }
 
   f.bpath_ = boost::filesystem::path(f.constructPath(f.box_path_, path));
 
   char* mode_c = new char[2];
   istream.read(mode_c, 2);
-  int16_t mode;
+  uint16_t mode;
   std::memcpy(&mode, mode_c, 2);
   f.mode_ = boost::filesystem::perms(be16toh(mode));
 
   char* type_c = new char[1];
   istream.read(type_c, 1);
-  int8_t type;
+  uint8_t type;
   std::memcpy(&type, type_c, 1);
   f.type_ = boost::filesystem::file_type(type);
 
-  char* mtime = new char[4];
-  istream.read(mtime, 4);
-  f.mtime_ = be32toh((int32_t)*mtime);
+  char* mtime_c = new char[4];
+  istream.read(mtime_c, 4);
+  uint32_t mtime;
+  std::memcpy(&mtime, mtime_c, 4);
+  f.mtime_ = be32toh(mtime);
 
   f.checkArguments(path, f.type_, true);
 

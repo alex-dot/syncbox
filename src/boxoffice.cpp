@@ -398,6 +398,7 @@ int Boxoffice::processEvent(fsm::status_t status,
         // receiving file metadata
         case fsm::status_170: {
           if (state_ == fsm::receiving_file_metadata_change_state) {
+    std::cout << "bo: 1" << std::endl;
             std::string box_hash;
             int timestamp;
             *sstream >> timestamp >> box_hash;
@@ -405,12 +406,24 @@ int Boxoffice::processEvent(fsm::status_t status,
             Box* box = boxes[box_hash];
             Hash* hash = new Hash();
             hash->initializeHash(box_hash);
+    std::cout << "bo: 2" << std::endl;
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
+    std::cout << "bo: 3" << std::endl;
+
             if (!new_file->isToBeDeleted()) {
+    std::cout << "bo: 4" << std::endl;
+              if (new_file->exists()) {
+    std::cout << "bo: 5" << std::endl;
+                new_file->resize();
+              } else {
+    std::cout << "bo: 6" << std::endl;
+                new_file->create();
+              }
               new_file->storeMetadata();
-              new_file->resize();
             }
+    std::cout << "bo: 7" << std::endl;
+            delete new_file;
 
             status = fsm::status_173;
             event = fsm::get_event_by_status_code(status);
@@ -545,6 +558,7 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
     || new_state == fsm::sending_new_file_with_more_beta_state
     || new_state == fsm::sending_file_metadata_change_state
     || new_state == fsm::sending_file_metadata_change_with_more_state) {
+    //TODO change container as we need pop_front()
     File* current_file = file_list_.front();
     *message << *current_file;
   }
