@@ -348,10 +348,7 @@ int Boxoffice::processEvent(fsm::status_t status,
             node_reply_counter_ = 0;
             status = fsm::status_122;
             event = fsm::get_event_by_status_code(status);
-            if ( !fsm::check_event(state_, event, status) ) {
-              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
-              return 1;
-            }
+            if ( !check_event(state_, event, status) ) return 1;
           }
 
           break;
@@ -366,10 +363,7 @@ int Boxoffice::processEvent(fsm::status_t status,
             node_reply_counter_ = 0;
             status = fsm::status_162;
             event = fsm::get_event_by_status_code(status);
-            if ( !fsm::check_event(state_, event, status) ) {
-              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
-              return 1;
-            }
+            if ( !check_event(state_, event, status) ) return 1;
           }
 
           break;
@@ -385,10 +379,7 @@ int Boxoffice::processEvent(fsm::status_t status,
             node_reply_counter_ = -1;
             status = fsm::status_172;
             event = fsm::get_event_by_status_code(status);
-            if ( !fsm::check_event(state_, event, status) ) {
-              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
-              return 1;
-            }
+            if ( !check_event(state_, event, status) ) return 1;
           }
 
           break;
@@ -421,10 +412,7 @@ int Boxoffice::processEvent(fsm::status_t status,
 
             status = fsm::status_173;
             event = fsm::get_event_by_status_code(status);
-            if ( !fsm::check_event(state_, event, status) ) {
-              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
-              return 1;
-            }
+            if ( !check_event(state_, event, status) ) return 1;
           }
 
           break;
@@ -436,10 +424,7 @@ int Boxoffice::processEvent(fsm::status_t status,
           if ( state_ == fsm::ready_state ) {
             status = fsm::status_100;
             event = fsm::get_event_by_status_code(status);
-            if ( !fsm::check_event(state_, event, status) ) {
-              if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
-              return 1;
-            }
+            if ( !check_event(state_, event, status) ) return 1;
             fsm::action_t action = fsm::get_action(state_, event, status);
             performAction(event, action, status, state_);
           }
@@ -561,6 +546,16 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
     File* current_file = file_list_.front();
     *message << *current_file;
   }
+}
+
+bool Boxoffice::checkEvent(fsm::state_t const state,
+                           fsm::event_t const event,
+                           fsm::status_t const status) const {
+  if ( !fsm::check_event(state, event, status) ) {
+    if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
+    return false;
+  }
+  return true;
 }
 
 

@@ -73,6 +73,9 @@ class Boxoffice
     int closeConnections();
 
     int processEvent(fsm::status_t status, std::stringstream* message);
+    bool checkEvent(fsm::state_t const state,
+                    fsm::event_t const event,
+                    fsm::status_t const status) const;
     int performAction(fsm::event_t const event,
                       fsm::action_t const action,
                       fsm::status_t const received_status,
