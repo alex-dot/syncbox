@@ -34,7 +34,7 @@ int Publisher::connectToHeartbeater()
 {
   // connect to process broadcast
   z_heartbeater = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
-  z_heartbeater->bind("inproc://pub_hb_pair");
+  z_heartbeater->connect("inproc://pub_hb_pair");
 
   return 0;
 }

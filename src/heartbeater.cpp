@@ -12,6 +12,8 @@
 #include <sstream>
 #include <iostream>
 #include <boost/thread.hpp>
+#include <chrono>
+#include <thread>
 
 Heartbeater::Heartbeater(zmqpp::context* z_ctx_, fsm::status_t status) :
   Transmitter(z_ctx_),
@@ -36,7 +38,7 @@ int Heartbeater::connectToPublisher()
 {
   // connect to process broadcast
   z_heartbeater = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
-  z_heartbeater->connect("inproc://pub_hb_pair");
+  z_heartbeater->bind("inproc://pub_hb_pair");
 
   return 0;
 }
@@ -66,7 +68,7 @@ int Heartbeater::run()
   {
     // waiting for boxoffice input in non-blocking mode
     sstream = new std::stringstream();
-    int z_return = s_recv_noblock(*z_boxoffice_push, *z_boxoffice_hb_push, *z_broadcast, *sstream, 2000);
+    int z_return = s_recv_noblock(*z_boxoffice_push, *z_boxoffice_hb_push, *z_broadcast, *sstream, 1);
 
     if ( z_return != 0 ) {
       *sstream >> msg_type >> msg_signal;
@@ -77,6 +79,7 @@ int Heartbeater::run()
       }
     }
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     if (SB_MSG_DEBUG) printf("hb: sending hb status code %d\n", (int)current_status_);
 
     // send a message
@@ -90,7 +93,7 @@ int Heartbeater::run()
             << current_message_;
     zmqpp::message z_msg;
     z_msg << message.str();
-    z_heartbeater->send(z_msg);
+    z_heartbeater->send(z_msg, true);
 
     delete sstream;
   }
