@@ -13,6 +13,7 @@
 #include <zmqpp/zmqpp.hpp>
 #include <boost/thread.hpp>
 #include <vector>
+#include <deque>
 #include <utility>
 #include <unordered_map>
 
@@ -79,15 +80,15 @@ class Boxoffice
     int performAction(fsm::event_t const event,
                       fsm::action_t const action,
                       fsm::status_t const received_status,
-                      fsm::state_t const new_state) const;
+                      fsm::state_t const new_state);
     int updateHeartbeat(fsm::status_t const new_status,
-                        fsm::state_t const new_state) const;
+                        fsm::state_t const new_state);
     void prepareHeartbeatMessage(std::stringstream* message,
-                                 fsm::state_t const new_state) const;
+                                 fsm::state_t const new_state);
 
     fsm::state_t state_;
 
-    std::vector< File* > file_list_;
+    std::deque< File* > file_list_;
     int node_reply_counter_;
     int total_node_number_;
 

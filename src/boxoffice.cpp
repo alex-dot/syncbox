@@ -398,7 +398,6 @@ int Boxoffice::processEvent(fsm::status_t status,
         // receiving file metadata
         case fsm::status_170: {
           if (state_ == fsm::receiving_file_metadata_change_state) {
-    std::cout << "bo: 1" << std::endl;
             std::string box_hash;
             int timestamp;
             *sstream >> timestamp >> box_hash;
@@ -406,23 +405,17 @@ int Boxoffice::processEvent(fsm::status_t status,
             Box* box = boxes[box_hash];
             Hash* hash = new Hash();
             hash->initializeHash(box_hash);
-    std::cout << "bo: 2" << std::endl;
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
-    std::cout << "bo: 3" << std::endl;
 
             if (!new_file->isToBeDeleted()) {
-    std::cout << "bo: 4" << std::endl;
               if (new_file->exists()) {
-    std::cout << "bo: 5" << std::endl;
                 new_file->resize();
               } else {
-    std::cout << "bo: 6" << std::endl;
                 new_file->create();
               }
               new_file->storeMetadata();
             }
-    std::cout << "bo: 7" << std::endl;
             delete new_file;
 
             status = fsm::status_173;
@@ -478,14 +471,13 @@ int Boxoffice::processEvent(fsm::status_t status,
       Hash* hash = new Hash();
       hash->initializeHash(box_hash);
       File* new_file;
-      if (((inotify_mask & IN_DELETE) == IN_DELETE)
-       || ((inotify_mask & IN_DELETE_SELF) == IN_DELETE_SELF)) {
+      if ((inotify_mask & IN_DELETE) == IN_DELETE) {
         new_file = new File(box->getBaseDir(), hash, path, false, true);
       } else {
         new_file = new File(box->getBaseDir(), hash, path);
       }
       if ( state_ == fsm::announcing_new_file_state ) {
-        std::vector<File*>::iterator iter;
+        std::deque<File*>::iterator iter;
         iter = std::find(file_list_.begin(), file_list_.end(), new_file);
         if ( iter != file_list_.end() ) {
           file_list_.push_back(new_file);
@@ -517,7 +509,7 @@ int Boxoffice::processEvent(fsm::status_t status,
 int Boxoffice::performAction(fsm::event_t const event, 
                              fsm::action_t const action, 
                              fsm::status_t const received_status,
-                             fsm::state_t const new_state) const {
+                             fsm::state_t const new_state) {
 
   switch (action) {
     case fsm::send_heartbeat_action: {
@@ -534,7 +526,7 @@ int Boxoffice::performAction(fsm::event_t const event,
 }
 
 int Boxoffice::updateHeartbeat(fsm::status_t const new_status,
-                               fsm::state_t const new_state) const {
+                               fsm::state_t const new_state) {
   if (SB_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
   std::stringstream* message = new std::stringstream();
   *message << SB_SIGTYPE_FSM << " " << new_status << " ";
@@ -548,7 +540,7 @@ int Boxoffice::updateHeartbeat(fsm::status_t const new_status,
 }
 
 void Boxoffice::prepareHeartbeatMessage(std::stringstream* message, 
-                                        fsm::state_t const new_state) const {
+                                        fsm::state_t const new_state) {
   *message << "";
 
   if ( new_state == fsm::sending_new_file_metadata_state
@@ -558,9 +550,9 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
     || new_state == fsm::sending_new_file_with_more_beta_state
     || new_state == fsm::sending_file_metadata_change_state
     || new_state == fsm::sending_file_metadata_change_with_more_state) {
-    //TODO change container as we need pop_front()
     File* current_file = file_list_.front();
     *message << *current_file;
+    file_list_.pop_front();
   }
 }
 

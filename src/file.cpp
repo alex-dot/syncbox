@@ -185,19 +185,16 @@ void File::checkArguments(const std::string& path,
         bpath_parent = bpath_.parent_path().parent_path();
       else
         bpath_parent = bpath_.parent_path();
-      std::cout << "f: " << type << std::endl;
 
       if (boost::filesystem::exists(bpath_parent, ec)) {
         switch (type) {
           case (boost::filesystem::regular_file) : {
-      std::cout << "f: " << "reg" << std::endl;
             boost::filesystem::ofstream ofs(bpath_);
             ofs.close();
             break;
           }
 
           case (boost::filesystem::directory_file) : {
-      std::cout << "f: " << "dir" << std::endl;
             boost::filesystem::create_directory(bpath_);
             break;
           }
@@ -268,11 +265,9 @@ void File::resize() {
   resize(size_);
 }
 void File::create() {
-    std::cout << "file: 1" << std::endl;
   if (type_ == boost::filesystem::regular_file) {
     openFile();
   } else if (type_ == boost::filesystem::directory_file) {
-    std::cout << "file: creating directory" << std::endl;
     boost::filesystem::create_directory(bpath_);
   } else {
     throw std::range_error("Tried to create file of unsupported filetype. ");
@@ -357,7 +352,7 @@ const std::string File::constructPath(const std::string box_path,
     box_path_temp.pop_back();
     complete_path = box_path_temp + path;
   } else {
-    complete_path = box_path + '/' + path;
+    complete_path = box_path + path;
   }
   return complete_path;
 }
@@ -369,7 +364,7 @@ std::ostream& operator<<(std::ostream& ostream, const File& f) {
   ostream.write(path.c_str(), SB_MAXIMUM_PATH_LENGTH);
 
   if (f.deleted_file_) {
-    ostream << "IN_DELETE";
+    ostream << "IN_DELETE\0";
     return ostream;
   }
 
@@ -410,9 +405,9 @@ std::istream& operator>>(std::istream& istream, File& f) {
   }
   std::string path(f.path_.begin(), f.path_.end());
 
-  char* deleted = new char[9];
-  istream.read(deleted, 9);
-  if (std::strcmp(deleted, "IN_DELETE") == 0) {
+  std::string deleted;
+  istream >> deleted;
+  if (deleted == "IN_DELETE") {
     f.deleted_file_ = true;
     f.bpath_ = boost::filesystem::path(f.constructPath(f.box_path_, path));
     if (boost::filesystem::exists(f.bpath_)) {
