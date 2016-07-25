@@ -6,6 +6,7 @@
 #include "heartbeater.hpp"
 
 #include <unistd.h>
+#include <endian.h>
 
 #include <zmqpp/zmqpp.hpp>
 #include <string>
@@ -83,18 +84,24 @@ int Heartbeater::run()
     if (SB_MSG_DEBUG) printf("hb: sending hb status code %d\n", (int)current_status_);
 
     // send a message
-    int64_t timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-      std::chrono::system_clock::now().time_since_epoch()
-    ).count();
-    std::stringstream message;
-    message << std::to_string((int)SB_SIGTYPE_PUB)  << " "
-            << std::to_string((int)current_status_) << " "
-            << "12" // timestamp
-            << current_message_;
+    uint64_t timestamp = htobe64(
+      std::chrono::duration_cast< std::chrono::milliseconds >(
+        std::chrono::system_clock::now().time_since_epoch()
+      ).count()
+    );
+    char* timestamp_c = new char(8);
+    std::memcpy(timestamp_c, &timestamp, 8);
+
+    std::stringstream* message = new std::stringstream();
+    *message << SB_SIGTYPE_PUB  << " "
+             << current_status_ << " ";
+    message->write(timestamp_c, 8);
+    *message << current_message_;
     zmqpp::message z_msg;
-    z_msg << message.str();
+    z_msg << message->str();
     z_heartbeater->send(z_msg, true);
 
+    delete message;
     delete sstream;
   }
 

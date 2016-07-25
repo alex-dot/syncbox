@@ -9,6 +9,7 @@
 #include <vector>
 #include <utility>
 #include <fstream>
+#include <endian.h>
 #include <sys/inotify.h>
 #include "cryptopp/aes.h"
 
@@ -314,30 +315,37 @@ int Boxoffice::processEvent(fsm::status_t status,
                             std::stringstream* sstream) {
   fsm::event_t event = fsm::get_event_by_status_code(status);
 
+std::cout << "bo: " << status << std::endl;
+std::cout << sstream->str() << std::endl;
   if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
     state_, event, status);
   if ( fsm::check_event(state_, event, status) ) {
 
     // RECEIVED_HEARTBEAT_EVENT
     if ( event == fsm::received_heartbeat_event ) {
+      // Synchronize the node's local time
+      std::string node_uid;
+      uint64_t node_timestamp, local_timestamp;
+      uint16_t offset;
+      *sstream >> node_uid;
+      char* node_timestamp_c = new char[8];
+      sstream->seekg(2, std::ios_base::cur);
+      sstream->read(node_timestamp_c, 8);
+      std::memcpy(&node_timestamp, node_timestamp_c, 8);
+      subscribers[node_uid].last_timestamp = be64toh(node_timestamp);
+      local_timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+        std::chrono::system_clock::now().time_since_epoch()
+      ).count();
+      offset = local_timestamp - subscribers[node_uid].last_timestamp;
+      subscribers[node_uid].offset = offset;
+
       switch ( status ) {
         // STATUS_100
-        // if the received status was simply 100, just update the corresponding node
+        // if the received status was simply 100, do nothing...
         case fsm::status_100: {
-          std::string node_uid;
-          int64_t node_timestamp, local_timestamp;
-          int16_t offset;
-          *sstream >> node_uid >> node_timestamp;
-
-          subscribers[node_uid].last_timestamp = node_timestamp;
-          local_timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-            std::chrono::system_clock::now().time_since_epoch()
-          ).count();
-          offset = local_timestamp - subscribers[node_uid].last_timestamp;
-          subscribers[node_uid].offset = offset;
-
           break;
         }
+
         // STATUS_121
         // waiting for all nodes to reply, so increment node_reply_counter_
         // until all nodes replied, then manually change the status

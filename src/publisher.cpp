@@ -6,6 +6,7 @@
 #include "publisher.hpp"
 
 #include <unistd.h>
+#include <endian.h>
 
 #include <zmqpp/zmqpp.hpp>
 #include <string>

@@ -62,8 +62,8 @@ int Subscriber::run()
     std::getline(*sstream, infomessage);
     std::stringstream message;
     message << SB_SIGTYPE_SUB << " "
-            << msg_signal
-//            << data.uid
+            << msg_signal     << " "
+            << data.uid       << " "
             << infomessage;
     zmqpp::message z_msg;
     z_msg << message.str();
