@@ -340,7 +340,7 @@ static inline bool
             return false;
         }
     } else if ( state == announcing_file_metadata_change_with_more_state ) {
-        if ( event == received_heartbeat_event && status == status_161 ) {
+        if ( event == received_heartbeat_event && status == status_165 ) {
             return true;
         } else if ( event == all_nodes_replied_event && status == status_166 ) {
             return true;
@@ -1009,7 +1009,7 @@ static inline action_t
             return NULL_action;
         }
     } else if ( state == announcing_file_metadata_change_with_more_state ) {
-        if ( event == received_heartbeat_event && status == status_161 ) {
+        if ( event == received_heartbeat_event && status == status_165 ) {
             return send_heartbeat_action;
         } else if ( event == all_nodes_replied_event && status == status_166 ) {
             return send_heartbeat_action;
@@ -1678,7 +1678,7 @@ static inline status_t
             return NULL_status;
         }
     } else if ( state == announcing_file_metadata_change_with_more_state ) {
-        if ( event == received_heartbeat_event && received_status == status_161 ) {
+        if ( event == received_heartbeat_event && received_status == status_165 ) {
             return status_164;
         } else if ( event == all_nodes_replied_event && received_status == status_166 ) {
             return status_174;
@@ -2347,7 +2347,7 @@ static inline state_t
             return NULL_state;
         }
     } else if ( state == announcing_file_metadata_change_with_more_state ) {
-        if ( event == received_heartbeat_event && received_status == status_161 ) {
+        if ( event == received_heartbeat_event && received_status == status_165 ) {
             return announcing_file_metadata_change_with_more_state;
         } else if ( event == all_nodes_replied_event && received_status == status_166 ) {
             return sending_file_metadata_change_with_more_state;

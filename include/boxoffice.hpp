@@ -43,7 +43,8 @@ class Boxoffice
   private:
     Boxoffice() :
       state_(fsm::ready_state),
-      file_list_(),
+      file_list_metadata_(),
+      file_list_data_(),
       node_reply_counter_(0),
       total_node_number_(0),
       z_ctx(nullptr),
@@ -88,7 +89,8 @@ class Boxoffice
 
     fsm::state_t state_;
 
-    std::deque< File* > file_list_;
+    std::deque< File* > file_list_metadata_;
+    std::deque< File* > file_list_data_;
     int node_reply_counter_;
     int total_node_number_;
 

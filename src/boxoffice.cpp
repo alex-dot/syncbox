@@ -374,6 +374,21 @@ int Boxoffice::processEvent(fsm::status_t status,
 
           break;
         }
+        // STATUS_165
+        // waiting for all nodes to reply, so increment node_reply_counter_
+        // until all nodes replied, then manually change the status
+        case fsm::status_165: {
+          ++node_reply_counter_;
+
+          if ( node_reply_counter_ == total_node_number_ ) {
+            node_reply_counter_ = 0;
+            status = fsm::status_166;
+            event = fsm::get_event_by_status_code(status);
+            if ( !check_event(state_, event, status) ) return 1;
+          }
+
+          break;
+        }
 
         // STATUS_141
         // waiting for all nodes to reply, so increment node_reply_counter_
@@ -472,6 +487,13 @@ int Boxoffice::processEvent(fsm::status_t status,
         return 1;
       }
 
+      std::deque< File* >* file_list;
+      if ( event == fsm::new_local_file_event
+        || event == fsm::new_local_file_with_more_event ) {
+        file_list = &file_list_data_;
+      } else {
+        file_list = &file_list_metadata_;
+      } 
       Box* box = boxes[box_hash];
       Hash* hash = new Hash();
       hash->initializeHash(box_hash);
@@ -483,12 +505,12 @@ int Boxoffice::processEvent(fsm::status_t status,
       }
       if ( state_ == fsm::announcing_new_file_state ) {
         std::deque<File*>::iterator iter;
-        iter = std::find(file_list_.begin(), file_list_.end(), new_file);
-        if ( iter != file_list_.end() ) {
-          file_list_.push_back(new_file);
+        iter = std::find(file_list->begin(), file_list->end(), new_file);
+        if ( iter != file_list->end() ) {
+          file_list->push_back(new_file);
         }
       } else {
-        file_list_.push_back(new_file);
+        file_list->push_back(new_file);
       }
       node_reply_counter_ = 0;
     }
@@ -548,16 +570,19 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
                                         fsm::state_t const new_state) {
   *message << "";
 
-  if ( new_state == fsm::sending_new_file_metadata_state
-    || new_state == fsm::sending_new_file_metadata_with_more_state
-    || new_state == fsm::sending_new_file_state
-    || new_state == fsm::sending_new_file_with_more_alpha_state
-    || new_state == fsm::sending_new_file_with_more_beta_state
-    || new_state == fsm::sending_file_metadata_change_state
-    || new_state == fsm::sending_file_metadata_change_with_more_state) {
-    File* current_file = file_list_.front();
+  if (        new_state == fsm::sending_new_file_metadata_state
+           || new_state == fsm::sending_new_file_state
+           || new_state == fsm::sending_file_metadata_change_state ) {
+    File* current_file = file_list_data_.front();
     *message << *current_file;
-    file_list_.pop_front();
+    file_list_data_.pop_front();
+  } else if ( new_state == fsm::sending_new_file_metadata_with_more_state
+           || new_state == fsm::sending_new_file_with_more_alpha_state
+           || new_state == fsm::sending_new_file_with_more_beta_state
+           || new_state == fsm::sending_file_metadata_change_with_more_state) {
+    File* current_file = file_list_metadata_.front();
+    *message << *current_file;
+    file_list_metadata_.pop_front();
   }
 }
 
