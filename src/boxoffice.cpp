@@ -315,8 +315,6 @@ int Boxoffice::processEvent(fsm::status_t status,
                             std::stringstream* sstream) {
   fsm::event_t event = fsm::get_event_by_status_code(status);
 
-std::cout << "bo: " << status << std::endl;
-std::cout << sstream->str() << std::endl;
   if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
     state_, event, status);
   if ( fsm::check_event(state_, event, status) ) {
@@ -407,8 +405,7 @@ std::cout << sstream->str() << std::endl;
         case fsm::status_170: {
           if (state_ == fsm::receiving_file_metadata_change_state) {
             std::string box_hash;
-            int timestamp;
-            *sstream >> timestamp >> box_hash;
+            *sstream >> box_hash;
 
             Box* box = boxes[box_hash];
             Hash* hash = new Hash();

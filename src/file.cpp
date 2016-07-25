@@ -418,7 +418,7 @@ std::istream& operator>>(std::istream& istream, File& f) {
     }
     return istream;
   } else {
-    istream.seekg(-15, std::ios_base::end);
+    istream.seekg(-1*deleted.length(), std::ios_base::cur);
   }
 
   f.bpath_ = boost::filesystem::path(f.constructPath(f.box_path_, path));

@@ -82,7 +82,11 @@ int Publisher::run()
     std::getline(*sstream, infomessage);
     std::stringstream message;
     message << std::to_string(msg_signal) << infomessage;
-    if (SB_MSG_DEBUG) printf("pub: %s\n", message.str().c_str());
+    if (SB_MSG_DEBUG) printf("pub: sending status %d message with length %lu\n",
+      msg_signal, message.str().length());
+    // setting the width to SB_MINIMUM_HB_WIDTH
+    uint p = message.tellp();
+    message << std::setw(SB_MINIMUM_HB_WIDTH-p) << std::setfill(' ') << " ";
     zmqpp::message z_msg;
     z_msg << message.str();
     z_publisher->send(z_msg);
