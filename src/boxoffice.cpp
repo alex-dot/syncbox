@@ -398,7 +398,16 @@ int Boxoffice::processEvent(fsm::status_t status,
 
           if ( node_reply_counter_ == total_node_number_ ) {
             node_reply_counter_ = -1;
-            status = fsm::status_172;
+
+            if (file_list_metadata_.size() > 0) {
+              status = fsm::status_174;
+            } else if (file_list_data_.size() > 1) {
+              status = fsm::status_178;
+            } else if (file_list_data_.size() > 0) {
+              status = fsm::status_177;
+            } else {
+              status = fsm::status_172;
+            }
             event = fsm::get_event_by_status_code(status);
             if ( !check_event(state_, event, status) ) return 1;
           }
@@ -409,9 +418,18 @@ int Boxoffice::processEvent(fsm::status_t status,
         // STATUS_130
         // waiting for file metadata
         case fsm::status_130: {
-          std::string message;
-          getline(*sstream, message);
-          std::cout << "bo: " << message << std::endl;
+          if (state_ == fsm::promoting_new_file_metadata_state) {
+            std::string box_hash;
+            *sstream >> box_hash;
+
+            Box* box = boxes[box_hash];
+            Hash* hash = new Hash();
+            hash->initializeHash(box_hash);
+            File* new_file = new File(box->getBaseDir(), hash);
+            *sstream >> *new_file;
+            new_file->storeMetadata();
+            delete new_file;
+          }
 
           break;
         }
@@ -419,6 +437,36 @@ int Boxoffice::processEvent(fsm::status_t status,
         // receiving file metadata
         case fsm::status_170: {
           if (state_ == fsm::receiving_file_metadata_change_state) {
+            std::string box_hash;
+            *sstream >> box_hash;
+
+            Box* box = boxes[box_hash];
+            Hash* hash = new Hash();
+            hash->initializeHash(box_hash);
+            File* new_file = new File(box->getBaseDir(), hash);
+            *sstream >> *new_file;
+
+            if (!new_file->isToBeDeleted()) {
+              if (new_file->exists()) {
+                new_file->resize();
+              } else {
+                new_file->create();
+              }
+              new_file->storeMetadata();
+            }
+            delete new_file;
+
+            status = fsm::status_173;
+            event = fsm::get_event_by_status_code(status);
+            if ( !check_event(state_, event, status) ) return 1;
+          }
+
+          break;
+        }
+        // STATUS_174
+        // receiving file metadata with additional files to come
+        case fsm::status_174: {
+          if (state_ == fsm::receiving_file_metadata_change_with_more_state) {
             std::string box_hash;
             *sstream >> box_hash;
 

@@ -1753,9 +1753,9 @@ static inline status_t
         }
     } else if ( state == sending_file_metadata_change_with_more_state ) {
         if ( event == received_heartbeat_event && received_status == status_175 ) {
-            return status_170;
+            return status_174;
         } else if ( event == received_heartbeat_event && received_status == status_141 ) {
-            return status_170;
+            return status_174;
         } else if ( event == all_nodes_have_all_files_event && received_status == status_172 ) {
             return status_150;
         } else if ( event == all_nodes_have_all_metadata_changes_with_more_event && received_status == status_177 ) {
@@ -2021,13 +2021,13 @@ static inline status_t
         }
     } else if ( state == receiving_file_metadata_change_with_more_state ) {
         if ( event == received_heartbeat_event && received_status == status_174 ) {
-            return status_171;
+            return status_175;
         } else if ( event == received_heartbeat_event && received_status == status_175 ) {
-            return status_171;
+            return status_175;
         } else if ( event == received_heartbeat_event && received_status == status_141 ) {
             return status_175;
         } else if ( event == all_metadata_received_event && received_status == status_173 ) {
-            return status_145;
+            return status_141;
         } else if ( event == new_local_file_event && received_status == status_300 ) {
             return status_175;
         } else if ( event == new_local_file_with_more_event && received_status == status_304 ) {
