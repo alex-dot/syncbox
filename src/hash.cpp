@@ -13,10 +13,12 @@
 #include <sstream>
 #include <iomanip>
 
-#include "constants.hpp"
+#include <iostream>
 
-Hash::Hash() : hash_(new unsigned char[SB_GENERIC_HASH_LEN]) {}
-Hash::Hash(const std::string& string) : hash_() {
+Hash::Hash() :
+        hash_(new unsigned char[SB_GENERIC_HASH_LEN]) {}
+Hash::Hash(const std::string& string) :
+        hash_(new unsigned char[SB_GENERIC_HASH_LEN]) {
     makeHash(string);
 }
 Hash::~Hash() {}

@@ -16,6 +16,9 @@
 #include <sstream>
 #include <iomanip>
 #include <memory>
+#include <cstring>
+
+#define SB_GENERIC_HASH_LEN 256
 
 /**
  * \brief Wrapper class for hashed strings enabling sorting etc.
@@ -30,52 +33,59 @@
  */
 class Hash {
  public:
-    Hash();
-    explicit Hash(const std::string& string);
-    ~Hash();
+  Hash();
+  explicit Hash(const std::string& string);
+  ~Hash();
 
-    void makeHash(const std::string& string);
-    void initializeHash(const std::string& hash_string);
-    const std::string getString() const;
+  void makeHash(const std::string& string);
+  void initializeHash(const std::string& hash_string);
+  const std::string getString() const;
 
  private:
-    unsigned char* hash_;
+  unsigned char* hash_;
+
+  friend bool operator<  (const Hash&, const Hash&);
+  friend bool operator>  (const Hash&, const Hash&);
+  friend bool operator<= (const Hash&, const Hash&);
+  friend bool operator>= (const Hash&, const Hash&);
+  friend bool operator== (const Hash&, const Hash&);
+  friend bool operator!= (const Hash&, const Hash&);
 };
 
 inline bool operator<  (const Hash& lhs, const Hash& rhs) {
-    return (lhs.getString() < rhs.getString()) ? true : false;
+  return (memcmp(lhs.hash_, rhs.hash_, SB_GENERIC_HASH_LEN) < 0)? true : false;
 }
 inline bool operator>  (const Hash& lhs, const Hash& rhs)
-    { return rhs < lhs; }
+  { return rhs < lhs; }
 inline bool operator<= (const Hash& lhs, const Hash& rhs)
-    { return !(lhs > rhs); }
+  { return !(lhs > rhs); }
 inline bool operator>= (const Hash& lhs, const Hash& rhs)
-    { return !(lhs < rhs); }
+  { return !(lhs < rhs); }
 inline bool operator== (const Hash& lhs, const Hash& rhs) {
-    return (lhs.getString() == rhs.getString()) ? true : false;
+  return (memcmp(lhs.hash_, rhs.hash_, SB_GENERIC_HASH_LEN) == 0) ? true : false;
 }
 inline bool operator!= (const Hash& lhs, const Hash& rhs)
-    { return !(lhs == rhs); }
+  { return !(lhs == rhs); }
 
 struct hashPointerLessThanFunctor {
-    bool operator()(const Hash* lhs, const Hash* rhs)
-        { return (*lhs < *rhs); }
+  bool operator()(const Hash* lhs, const Hash* rhs)
+    { return (*lhs < *rhs); }
 };
 struct hashPointerEqualsFunctor {
-    bool operator()(const Hash* lhs, const Hash* rhs)
-        { return ((*lhs) == (*rhs)); }
+  bool operator()(const Hash* lhs, const Hash* rhs)
+    { return ((*lhs) == (*rhs)); }
 };
 struct hashSharedPointerLessThanFunctor {
-    bool operator()
-        (const std::shared_ptr<Hash> lhs,
-         const std::shared_ptr<Hash> rhs)
-            { return (*lhs < *rhs); }
+  bool operator()
+    (const std::shared_ptr<Hash> lhs,
+     const std::shared_ptr<Hash> rhs)
+      { return (*lhs < *rhs); }
 };
 struct hashSharedPointerEqualsFunctor {
-    bool operator()
-        (const std::shared_ptr<Hash> lhs,
-         const std::shared_ptr<Hash> rhs)
-            { return ((*lhs) == (*rhs)); }
+  bool operator()
+    (const std::shared_ptr<Hash> lhs,
+     const std::shared_ptr<Hash> rhs)
+      { return ((*lhs) == (*rhs)); }
 };
 
 #endif  // INCLUDE_HASH_HPP_

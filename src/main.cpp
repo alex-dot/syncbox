@@ -55,6 +55,12 @@ int main_application(int argc, char* argv[])
   // opening zeromq context
   zmqpp::context z_context;
 
+  if (sodium_init() == -1) {
+    std::cerr << "[E] Could not initialize crypto library libsodium."
+              << std::endl;
+    return 1;
+  }
+
   // we eagerly initialize all singletons here
   Boxoffice::getInstance();
   int return_val = Config::initialize(argc, argv);
