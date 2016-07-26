@@ -5,6 +5,9 @@
  * to the boxoffice and the boxoffice prepares the messages for the 
  * publishers to send. 
  * Boxoffice shall only be used within the boxoffice thread. 
+ *
+ * \TODO heartbeaters+dispatchers probably need info to check if the call
+ *       was meant for them. right now all hb+disp would react
  */
 
 #ifndef SB_BOXOFFICE_HPP
@@ -52,6 +55,7 @@ class Boxoffice
       z_router(nullptr),
       z_bo_pub(nullptr),
       z_bo_hb(nullptr),
+      z_bo_disp(nullptr),
       z_broadcast(nullptr),
       subscribers(),
       publishers(),
@@ -69,6 +73,7 @@ class Boxoffice
     int setupBoxes();
     int setupPublishers();
     int setupHeartbeaters();
+    int setupDispatchers();
     int setupSubscribers();
     int checkChildren();
     int runRouter();
@@ -99,6 +104,7 @@ class Boxoffice
     zmqpp::socket* z_router;
     zmqpp::socket* z_bo_pub;
     zmqpp::socket* z_bo_hb;
+    zmqpp::socket* z_bo_disp;
     zmqpp::socket* z_broadcast;
 
     std::unordered_map< std::string, node_t > subscribers; // endpoint and type
@@ -107,6 +113,7 @@ class Boxoffice
 
     std::vector<boost::thread*> pub_threads;
     std::vector<boost::thread*> hb_threads;
+    std::vector<boost::thread*> disp_threads;
     std::vector<boost::thread*> sub_threads;
     std::vector<boost::thread*> box_threads;
 };

@@ -11,6 +11,7 @@ add_executable(syncbox  main.cpp
                         boxoffice.cpp
                         publisher.cpp
                         heartbeater.cpp
+                        dispatcher.cpp
                         subscriber.cpp)
 target_link_libraries(syncbox ${CMAKE_THREAD_LIBS_INIT}
                               ${Boost_LIBRARIES}
