@@ -360,20 +360,7 @@ int Boxoffice::processEvent(fsm::status_t status,
     // RECEIVED_HEARTBEAT_EVENT
     if ( event == fsm::received_heartbeat_event ) {
       // Synchronize the node's local time
-      std::string node_uid;
-      uint64_t node_timestamp, local_timestamp;
-      uint16_t offset;
-      *sstream >> node_uid;
-      char* node_timestamp_c = new char[8];
-      sstream->seekg(2, std::ios_base::cur);
-      sstream->read(node_timestamp_c, 8);
-      std::memcpy(&node_timestamp, node_timestamp_c, 8);
-      subscribers[node_uid].last_timestamp = be64toh(node_timestamp);
-      local_timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-        std::chrono::system_clock::now().time_since_epoch()
-      ).count();
-      offset = local_timestamp - subscribers[node_uid].last_timestamp;
-      subscribers[node_uid].offset = offset;
+      updateTimestamp(sstream);
 
       switch ( status ) {
         // STATUS_100
@@ -680,6 +667,25 @@ bool Boxoffice::checkEvent(fsm::state_t const state,
     return false;
   }
   return true;
+}
+
+int Boxoffice::updateTimestamp(std::stringstream* sstream) {
+  std::string node_uid;
+  uint64_t node_timestamp, local_timestamp;
+  uint16_t offset;
+  *sstream >> node_uid;
+  char* node_timestamp_c = new char[8];
+  sstream->seekg(2, std::ios_base::cur);
+  sstream->read(node_timestamp_c, 8);
+  std::memcpy(&node_timestamp, node_timestamp_c, 8);
+  subscribers[node_uid].last_timestamp = be64toh(node_timestamp);
+  local_timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+    std::chrono::system_clock::now().time_since_epoch()
+  ).count();
+  offset = local_timestamp - subscribers[node_uid].last_timestamp;
+  subscribers[node_uid].offset = offset;
+
+  return 0;
 }
 
 

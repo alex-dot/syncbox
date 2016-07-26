@@ -91,6 +91,7 @@ class Boxoffice
                         fsm::state_t const new_state);
     void prepareHeartbeatMessage(std::stringstream* message,
                                  fsm::state_t const new_state);
+    int updateTimestamp(std::stringstream* sstream);
 
     fsm::state_t state_;
 
