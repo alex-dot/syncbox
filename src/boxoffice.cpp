@@ -11,7 +11,6 @@
 #include <fstream>
 #include <endian.h>
 #include <sys/inotify.h>
-#include "cryptopp/aes.h"
 
 #include "file.hpp"
 #include "constants.hpp"

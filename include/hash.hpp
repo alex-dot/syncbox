@@ -15,30 +15,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include "cryptopp/tiger.h"
-
-typedef char unsigned byte;  // this should probably appear elsewhere?
-
-
-/**
- * \brief Convenience struct for transformation between unsigned and signed chars.
- *
- * Conveniently allows easy transformation between unsigned chars (bytes)
- * and (signed) chars. 
- * Original code from http://stackoverflow.com/a/673389/876584
- * \author ???
- */
-struct HexCharStruct {
-    unsigned char c;
-    explicit HexCharStruct(unsigned char _c) : c(_c) { }
-};
-inline std::ostream& operator<<(std::ostream& o, const HexCharStruct& hs) {
-    return (o << std::setw(2) << std::setfill('0') << std::hex
-              << static_cast<int>(hs.c) << std::dec);
-}
-inline HexCharStruct hex(unsigned char _c) {
-    return HexCharStruct(_c);
-}
+#include <memory>
 
 /**
  * \brief Wrapper class for hashed strings enabling sorting etc.

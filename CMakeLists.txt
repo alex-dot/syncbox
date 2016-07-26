@@ -19,42 +19,23 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF) 
 find_package(Boost 1.55.0 COMPONENTS system filesystem thread unit_test_framework program_options) 
 
-# - Find Crypto++
-# courtesy of: 
-# https://github.com/harningt/cryptoface/blob/master/Modules/FindCrypto%2B%2B.cmake
-if(CRYPTO++_INCLUDE_DIR AND CRYPTO++_LIBRARIES)
-   set(CRYPTO++_FOUND TRUE)
+# Find libsodium
+FIND_PATH ( LIBSODIUM_INCLUDE_DIR NAMES sodium.h PATHS /usr/include/ /usr/local/include/ )
+FIND_LIBRARY ( LIBSODIUM_LIBRARY NAMES sodium libsodium PATHS /usr/lib /usr/local/lib )
+IF ( LIBSODIUM_INCLUDE_DIR AND LIBSODIUM_LIBRARY )
+    SET ( LIBSODIUM_FOUND TRUE )
+ENDIF ( LIBSODIUM_INCLUDE_DIR AND LIBSODIUM_LIBRARY )
 
-else(CRYPTO++_INCLUDE_DIR AND CRYPTO++_LIBRARIES)
-  find_path(CRYPTO++_INCLUDE_DIR cryptlib.h
-      /usr/include/crypto++
-      /usr/include/cryptopp
-      /usr/local/include/crypto++
-      /usr/local/include/cryptopp
-      /opt/local/include/crypto++
-      /opt/local/include/cryptopp
-      $ENV{SystemDrive}/Crypto++/include
-      )
+IF ( LIBSODIUM_FOUND )
+  IF ( NOT LIBSODIUM_FIND_QUIETLY )
+    MESSAGE ( STATUS "Found libsodium:" )
+    MESSAGE ( STATUS "  (Headers)       ${LIBSODIUM_INCLUDE_DIR}" )
+    MESSAGE ( STATUS "  (Library)       ${LIBSODIUM_LIBRARY}" )
+  ENDIF ( NOT LIBSODIUM_FIND_QUIETLY )
+ELSE ( LIBSODIUM_FOUND )
+  MESSAGE ( FATAL_ERROR "Could not find libsodium" )
+ENDIF ( LIBSODIUM_FOUND )
 
-  find_library(CRYPTO++_LIBRARIES NAMES cryptopp
-      PATHS
-      /usr/lib
-      /usr/local/lib
-      /opt/local/lib
-      $ENV{SystemDrive}/Crypto++/lib
-      )
-
-  if(CRYPTO++_INCLUDE_DIR AND CRYPTO++_LIBRARIES)
-    set(CRYPTO++_FOUND TRUE)
-    message(STATUS "Found Crypto++: ${CRYPTO++_INCLUDE_DIR}, ${CRYPTO++_LIBRARIES}")
-  else(CRYPTO++_INCLUDE_DIR AND CRYPTO++_LIBRARIES)
-    set(CRYPTO++_FOUND FALSE)
-    message(STATUS "Crypto++ not found.")
-  endif(CRYPTO++_INCLUDE_DIR AND CRYPTO++_LIBRARIES)
-
-  mark_as_advanced(CRYPTO++_INCLUDE_DIR CRYPTO++_LIBRARIES)
-
-endif(CRYPTO++_INCLUDE_DIR AND CRYPTO++_LIBRARIES)
 
 # - Find ZMQ
 # courtesy of: 

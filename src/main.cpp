@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sodium.h>
 #include <zmqpp/zmqpp.hpp>
 
 #include <iostream>
@@ -59,6 +60,12 @@ int main_application(int argc, char* argv[])
   int return_val = Config::initialize(argc, argv);
   if (return_val != 0) {
     return return_val;
+  }
+
+  if (sodium_init() == -1) {
+    std::cerr << "[E] Could not initialize crypto library libsodium."
+              << std::endl;
+    return 1;
   }
 
   // catch signals

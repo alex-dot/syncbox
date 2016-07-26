@@ -8,10 +8,10 @@
 
 #include "hash.hpp"
 
+#include <sodium.h>
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include "cryptopp/tiger.h"
 
 Hash::Hash() : hash_() {}
 Hash::Hash(const std::string& string) : hash_() {
@@ -23,25 +23,18 @@ Hash::~Hash() {}
  * \fn Hash::makeHash
  *
  * Generates a cryptographic hash out of the supplied string and stores it in 
- * the hash_ member variable. Uses Tiger as the cryptographic hash function. 
+ * the hash_ member variable. Uses libsodiums generichash (Blake2) for hashes. 
  * 
  * \param string
  */
 void Hash::makeHash(const std::string& string) {
-    byte const* string_input = (unsigned char*)string.c_str();
-    unsigned int string_input_length = string.length();
-
-    byte digest[CryptoPP::Tiger::DIGESTSIZE];  // = digest[24]
-
-    CryptoPP::Tiger hash;
-    hash.Update(string_input, string_input_length);
-    hash.Final(digest);
-
-    std::ostringstream stream;
-    for ( int i = 0; i < CryptoPP::Tiger::DIGESTSIZE; ++i ) {
-      stream << hex(digest[i]);
-    }
-    hash_ = stream.str();
+    unsigned char* new_hash = new unsigned char[256];
+    crypto_generichash(
+        new_hash, 256,
+        (unsigned char*)string.c_str(),
+        string.length(),
+        NULL, 0);
+    hash_ = std::string(reinterpret_cast<char*>(new_hash));
 }
 void Hash::initializeHash(const std::string& hash_string) {
     hash_ = hash_string;
