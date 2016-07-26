@@ -13,7 +13,9 @@
 #include <sstream>
 #include <iomanip>
 
-Hash::Hash() : hash_() {}
+#include "constants.hpp"
+
+Hash::Hash() : hash_(new unsigned char[SB_GENERIC_HASH_LEN]) {}
 Hash::Hash(const std::string& string) : hash_() {
     makeHash(string);
 }
@@ -28,17 +30,15 @@ Hash::~Hash() {}
  * \param string
  */
 void Hash::makeHash(const std::string& string) {
-    unsigned char* new_hash = new unsigned char[256];
     crypto_generichash(
-        new_hash, 256,
+        hash_, SB_GENERIC_HASH_LEN,
         (unsigned char*)string.c_str(),
         string.length(),
         NULL, 0);
-    hash_ = std::string(reinterpret_cast<char*>(new_hash));
 }
 void Hash::initializeHash(const std::string& hash_string) {
-    hash_ = hash_string;
+    hash_ = (unsigned char*)hash_string.c_str();
 }
-const std::string& Hash::getString() const {
-  return hash_;
+const std::string Hash::getString() const {
+  return std::string(reinterpret_cast<char*>(hash_));
 }

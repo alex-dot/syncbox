@@ -36,10 +36,10 @@ class Hash {
 
     void makeHash(const std::string& string);
     void initializeHash(const std::string& hash_string);
-    const std::string& getString() const;
+    const std::string getString() const;
 
  private:
-    std::string hash_;
+    unsigned char* hash_;
 };
 
 inline bool operator<  (const Hash& lhs, const Hash& rhs) {
