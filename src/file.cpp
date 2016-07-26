@@ -358,7 +358,7 @@ const std::string File::constructPath(const std::string box_path,
 }
 
 std::ostream& operator<<(std::ostream& ostream, const File& f) {
-  ostream << f.box_hash_->getHash() << " ";
+  ostream << f.box_hash_->getString() << " ";
 
   std::string path(f.path_.begin(), f.path_.end());
   ostream.write(path.c_str(), SB_MAXIMUM_PATH_LENGTH);

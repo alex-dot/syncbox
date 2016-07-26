@@ -52,19 +52,19 @@ bool hash_tree_compare_helper(unsigned int x)
     {
       if (j == diff_node_nr)
       {
-        if (hashes_orig[j]->getHash() == hashes_temp[j]->getHash())
+        if (hashes_orig[j]->getString() == hashes_temp[j]->getString())
         {
           return_value = false;
           std::cout << "Comparison: faulty hash equaled original hash." << std::endl;
           break; break;
         } else { list_of_culprits.push_back(j); }
       } else if (j < x) {
-        if (hashes_orig[j]->getHash() != hashes_temp[j]->getHash()) {
+        if (hashes_orig[j]->getString() != hashes_temp[j]->getString()) {
           return_value = false;
           std::cout << "Comparison: same hashes did not equal." << std::endl;
           break; break;
         }
-      } else if (hashes_orig[j]->getHash() != hashes_temp[j]->getHash()) {
+      } else if (hashes_orig[j]->getString() != hashes_temp[j]->getString()) {
         list_of_culprits.push_back(j);
       }
     }

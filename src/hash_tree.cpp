@@ -70,13 +70,13 @@ void HashTree::makeHashTree(std::vector< std::shared_ptr<Hash> >& temp_hashes)
         // if we have an odd number of lower nodes, simply double the left hash
         if ( (elements_per_level_.back() - (offset+2)) >= 0 )
         {
-          std::string string = hashes[curr_item]->getHash();
-          string += hashes[curr_item+1]->getHash();
+          std::string string = hashes[curr_item]->getString();
+          string += hashes[curr_item+1]->getString();
           std::shared_ptr<Hash> hash(new Hash(string));
           hashes.push_back(hash);
           ++temp_node_count;
         } else if ( ((offset+2) - elements_per_level_.back() == 1) ) {
-          std::string string = hashes[curr_item]->getHash();
+          std::string string = hashes[curr_item]->getString();
           std::shared_ptr<Hash> hash(new Hash(string+string));
           hashes.push_back(hash);
           ++temp_node_count;
@@ -103,7 +103,7 @@ std::shared_ptr<Hash> HashTree::getTopHash() const { return hashes_.back(); }
 
 bool HashTree::checkHashTreeChange(const HashTree& lhs) const
 {
-  if ( lhs.getTopHash()->getHash() != hashes_.back()->getHash() )
+  if ( lhs.getTopHash()->getString() != hashes_.back()->getString() )
     return true;
   else 
     return false;

@@ -135,12 +135,12 @@ BOOST_AUTO_TEST_CASE(hash_tree_sort)
   // hash2, hash5, hash4, hash3, hash1
   std::vector< std::shared_ptr<Hash> > hashes = {hash1, hash2, hash3, hash4, hash5};
   std::sort (hashes.begin(), hashes.end(), hashSharedPointerLessThanFunctor());
-  BOOST_CHECK_EQUAL(hash2->getHash(), hashes[0]->getHash());
-  BOOST_CHECK_EQUAL(hash5->getHash(), hashes[1]->getHash());
-  BOOST_CHECK_EQUAL(hash4->getHash(), hashes[2]->getHash());
-  BOOST_CHECK_EQUAL(hash3->getHash(), hashes[3]->getHash());
-  BOOST_CHECK_EQUAL(hash1->getHash(), hashes[4]->getHash());
-  BOOST_CHECK_EQUAL(hash2->getHash(), hashes[0]->getHash());
+  BOOST_CHECK_EQUAL(hash2->getString(), hashes[0]->getString());
+  BOOST_CHECK_EQUAL(hash5->getString(), hashes[1]->getString());
+  BOOST_CHECK_EQUAL(hash4->getString(), hashes[2]->getString());
+  BOOST_CHECK_EQUAL(hash3->getString(), hashes[3]->getString());
+  BOOST_CHECK_EQUAL(hash1->getString(), hashes[4]->getString());
+  BOOST_CHECK_EQUAL(hash2->getString(), hashes[0]->getString());
 }
 BOOST_AUTO_TEST_CASE(hash_tree_top_hash)
 {
@@ -151,5 +151,5 @@ BOOST_AUTO_TEST_CASE(hash_tree_top_hash)
   // Value taken from: http://asecuritysite.com/encryption/tiger
   std::string hash_string = "2FB13E2BC6157D929F28B44E51F563D9812787CD6BAAB82E";
   std::transform(hash_string.begin(), hash_string.end(), hash_string.begin(), ::tolower);
-  BOOST_CHECK_EQUAL(hash_string, ht->getTopHash()->getHash());
+  BOOST_CHECK_EQUAL(hash_string, ht->getTopHash()->getString());
 }

@@ -46,6 +46,6 @@ void Hash::makeHash(const std::string& string) {
 void Hash::initializeHash(const std::string& hash_string) {
     hash_ = hash_string;
 }
-const std::string& Hash::getHash() const {
+const std::string& Hash::getString() const {
   return hash_;
 }

@@ -59,14 +59,14 @@ class Hash {
 
     void makeHash(const std::string& string);
     void initializeHash(const std::string& hash_string);
-    const std::string& getHash() const;
+    const std::string& getString() const;
 
  private:
     std::string hash_;
 };
 
 inline bool operator<  (const Hash& lhs, const Hash& rhs) {
-    return (lhs.getHash() < rhs.getHash()) ? true : false;
+    return (lhs.getString() < rhs.getString()) ? true : false;
 }
 inline bool operator>  (const Hash& lhs, const Hash& rhs)
     { return rhs < lhs; }
@@ -75,7 +75,7 @@ inline bool operator<= (const Hash& lhs, const Hash& rhs)
 inline bool operator>= (const Hash& lhs, const Hash& rhs)
     { return !(lhs < rhs); }
 inline bool operator== (const Hash& lhs, const Hash& rhs) {
-    return (lhs.getHash() == rhs.getHash()) ? true : false;
+    return (lhs.getString() == rhs.getString()) ? true : false;
 }
 inline bool operator!= (const Hash& lhs, const Hash& rhs)
     { return !(lhs == rhs); }

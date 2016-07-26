@@ -279,8 +279,8 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
             // check if the box location is already mapped or the box name has already been claimed
             for (std::vector<box_t>::iterator j = this->boxes_.begin();
                  j != this->boxes_.end(); ++j) {
-                if (box_name.getHash() == j->uid) {
-                    std::cerr << "[E] " << box_name.getHash() << " is already used." << std::endl;
+                if (box_name.getString() == j->uid) {
+                    std::cerr << "[E] " << box_name.getString() << " is already used." << std::endl;
                     return 1;
                 }
                 if (box_path == j->base_path) {
@@ -291,7 +291,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
 
             // add new box strings to Config
             box_t new_box;
-            new_box.uid = box_name.getHash();
+            new_box.uid = box_name.getString();
             new_box.base_path = box_path;
             this->boxes_.push_back( new_box );
         }
@@ -331,13 +331,13 @@ int Config::synchronizeKeystore( std::string* keystore_file,
              i != hosts_.end(); ++i) {
             if ( !pks.isMember(i->endpoint) ) {
                 i->keypair = zmqpp::curve::generate_keypair();
-                i->uid = Hash(i->keypair.public_key).getHash();
+                i->uid = Hash(i->keypair.public_key).getString();
                 pks[i->endpoint]["public_key"] = i->keypair.public_key;
                 pks[i->endpoint]["private_key"] = i->keypair.secret_key;
             } else {
                 i->keypair.public_key = pks[i->endpoint].get("public_key", "").asString();
                 i->keypair.secret_key = pks[i->endpoint].get("private_key", "").asString();
-                i->uid = Hash(i->keypair.public_key).getHash();
+                i->uid = Hash(i->keypair.public_key).getString();
             }
         }
         f_pk << pks << std::endl;
@@ -350,7 +350,7 @@ int Config::synchronizeKeystore( std::string* keystore_file,
              i != hosts_.end(); ++i) {
             i->keypair.public_key = pks[i->endpoint].get("public_key", "").asString();
             i->keypair.secret_key = pks[i->endpoint].get("private_key", "").asString();
-            i->uid = Hash(i->keypair.public_key).getHash();
+            i->uid = Hash(i->keypair.public_key).getString();
         }
         f_pk.close();
     }
@@ -374,7 +374,7 @@ int Config::synchronizeKeystore( std::string* keystore_file,
     for ( std::vector<node_t>::iterator i = this->nodes_vec_.begin();
           i != this->nodes_vec_.end(); ++i ) {
         i->public_key = ks.get(i->endpoint, "").asString();
-        i->uid = Hash(i->public_key).getHash();
+        i->uid = Hash(i->public_key).getString();
         nodes_.insert( std::make_pair(i->uid, *i) );
     }
 

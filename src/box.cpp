@@ -40,7 +40,7 @@ Box::Box(zmqpp::context* z_ctx_, boost::filesystem::path p, std::string box_hash
 
     std::shared_ptr<Hash> hash(new Hash());
     baseDir->makeDirectoryHash(hash);
-    entries_[hash->getHash()] = baseDir;
+    entries_[hash->getString()] = baseDir;
     hashes->push_back(hash);
 
     std::vector<boost::filesystem::directory_entry> dirs;
@@ -77,7 +77,7 @@ void Box::recursiveDirectoryFill(
     Directory* directory = new Directory(*i);
     std::shared_ptr<Hash> hash(new Hash());
     directory->makeDirectoryHash(hash);
-    entries_.insert(std::make_pair(hash->getHash(),directory));
+    entries_.insert(std::make_pair(hash->getString(),directory));
     hashes->push_back(hash);
     std::vector<boost::filesystem::directory_entry> temp_dirs;
     directory->fillDirectory(*i, temp_dirs);

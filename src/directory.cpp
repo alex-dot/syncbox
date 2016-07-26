@@ -77,7 +77,7 @@ void Directory::fillDirectory(const boost::filesystem::path& document_root,
       temp_hashes.push_back(hash);
 
       // insert into entries_
-      entries_.insert(std::make_pair(hash->getHash(),*i));
+      entries_.insert(std::make_pair(hash->getString(),*i));
     }
 
     else
@@ -92,7 +92,7 @@ void Directory::makeDirectoryHash(std::shared_ptr<Hash> hash)
 {
   std::string hash_string;
   if ( !hash_tree_->empty() ) {
-    hash_string = hash_tree_->getTopHash()->getHash();
+    hash_string = hash_tree_->getTopHash()->getString();
   } else {
     hash_string = "";
   }
@@ -120,7 +120,7 @@ void Directory::printHashTree() const
   std::vector< std::shared_ptr<Hash> > hashes = *(hash_tree_->getHashes());
   for (std::vector< std::shared_ptr<Hash> >::iterator i = hashes.begin(); i != hashes.end(); ++i)
   {
-    std::cout << (*i)->getHash() << std::endl;
+    std::cout << (*i)->getString() << std::endl;
   }
 }
 void Directory::printEntries() const

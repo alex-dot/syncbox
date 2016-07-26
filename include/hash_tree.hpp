@@ -42,7 +42,7 @@ class HashTree
 
 bool inline checkHashTreeChange(const HashTree& lhs, const HashTree& rhs)
 {
-  if ( lhs.getTopHash()->getHash() != rhs.getTopHash()->getHash() )
+  if ( lhs.getTopHash()->getString() != rhs.getTopHash()->getString() )
     return false;
   else 
     return true;
