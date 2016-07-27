@@ -17,6 +17,10 @@
 
 Hash::Hash() :
         hash_(new unsigned char[SB_GENERIC_HASH_LEN]) {}
+Hash::Hash(const unsigned char hash_bytes[SB_GENERIC_HASH_LEN]) :
+        hash_(new unsigned char[SB_GENERIC_HASH_LEN]) {
+    std::memcpy(hash_, hash_bytes, SB_GENERIC_HASH_LEN);
+}
 Hash::Hash(const std::string& string) :
         hash_(new unsigned char[SB_GENERIC_HASH_LEN]) {
     makeHash(string);
@@ -32,15 +36,23 @@ Hash::~Hash() {}
  * \param string
  */
 void Hash::makeHash(const std::string& string) {
+    unsigned char new_hash[SB_GENERIC_HASH_LEN];
     crypto_generichash(
-        hash_, SB_GENERIC_HASH_LEN,
+        new_hash, SB_GENERIC_HASH_LEN,
         (unsigned char*)string.c_str(),
         string.length(),
         NULL, 0);
+    std::memcpy(hash_, new_hash, SB_GENERIC_HASH_LEN);
 }
 void Hash::initializeHash(const std::string& hash_string) {
     hash_ = (unsigned char*)hash_string.c_str();
 }
+void Hash::initializeHash(const unsigned char* hash_bytes) {
+    std::memcpy(hash_, hash_bytes, SB_GENERIC_HASH_LEN);
+}
 const std::string Hash::getString() const {
   return std::string(reinterpret_cast<char*>(hash_));
+}
+const unsigned char* Hash::getBytes() const {
+  return hash_;
 }

@@ -27,12 +27,14 @@ Box::Box() :
   box_hash_()
   {}
 
-Box::Box(zmqpp::context* z_ctx_, boost::filesystem::path p, std::string box_hash) :
+Box::Box(zmqpp::context* z_ctx_,
+         boost::filesystem::path p,
+         const unsigned char box_hash[SB_GENERIC_HASH_LEN]) :
   Transmitter(z_ctx_),
   path_(p),
   entries_(),
   hash_tree_(),
-  box_hash_(box_hash)
+  box_hash_(new unsigned char[SB_GENERIC_HASH_LEN])
   {
     tac = (char*)"box";
     Directory* baseDir = new Directory(p);
@@ -51,6 +53,8 @@ Box::Box(zmqpp::context* z_ctx_, boost::filesystem::path p, std::string box_hash
     temp_ht->makeHashTree(*hashes);
     std::swap(hash_tree_,temp_ht);
     delete temp_ht;
+
+    std::memcpy(box_hash_, box_hash, SB_GENERIC_HASH_LEN);
   }
 
 Box::~Box()
@@ -149,9 +153,9 @@ int Box::run()
       std::stringstream message;
       message << SB_SIGTYPE_INOTIFY << " "
               << status             << " "
-              << inotify_mask       << " "
-              << box_hash_          << " "
-              << dir_path           << "/"
+              << inotify_mask;
+      message.write(reinterpret_cast<char*>(box_hash_), SB_GENERIC_HASH_LEN);
+      message << " " << dir_path    << "/"
               << name.c_str();
 
       zmqpp::message* z_msg = new zmqpp::message();

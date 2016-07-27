@@ -358,7 +358,9 @@ const std::string File::constructPath(const std::string box_path,
 }
 
 std::ostream& operator<<(std::ostream& ostream, const File& f) {
-  ostream << f.box_hash_->getString() << " ";
+  ostream.write(reinterpret_cast<char*>(
+                  const_cast<unsigned char*>(f.box_hash_->getBytes())
+                ), SB_GENERIC_HASH_LEN);
 
   std::string path(f.path_.begin(), f.path_.end());
   ostream.write(path.c_str(), SB_MAXIMUM_PATH_LENGTH);
@@ -395,8 +397,6 @@ std::ostream& operator<<(std::ostream& ostream, const File& f) {
 std::istream& operator>>(std::istream& istream, File& f) {
   if (f.box_hash_ == nullptr || f.box_path_.length() == 0)
     throw std::out_of_range("Box info not found, File object probably not correctly initialised.");
-
-  istream.seekg(1, std::ios_base::cur);
 
   char* path_c = new char[SB_MAXIMUM_PATH_LENGTH];
   istream.read(path_c, SB_MAXIMUM_PATH_LENGTH);

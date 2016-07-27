@@ -84,7 +84,7 @@ int Publisher::run()
     message << std::to_string(msg_signal) << infomessage;
     if (SB_MSG_DEBUG) printf("pub: sending status %d message with length %lu\n",
       msg_signal, message.str().length());
-    // setting the width to SB_MINIMUM_HB_WIDTH
+    // setting the width to SB_MINIMUM_HB_WIDTH so all heartbeats have the same length
     uint p = message.tellp();
     message << std::setw(SB_MINIMUM_HB_WIDTH-p) << std::setfill(' ') << " ";
     zmqpp::message z_msg;

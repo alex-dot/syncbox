@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <sys/inotify.h>
 #include <ctime>
+#include <unordered_map>
 
 #include <hash.hpp>
 
@@ -67,12 +68,12 @@ enum SB_BACKUP_TYPE {
 // basic structs
 // TODO What if I have multiple publishers? Nodes must have a way to query the correct host keypair...
 struct node_t {
-  std::string  endpoint;
-  int          sb_subtype;
-  int64_t      last_timestamp;
-  int16_t      offset;
-  std::string  public_key;
-  std::string  uid;
+  std::string   endpoint;
+  int           sb_subtype;
+  int64_t       last_timestamp;
+  int16_t       offset;
+  std::string   public_key;
+  unsigned char uid[SB_GENERIC_HASH_LEN];
 };
 struct host_t {
   std::string           endpoint;
@@ -80,9 +81,14 @@ struct host_t {
   std::string           uid;
 };
 struct box_t {
-  std::string uid;
-  std::string base_path;
+  unsigned char uid[SB_GENERIC_HASH_LEN];
+  std::string   base_path;
 };
+
+typedef std::unordered_map< Hash*,
+                            node_t,
+                            hashAsKeyForContainerFunctor,
+                            hashPointerEqualsFunctor > node_map;
 
 // wrapper for polling on one socket while simultaneously polling the broadcast
 void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &sstream);

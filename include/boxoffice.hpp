@@ -108,9 +108,9 @@ class Boxoffice
     zmqpp::socket* z_bo_disp;
     zmqpp::socket* z_broadcast;
 
-    std::unordered_map< std::string, node_t > subscribers; // endpoint and type
+    node_map              subscribers; // endpoint and type
     std::vector< host_t > publishers;
-    std::unordered_map< std::string, Box* > boxes;
+    box_map               boxes;
 
     std::vector<boost::thread*> pub_threads;
     std::vector<boost::thread*> hb_threads;

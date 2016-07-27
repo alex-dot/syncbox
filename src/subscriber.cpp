@@ -62,9 +62,11 @@ int Subscriber::run()
     std::getline(*sstream, infomessage);
     std::stringstream message;
     message << SB_SIGTYPE_SUB << " "
-            << msg_signal     << " "
-            << data.uid       << " "
-            << infomessage;
+            << msg_signal;
+    message.write(reinterpret_cast<char*>(
+                    const_cast<unsigned char*>(data.uid)
+                  ), SB_GENERIC_HASH_LEN);
+    message << infomessage;
     zmqpp::message z_msg;
     z_msg << message.str();
     z_boxoffice_pull->send(z_msg);

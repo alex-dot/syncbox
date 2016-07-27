@@ -27,7 +27,7 @@ class Config
     static int initialize(int argc, char* argv[]);
 
     // Getters
-    const std::unordered_map< std::string, node_t >
+    const node_map
         getNodes() const;
     const std::vector< std::string >
         getNodeEndpoints() const;
@@ -57,7 +57,7 @@ class Config
     boost::program_options::variables_map   vm_;
 
     std::vector< node_t >  nodes_vec_;
-    std::unordered_map< std::string, node_t >  nodes_;
+    node_map               nodes_;
     std::vector< host_t >  hosts_;
     std::vector< box_t >   boxes_;
 

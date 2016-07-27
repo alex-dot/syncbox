@@ -144,7 +144,8 @@ int Boxoffice::setupBoxes()
     // initializing the boxes here, so we can use file IO while it's thread 
     // still listens to inotify events
     Box* box = new Box(z_ctx, i->base_path, i->uid);
-    boxes.insert(std::make_pair(i->uid,box));
+    Hash* hash = new Hash(i->uid);
+    boxes.insert(std::make_pair(hash,box));
 
     // opening box thread
     boost::thread* bt = new boost::thread(box_thread, box);
@@ -213,7 +214,7 @@ int Boxoffice::setupSubscribers()
 {
   // opening subscriber threads
   if (SB_MSG_DEBUG) printf("bo: opening %d subscriber threads\n", (int)subscribers.size());
-  for (std::unordered_map< std::string, node_t >::iterator i = subscribers.begin(); 
+  for (node_map::iterator i = subscribers.begin(); 
         i != subscribers.end(); ++i)
   {
     boost::thread* sub_thread = new boost::thread(subscriber_thread, 
@@ -444,12 +445,13 @@ int Boxoffice::processEvent(fsm::status_t status,
         // waiting for file metadata
         case fsm::status_130: {
           if (state_ == fsm::promoting_new_file_metadata_state) {
-            std::string box_hash;
-            *sstream >> box_hash;
+            char box_hash_s[SB_GENERIC_HASH_LEN];
+            sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
+            unsigned char box_hash[SB_GENERIC_HASH_LEN];
+            std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
 
-            Box* box = boxes[box_hash];
-            Hash* hash = new Hash();
-            hash->initializeHash(box_hash);
+            Hash* hash = new Hash(box_hash);
+            Box* box = boxes[hash];
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
             new_file->storeMetadata();
@@ -462,12 +464,14 @@ int Boxoffice::processEvent(fsm::status_t status,
         // receiving file metadata
         case fsm::status_170: {
           if (state_ == fsm::receiving_file_metadata_change_state) {
-            std::string box_hash;
-            *sstream >> box_hash;
+            sstream->seekg(1, std::ios_base::cur);
+            char box_hash_s[SB_GENERIC_HASH_LEN];
+            sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
+            unsigned char box_hash[SB_GENERIC_HASH_LEN];
+            std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
 
-            Box* box = boxes[box_hash];
-            Hash* hash = new Hash();
-            hash->initializeHash(box_hash);
+            Hash* hash = new Hash(box_hash);
+            Box* box = boxes[hash];
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
 
@@ -492,12 +496,16 @@ int Boxoffice::processEvent(fsm::status_t status,
         // receiving file metadata with additional files to come
         case fsm::status_174: {
           if (state_ == fsm::receiving_file_metadata_change_with_more_state) {
-            std::string box_hash;
-            *sstream >> box_hash;
+            sstream->seekg(1, std::ios_base::cur);
+            char box_hash_s[SB_GENERIC_HASH_LEN];
+            sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
+            unsigned char box_hash[SB_GENERIC_HASH_LEN];
+            std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
+    std::cout << "BLA: " << std::hex << (int)box_hash_s[0] << std::endl;
 
-            Box* box = boxes[box_hash];
-            Hash* hash = new Hash();
-            hash->initializeHash(box_hash);
+            Hash* hash = new Hash(box_hash);
+    std::cout << "BLA: " << std::hex << (int)box_hash_s[0] << std::endl;
+            Box* box = boxes[hash];
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
 
@@ -550,8 +558,15 @@ int Boxoffice::processEvent(fsm::status_t status,
       || event == fsm::local_file_metadata_change_event
       || event == fsm::local_file_metadata_change_with_more_event ) {
       int inotify_mask;
-      std::string box_hash, path;
-      *sstream >> inotify_mask >> box_hash >> path;
+      *sstream >> inotify_mask;
+
+      char box_hash_s[SB_GENERIC_HASH_LEN];
+      sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
+      unsigned char box_hash[SB_GENERIC_HASH_LEN];
+      std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
+
+      std::string path;
+      *sstream >> path;
 
       if ( path.length() > 128 ) {
         std::cerr << "[E]: filepath is too long, syncbox only supports "
@@ -567,9 +582,9 @@ int Boxoffice::processEvent(fsm::status_t status,
       } else {
         file_list = &file_list_metadata_;
       } 
-      Box* box = boxes[box_hash];
-      Hash* hash = new Hash();
-      hash->initializeHash(box_hash);
+
+      Hash* hash = new Hash(box_hash);
+      Box* box = boxes[hash];
       File* new_file;
       if ((inotify_mask & IN_DELETE) == IN_DELETE) {
         new_file = new File(box->getBaseDir(), hash, path, false, true);
@@ -644,14 +659,14 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
   *message << "";
 
   if (        new_state == fsm::sending_new_file_metadata_state
+           || new_state == fsm::sending_new_file_metadata_with_more_state
            || new_state == fsm::sending_new_file_state
-           || new_state == fsm::sending_file_metadata_change_state ) {
+           || new_state == fsm::sending_new_file_with_more_alpha_state
+           || new_state == fsm::sending_new_file_with_more_beta_state ) {
     File* current_file = file_list_data_.front();
     *message << *current_file;
     file_list_data_.pop_front();
-  } else if ( new_state == fsm::sending_new_file_metadata_with_more_state
-           || new_state == fsm::sending_new_file_with_more_alpha_state
-           || new_state == fsm::sending_new_file_with_more_beta_state
+  } else if ( new_state == fsm::sending_file_metadata_change_state
            || new_state == fsm::sending_file_metadata_change_with_more_state) {
     File* current_file = file_list_metadata_.front();
     *message << *current_file;
@@ -670,20 +685,23 @@ bool Boxoffice::checkEvent(fsm::state_t const state,
 }
 
 int Boxoffice::updateTimestamp(std::stringstream* sstream) {
-  std::string node_uid;
+  char node_hash_s[SB_GENERIC_HASH_LEN];
+  sstream->read(node_hash_s, SB_GENERIC_HASH_LEN);
+  unsigned char node_hash[SB_GENERIC_HASH_LEN];
+  std::memcpy(node_hash, node_hash_s, SB_GENERIC_HASH_LEN);
+  Hash* hash = new Hash(node_hash);
   uint64_t node_timestamp, local_timestamp;
   uint16_t offset;
-  *sstream >> node_uid;
   char* node_timestamp_c = new char[8];
-  sstream->seekg(2, std::ios_base::cur);
+  sstream->seekg(1, std::ios_base::cur);
   sstream->read(node_timestamp_c, 8);
   std::memcpy(&node_timestamp, node_timestamp_c, 8);
-  subscribers[node_uid].last_timestamp = be64toh(node_timestamp);
+  subscribers[hash].last_timestamp = be64toh(node_timestamp);
   local_timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
     std::chrono::system_clock::now().time_since_epoch()
   ).count();
-  offset = local_timestamp - subscribers[node_uid].last_timestamp;
-  subscribers[node_uid].offset = offset;
+  offset = local_timestamp - subscribers[hash].last_timestamp;
+  subscribers[hash].offset = offset;
 
   return 0;
 }

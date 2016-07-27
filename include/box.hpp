@@ -32,7 +32,9 @@
 class Box : public Transmitter {
  public:
     Box();
-    Box(zmqpp::context* z_ctx_, boost::filesystem::path, std::string box_hash);
+    Box(zmqpp::context* z_ctx_,
+        boost::filesystem::path,
+        const unsigned char box_hash[SB_GENERIC_HASH_LEN]);
     ~Box();
 
     HashTree* getHashTree() const;
@@ -60,7 +62,12 @@ class Box : public Transmitter {
     std::unordered_map<std::string, Directory*> entries_;
     HashTree*                                   hash_tree_;
     std::unordered_map<int, Directory*>         watch_descriptors_;
-    std::string                                 box_hash_;
+    unsigned char*                              box_hash_;
 };
+
+typedef std::unordered_map< Hash*,
+                            Box*,
+                            hashAsKeyForContainerFunctor,
+                            hashPointerEqualsFunctor > box_map;
 
 #endif  // INCLUDE_BOX_HPP_

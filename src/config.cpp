@@ -107,14 +107,14 @@ int Config::initialize(int argc, char* argv[])
     return return_val;
 }
 
-const std::unordered_map< std::string, node_t >
+const node_map
     Config::getNodes() const {
         return nodes_;
 }
 const std::vector< std::string >
   Config::getNodeEndpoints() const {
     std::vector<std::string> endpoints;
-    for ( std::unordered_map< std::string, node_t >::const_iterator i=nodes_.begin();
+    for ( node_map::const_iterator i=nodes_.begin();
           i != nodes_.end(); ++i ) {
         endpoints.push_back( i->second.endpoint );
     }
@@ -123,7 +123,7 @@ const std::vector< std::string >
 const std::vector< std::string >
   Config::getNodePublicKeys() const {
     std::vector<std::string> endpoints;
-    for ( std::unordered_map< std::string, node_t >::const_iterator i=nodes_.begin();
+    for ( node_map::const_iterator i=nodes_.begin();
           i != nodes_.end(); ++i ) {
         endpoints.push_back( i->second.public_key );
     }
@@ -279,8 +279,8 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
             // check if the box location is already mapped or the box name has already been claimed
             for (std::vector<box_t>::iterator j = this->boxes_.begin();
                  j != this->boxes_.end(); ++j) {
-                if (box_name.getString() == j->uid) {
-                    std::cerr << "[E] " << box_name.getString() << " is already used." << std::endl;
+                if (std::memcmp(box_name.getBytes(), j->uid, SB_GENERIC_HASH_LEN) == 0 ) {
+                    std::cerr << "[E] " << box_name.getBytes() << " is already used." << std::endl;
                     return 1;
                 }
                 if (box_path == j->base_path) {
@@ -291,7 +291,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
 
             // add new box strings to Config
             box_t new_box;
-            new_box.uid = box_name.getString();
+            std::memcpy(new_box.uid, box_name.getBytes(), SB_GENERIC_HASH_LEN);
             new_box.base_path = box_path;
             this->boxes_.push_back( new_box );
         }
@@ -374,8 +374,9 @@ int Config::synchronizeKeystore( std::string* keystore_file,
     for ( std::vector<node_t>::iterator i = this->nodes_vec_.begin();
           i != this->nodes_vec_.end(); ++i ) {
         i->public_key = ks.get(i->endpoint, "").asString();
-        i->uid = Hash(i->public_key).getString();
-        nodes_.insert( std::make_pair(i->uid, *i) );
+        Hash* hash = new Hash(i->public_key);
+        std::memcpy(i->uid, hash->getBytes(), SB_GENERIC_HASH_LEN);
+        nodes_.insert( std::make_pair(hash, *i) );
     }
 
     return 0;
