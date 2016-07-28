@@ -17,17 +17,21 @@
 Publisher::Publisher(zmqpp::context* z_ctx_, host_t data_) :
   Transmitter(z_ctx_),
   z_heartbeater(nullptr),
+  z_dispatcher(nullptr),
   z_publisher(nullptr),
   data(data_) {
     tac = (char*)"pub";
     this->connectToHeartbeater();
+    this->connectToDispatcher();
 }
 
 Publisher::~Publisher() {
   z_heartbeater->close();
+  z_dispatcher->close();
   z_publisher->close();
 
   delete z_heartbeater;
+  delete z_dispatcher;
   delete z_publisher;
 }
 
@@ -36,6 +40,15 @@ int Publisher::connectToHeartbeater()
   // connect to process broadcast
   z_heartbeater = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
   z_heartbeater->connect("inproc://pub_hb_pair");
+
+  return 0;
+}
+
+int Publisher::connectToDispatcher()
+{
+  // connect to process broadcast
+  z_dispatcher = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
+  z_dispatcher->connect("inproc://pub_disp_pair");
 
   return 0;
 }
@@ -72,7 +85,11 @@ int Publisher::run()
   {
     // waiting for boxoffice input in non-blocking mode
     sstream = new std::stringstream();
-    s_recv(*z_boxoffice_push, *z_broadcast, *z_heartbeater, *sstream);
+    s_recv(*z_boxoffice_push,
+           *z_broadcast,
+           *z_heartbeater,
+           *z_dispatcher,
+           *sstream);
 
     *sstream >> msg_type >> msg_signal;
     if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;

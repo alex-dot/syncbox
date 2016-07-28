@@ -21,6 +21,7 @@ class Publisher : public Transmitter
     Publisher() :
       Transmitter(), 
       z_heartbeater(nullptr),
+      z_dispatcher(nullptr),
       z_publisher(nullptr),
       data()
       {};
@@ -32,8 +33,10 @@ class Publisher : public Transmitter
 
   private:
     int connectToHeartbeater();
+    int connectToDispatcher();
 
     zmqpp::socket* z_heartbeater;
+    zmqpp::socket* z_dispatcher;
     zmqpp::socket* z_publisher;
     host_t         data;
 };

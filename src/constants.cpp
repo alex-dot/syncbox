@@ -25,7 +25,7 @@ void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &
     int parts = z_msg.parts();
     for (int i = 0; i < parts; ++i)
     {
-      sstream << z_msg.get(0);
+      sstream << z_msg.get(i);
     }
   }
   else if ( poller.events(z_items[1]) & ZMQ_POLLIN )
@@ -34,7 +34,10 @@ void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, std::stringstream &
     sstream << z_msg.get(0);
   }
 }
-void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, zmqpp::socket &heartbeat, std::stringstream &sstream)
+void s_recv(zmqpp::socket &socket,
+            zmqpp::socket &broadcast,
+            zmqpp::socket &heartbeat,
+            std::stringstream &sstream)
 {
   zmqpp::message z_msg;
   zmq_pollitem_t z_items[] = {
@@ -56,7 +59,7 @@ void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, zmqpp::socket &hear
     int parts = z_msg.parts();
     for (int i = 0; i < parts; ++i)
     {
-      sstream << z_msg.get(0);
+      sstream << z_msg.get(i);
     }
   }
   if ( poller.events(z_items[1]) & ZMQ_POLLIN )
@@ -65,6 +68,53 @@ void s_recv(zmqpp::socket &socket, zmqpp::socket &broadcast, zmqpp::socket &hear
     sstream << z_msg.get(0);
   }
   if ( poller.events(z_items[2]) & ZMQ_POLLIN )
+  {
+    heartbeat.receive(z_msg);
+    sstream << z_msg.get(0);
+  }
+}
+void s_recv(zmqpp::socket &socket,
+            zmqpp::socket &broadcast,
+            zmqpp::socket &heartbeat,
+            zmqpp::socket &dispatch,
+            std::stringstream &sstream)
+{
+  zmqpp::message z_msg;
+  zmq_pollitem_t z_items[] = {
+    { static_cast<void *>(socket),    0, ZMQ_POLLIN, 0 },
+    { static_cast<void *>(broadcast), 0, ZMQ_POLLIN, 0 },
+    { static_cast<void *>(heartbeat), 0, ZMQ_POLLIN, 0 },
+    { static_cast<void *>(dispatch), 0, ZMQ_POLLIN, 0 }
+  };
+
+  zmqpp::poller poller;
+  poller.add(z_items[0]);
+  poller.add(z_items[1]);
+  poller.add(z_items[2]);
+  poller.add(z_items[3]);
+
+  poller.poll();
+
+  if ( poller.events(z_items[0]) & ZMQ_POLLIN )
+  {
+    socket.receive(z_msg);
+    int parts = z_msg.parts();
+    for (int i = 0; i < parts; ++i)
+    {
+      sstream << z_msg.get(i);
+    }
+  }
+  if ( poller.events(z_items[1]) & ZMQ_POLLIN )
+  {
+    broadcast.receive(z_msg);
+    sstream << z_msg.get(0);
+  }
+  if ( poller.events(z_items[2]) & ZMQ_POLLIN )
+  {
+    heartbeat.receive(z_msg);
+    sstream << z_msg.get(0);
+  }
+  if ( poller.events(z_items[3]) & ZMQ_POLLIN )
   {
     heartbeat.receive(z_msg);
     sstream << z_msg.get(0);
@@ -94,7 +144,7 @@ int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &socket2, zmqpp::socket 
       int parts = z_msg.parts();
       for (int i = 0; i < parts; ++i)
       {
-        sstream << z_msg.get(0);
+        sstream << z_msg.get(i);
       }
     }
     if ( poller.events(z_items[1]) & ZMQ_POLLIN )

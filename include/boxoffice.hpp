@@ -50,6 +50,7 @@ class Boxoffice
       file_list_data_(),
       node_reply_counter_(0),
       total_node_number_(0),
+      current_timing_offset_(-1),
       z_ctx(nullptr),
       z_bo_main(nullptr),
       z_router(nullptr),
@@ -99,6 +100,7 @@ class Boxoffice
     std::deque< File* > file_list_data_;
     int node_reply_counter_;
     int total_node_number_;
+    uint32_t current_timing_offset_;
 
     zmqpp::context* z_ctx;
     zmqpp::socket* z_bo_main;

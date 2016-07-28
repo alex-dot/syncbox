@@ -26,7 +26,7 @@ class Dispatcher : public Transmitter
       z_dispatcher(nullptr),
       z_boxoffice_disp_push(nullptr),
       current_status_(fsm::status_100),
-      offset_(-1)
+      timing_offset_(-1)
       {};
     Dispatcher(zmqpp::context* z_ctx_, fsm::status_t status);
     Dispatcher(const Dispatcher&);
@@ -41,7 +41,7 @@ class Dispatcher : public Transmitter
     zmqpp::socket* z_dispatcher;
     zmqpp::socket* z_boxoffice_disp_push;
     fsm::status_t  current_status_;
-    uint64_t       offset_;
+    uint64_t       timing_offset_;
 };
 
 #endif

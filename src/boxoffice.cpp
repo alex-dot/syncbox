@@ -11,6 +11,7 @@
 #include <fstream>
 #include <endian.h>
 #include <sys/inotify.h>
+#include <sodium.h>
 
 #include "file.hpp"
 #include "constants.hpp"
@@ -381,6 +382,41 @@ int Boxoffice::processEvent(fsm::status_t status,
             status = fsm::status_122;
             event = fsm::get_event_by_status_code(status);
             if ( !check_event(state_, event, status) ) return 1;
+
+            // calculating offset, store it and send it to dispatch
+            std::stringstream message;
+            message << SB_SIGTYPE_FSM << " "
+                    << status         << " ";
+
+            char node_hash_s[SB_GENERIC_HASH_LEN];
+            sstream->read(node_hash_s, SB_GENERIC_HASH_LEN);
+            unsigned char node_hash[SB_GENERIC_HASH_LEN];
+            std::memcpy(node_hash, node_hash_s, SB_GENERIC_HASH_LEN);
+            Hash* hash = new Hash(node_hash);
+
+            uint64_t timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+              std::chrono::system_clock::now().time_since_epoch()
+            ).count();
+            uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_OFFSET-SB_MINIMUM_OFFSET);
+            random_offset += SB_MINIMUM_OFFSET;
+            current_timing_offset_ = timestamp
+                                     + random_offset
+                                     + subscribers[hash].offset; // \TODO this should be the average across all nodes
+            uint32_t timing_offset = htobe32(current_timing_offset_);
+            char* timing_offset_c = new char[4];
+            std::memcpy(timing_offset_c, &timing_offset, 4);
+            message.write(timing_offset_c, 4);
+
+            message.write(node_hash_s, SB_GENERIC_HASH_LEN);
+            Box* box = boxes[hash];
+            uint8_t box_dir_length = box->getBaseDir().length();
+            message.write(box->getBaseDir().c_str(), box_dir_length);
+            File* new_file = new File(box->getBaseDir(), hash);
+            message >> *new_file;
+
+            zmqpp::message z_msg;
+            z_msg << message.str();
+            z_bo_disp->send(z_msg);
           }
 
           break;
@@ -501,10 +537,8 @@ int Boxoffice::processEvent(fsm::status_t status,
             sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
             unsigned char box_hash[SB_GENERIC_HASH_LEN];
             std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
-    std::cout << "BLA: " << std::hex << (int)box_hash_s[0] << std::endl;
 
             Hash* hash = new Hash(box_hash);
-    std::cout << "BLA: " << std::hex << (int)box_hash_s[0] << std::endl;
             Box* box = boxes[hash];
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;

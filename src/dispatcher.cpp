@@ -4,6 +4,7 @@
 
 #include "constants.hpp"
 #include "dispatcher.hpp"
+#include "file.hpp"
 
 #include <unistd.h>
 #include <endian.h>
@@ -20,8 +21,8 @@ Dispatcher::Dispatcher(zmqpp::context* z_ctx_, fsm::status_t status) :
   Transmitter(z_ctx_),
   z_dispatcher(nullptr),
   z_boxoffice_disp_push(nullptr),
-  current_status_(fsm::status_100),
-  offset_(-1) {
+  current_status_(status),
+  timing_offset_(-1) {
     tac = (char*)"dis";
     this->connectToBoxofficeHB();
     this->connectToPublisher();
@@ -69,41 +70,86 @@ int Dispatcher::run()
   {
     // waiting for boxoffice input in non-blocking mode
     sstream = new std::stringstream();
-    int z_return = s_recv_noblock(*z_boxoffice_push, *z_boxoffice_disp_push, *z_broadcast, *sstream, 1);
+    s_recv(*z_boxoffice_push, *z_boxoffice_disp_push, *z_broadcast, *sstream);
 
-    if ( z_return != 0 ) {
-      *sstream >> msg_type >> msg_signal;
-      if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
-//      if ( msg_type == SB_SIGTYPE_FSM ) {
-//        current_status_ = (fsm::status_t)msg_signal;
-//        std::getline(*sstream, current_message_);
-//      }
+    *sstream >> msg_type >> msg_signal;
+    if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
+    if ( msg_type == SB_SIGTYPE_FSM ) {
+      current_status_ = (fsm::status_t)msg_signal;
     }
-/*
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
     if (SB_MSG_DEBUG) printf("dis: sending disp status code %d\n", (int)current_status_);
 
-    // send a message
-    uint64_t timestamp = htobe64(
-      std::chrono::duration_cast< std::chrono::milliseconds >(
-        std::chrono::system_clock::now().time_since_epoch()
-      ).count()
-    );
-    char* timestamp_c = new char(8);
-    std::memcpy(timestamp_c, &timestamp, 8);
+    if (current_status_ == fsm::status_122) {
+      uint32_t timing_offset;
+      char* timing_offset_c = new char[4];
+      sstream->seekg(1, std::ios_base::cur);
+      sstream->read(timing_offset_c, 4);
+      std::memcpy(&timing_offset, timing_offset_c, 4);
+      timing_offset_ = be32toh(timing_offset);
 
-    std::stringstream* message = new std::stringstream();
-    *message << SB_SIGTYPE_PUB  << " "
-             << current_status_ << " ";
-    message->write(timestamp_c, 8);
-    *message << current_message_;
-    zmqpp::message z_msg;
-    z_msg << message->str();
-    z_dispatcher->send(z_msg, true);
+//      std::this_thread::sleep_for(std::chrono::milliseconds(timing_offset_));
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    delete message;
+      std::stringstream* message = new std::stringstream();
+      *message << SB_SIGTYPE_FSM  << " "
+               << fsm::status_132;
+      zmqpp::message* z_msg = new zmqpp::message();
+      *z_msg << message->str();
+      z_boxoffice_pull->send(*z_msg);
+      delete message;
+      message = new std::stringstream();
+      delete z_msg;
+      z_msg = new zmqpp::message();
+
+      current_status_ = fsm::status_200;
+
+      char box_hash_s[SB_GENERIC_HASH_LEN];
+      sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
+      unsigned char box_hash[SB_GENERIC_HASH_LEN];
+      std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
+      Hash* hash = new Hash(box_hash);
+      uint8_t box_dir_length;
+      char* box_dir_length_c = new char[1];
+      sstream->read(box_dir_length_c, 1);
+      std::memcpy(&box_dir_length, box_dir_length_c, 1);
+      char* box_dir = new char();
+      sstream->read(box_dir, box_dir_length);
+
+      File* file = new File(box_dir, hash);
+      *sstream >> *file;
+
+      char* contents = new char[SB_MAXIMUM_FILE_PACKAGE_SIZE];
+      bool* more = new bool(true);
+      uint64_t data_size = 0;
+      uint64_t offset = 0;
+
+      message = new std::stringstream();
+      *message << SB_SIGTYPE_PUB  << " "
+               << current_status_;
+      z_msg = new zmqpp::message();
+
+      while (*more) {
+        data_size += file->readFileData(contents,
+                                         SB_MAXIMUM_FILE_PACKAGE_SIZE,
+                                         offset,
+                                         more);
+        offset += SB_MAXIMUM_FILE_PACKAGE_SIZE;
+
+        message->write(contents, data_size);
+        *z_msg << message->str();
+        z_dispatcher->send(*z_msg);
+
+        delete contents;
+        contents = new char[SB_MAXIMUM_FILE_PACKAGE_SIZE];
+        delete message;
+        message = new std::stringstream();
+        delete z_msg;
+        z_msg = new zmqpp::message();
+      }
+    }
     delete sstream;
-*/
+
   }
 
   delete sstream;
