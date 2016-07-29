@@ -88,8 +88,9 @@ int Dispatcher::run()
       sstream->read(timing_offset_c, 4);
       std::memcpy(&timing_offset, timing_offset_c, 4);
       timing_offset_ = be32toh(timing_offset);
-std::cout << "DISP: " << timing_offset_ << std::endl;
 
+// \TODO needs individual offset
+// \TODO needs DEBUG conditional
 //      std::this_thread::sleep_for(std::chrono::milliseconds(timing_offset_));
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -98,7 +99,7 @@ std::cout << "DISP: " << timing_offset_ << std::endl;
                << fsm::status_132;
       zmqpp::message* z_msg = new zmqpp::message();
       *z_msg << message->str();
-//      z_boxoffice_pull->send(*z_msg);
+      z_boxoffice_pull->send(*z_msg);
       delete message;
       message = new std::stringstream();
       delete z_msg;
@@ -159,8 +160,9 @@ std::cout << "DISP: " << timing_offset_ << std::endl;
       sstream->read(timing_offset_c, 4);
       std::memcpy(&timing_offset, timing_offset_c, 4);
       timing_offset_ = be32toh(timing_offset);
-std::cout << "DISP: " << timing_offset_ << std::endl;
 
+// \TODO needs individual offset
+// \TODO needs DEBUG conditional
 //      std::this_thread::sleep_for(std::chrono::milliseconds(timing_offset_));
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
 

@@ -731,10 +731,7 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
   *message << "";
 
   if (        new_state == fsm::sending_new_file_metadata_state
-           || new_state == fsm::sending_new_file_metadata_with_more_state
-           || new_state == fsm::sending_new_file_state
-           || new_state == fsm::sending_new_file_with_more_alpha_state
-           || new_state == fsm::sending_new_file_with_more_beta_state ) {
+           || new_state == fsm::sending_new_file_metadata_with_more_state ) {
     File* current_file = file_list_data_.front();
     current_file_ << *current_file;
     *message << current_file_.str();
