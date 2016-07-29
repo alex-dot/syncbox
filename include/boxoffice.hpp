@@ -8,6 +8,10 @@
  *
  * \TODO heartbeaters+dispatchers probably need info to check if the call
  *       was meant for them. right now all hb+disp would react
+ * \TODO boxoffice must be able to handle multiple transmissions of
+ *       different boxes
+ * \TODO current_box needn't be transmitted, only once. Should be stored
+ *       in member variable
  */
 
 #ifndef SB_BOXOFFICE_HPP
@@ -51,6 +55,8 @@ class Boxoffice
       node_reply_counter_(0),
       total_node_number_(0),
       current_timing_offset_(-1),
+      notified_dispatch_(false),
+      current_box_(new unsigned char[SB_GENERIC_HASH_LEN]),
       z_ctx(nullptr),
       z_bo_main(nullptr),
       z_router(nullptr),
@@ -101,6 +107,8 @@ class Boxoffice
     int node_reply_counter_;
     int total_node_number_;
     uint32_t current_timing_offset_;
+    bool notified_dispatch_;
+    unsigned char* current_box_;
 
     zmqpp::context* z_ctx;
     zmqpp::socket* z_bo_main;

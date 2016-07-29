@@ -49,6 +49,7 @@ class Box : public Transmitter {
     const std::string getBaseDir() const;
     const std::string getPathOfDirectory(int wd) const;
     const std::string getAbsolutePathOfDirectory(int wd) const;
+    const unsigned char* getBoxHash() const;
 
     void recursivePrint() const;
     void printDirectories() const;

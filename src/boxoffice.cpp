@@ -446,10 +446,20 @@ int Boxoffice::processEvent(fsm::status_t status,
           break;
         }
 
+        // STATUS_120 || STATUS_124 || STATUS_140
+        case fsm::status_120:
+        case fsm::status_124:
+        case fsm::status_140:
+          {
+            notified_dispatch_ = false;
+            break;
+          }
+
         // STATUS_130
         // waiting for file metadata
         case fsm::status_130: {
-          if (state_ == fsm::promoting_new_file_metadata_state) {
+          if ( state_ == fsm::promoting_new_file_metadata_state
+                && !notified_dispatch_ ) {
             sstream->seekg(1, std::ios_base::cur);
             char box_hash_s[SB_GENERIC_HASH_LEN];
             sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
@@ -462,6 +472,18 @@ int Boxoffice::processEvent(fsm::status_t status,
             *sstream >> *new_file;
             new_file->storeMetadata();
             delete new_file;
+
+            char* timing_offset_c = new char[4];
+            sstream->read(timing_offset_c, 4);
+
+            std::stringstream* message = new std::stringstream();
+            *message << SB_SIGTYPE_FSM  << " "
+                     << fsm::status_130 << " ";
+            message->write(timing_offset_c, 4);
+            zmqpp::message z_msg;
+            z_msg << message->str();
+            z_bo_disp->send(z_msg);
+            notified_dispatch_ = true;
           }
 
           break;
@@ -555,7 +577,8 @@ int Boxoffice::processEvent(fsm::status_t status,
     // ALL_NODES_HAVE_ALL_METADATA_CHANGES_WITH_MORE && STATUS177
     // The next state requires the dispatcher to fire after
     // a calculated offset
-    if ( event == fsm::all_nodes_replied_event
+    if ( (  event == fsm::all_nodes_replied_event
+        && status == fsm::status_122 )
       || (  event == fsm::all_nodes_have_all_metadata_changes_with_more_event
         && status == fsm::status_177 ) ) {
       // calculating offset, store it and send it to dispatch
@@ -563,6 +586,11 @@ int Boxoffice::processEvent(fsm::status_t status,
       message << SB_SIGTYPE_FSM << " "
               << status         << " ";
 
+      // jump back to the beginning of the stream to
+      // re-read the node_hash
+      sstream->seekg(5, std::ios_base::beg);
+//      int msg_type, msg_signal;
+//      *sstream >> msg_type >> msg_signal;
       char node_hash_s[SB_GENERIC_HASH_LEN];
       sstream->read(node_hash_s, SB_GENERIC_HASH_LEN);
       unsigned char node_hash[SB_GENERIC_HASH_LEN];
@@ -582,12 +610,15 @@ int Boxoffice::processEvent(fsm::status_t status,
       std::memcpy(timing_offset_c, &timing_offset, 4);
       message.write(timing_offset_c, 4);
 
-      message.write(node_hash_s, SB_GENERIC_HASH_LEN);
-      Box* box = boxes[hash];
+      char* box_hash = new char[SB_GENERIC_HASH_LEN];
+      std::memcpy(box_hash, current_box_, SB_GENERIC_HASH_LEN);
+      message.write(box_hash, SB_GENERIC_HASH_LEN);
+      Hash* box_hash_obj = new Hash(current_box_);
+      Box* box = boxes[box_hash_obj];
       uint8_t box_dir_length = box->getBaseDir().length();
       message.write(box->getBaseDir().c_str(), box_dir_length);
       File* new_file = new File(box->getBaseDir(), hash);
-      message >> *new_file;
+      message << *new_file;
 
       zmqpp::message z_msg;
       z_msg << message.str();
@@ -612,6 +643,7 @@ int Boxoffice::processEvent(fsm::status_t status,
       sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
       unsigned char box_hash[SB_GENERIC_HASH_LEN];
       std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
+      std::memcpy(current_box_, box_hash, SB_GENERIC_HASH_LEN);
 
       std::string path;
       *sstream >> path;
@@ -714,6 +746,10 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
     File* current_file = file_list_data_.front();
     *message << *current_file;
     file_list_data_.pop_front();
+    uint32_t timing_offset = htobe32(current_timing_offset_);
+    char* timing_offset_c = new char[4];
+    std::memcpy(timing_offset_c, &timing_offset, 4);
+    message->write(timing_offset_c, 4);
   } else if ( new_state == fsm::sending_file_metadata_change_state
            || new_state == fsm::sending_file_metadata_change_with_more_state) {
     File* current_file = file_list_metadata_.front();

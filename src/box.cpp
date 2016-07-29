@@ -183,6 +183,9 @@ const std::string Box::getPathOfDirectory(int wd) const
 }
 const std::string Box::getAbsolutePathOfDirectory(int wd) const
   { return watch_descriptors_.at(wd)->getAbsolutePath(); }
+const unsigned char* Box::getBoxHash() const {
+  return box_hash_;
+}
 
 void Box::recursivePrint() const
 {
