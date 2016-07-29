@@ -589,22 +589,16 @@ int Boxoffice::processEvent(fsm::status_t status,
       // jump back to the beginning of the stream to
       // re-read the node_hash
       sstream->seekg(5, std::ios_base::beg);
-//      int msg_type, msg_signal;
-//      *sstream >> msg_type >> msg_signal;
       char node_hash_s[SB_GENERIC_HASH_LEN];
       sstream->read(node_hash_s, SB_GENERIC_HASH_LEN);
       unsigned char node_hash[SB_GENERIC_HASH_LEN];
       std::memcpy(node_hash, node_hash_s, SB_GENERIC_HASH_LEN);
       Hash* hash = new Hash(node_hash);
 
-      uint64_t timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-        std::chrono::system_clock::now().time_since_epoch()
-      ).count();
       uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_OFFSET-SB_MINIMUM_OFFSET);
       random_offset += SB_MINIMUM_OFFSET;
-      current_timing_offset_ = timestamp
-                               + random_offset
-                               + subscribers[hash].offset; // \TODO this should be the average across all nodes
+      current_timing_offset_ = random_offset
+                               - subscribers[hash].offset; // \TODO this should be the average across all nodes
       uint32_t timing_offset = htobe32(current_timing_offset_);
       char* timing_offset_c = new char[4];
       std::memcpy(timing_offset_c, &timing_offset, 4);
@@ -615,10 +609,8 @@ int Boxoffice::processEvent(fsm::status_t status,
       message.write(box_hash, SB_GENERIC_HASH_LEN);
       Hash* box_hash_obj = new Hash(current_box_);
       Box* box = boxes[box_hash_obj];
-      uint8_t box_dir_length = box->getBaseDir().length();
-      message.write(box->getBaseDir().c_str(), box_dir_length);
-      File* new_file = new File(box->getBaseDir(), hash);
-      message << *new_file;
+      message << box->getBaseDir() << " ";
+      message << current_file_.str();
 
       zmqpp::message z_msg;
       z_msg << message.str();
@@ -744,7 +736,8 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
            || new_state == fsm::sending_new_file_with_more_alpha_state
            || new_state == fsm::sending_new_file_with_more_beta_state ) {
     File* current_file = file_list_data_.front();
-    *message << *current_file;
+    current_file_ << *current_file;
+    *message << current_file_.str();
     file_list_data_.pop_front();
     uint32_t timing_offset = htobe32(current_timing_offset_);
     char* timing_offset_c = new char[4];
