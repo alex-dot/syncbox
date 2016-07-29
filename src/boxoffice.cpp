@@ -382,41 +382,6 @@ int Boxoffice::processEvent(fsm::status_t status,
             status = fsm::status_122;
             event = fsm::get_event_by_status_code(status);
             if ( !check_event(state_, event, status) ) return 1;
-
-            // calculating offset, store it and send it to dispatch
-            std::stringstream message;
-            message << SB_SIGTYPE_FSM << " "
-                    << status         << " ";
-
-            char node_hash_s[SB_GENERIC_HASH_LEN];
-            sstream->read(node_hash_s, SB_GENERIC_HASH_LEN);
-            unsigned char node_hash[SB_GENERIC_HASH_LEN];
-            std::memcpy(node_hash, node_hash_s, SB_GENERIC_HASH_LEN);
-            Hash* hash = new Hash(node_hash);
-
-            uint64_t timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-              std::chrono::system_clock::now().time_since_epoch()
-            ).count();
-            uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_OFFSET-SB_MINIMUM_OFFSET);
-            random_offset += SB_MINIMUM_OFFSET;
-            current_timing_offset_ = timestamp
-                                     + random_offset
-                                     + subscribers[hash].offset; // \TODO this should be the average across all nodes
-            uint32_t timing_offset = htobe32(current_timing_offset_);
-            char* timing_offset_c = new char[4];
-            std::memcpy(timing_offset_c, &timing_offset, 4);
-            message.write(timing_offset_c, 4);
-
-            message.write(node_hash_s, SB_GENERIC_HASH_LEN);
-            Box* box = boxes[hash];
-            uint8_t box_dir_length = box->getBaseDir().length();
-            message.write(box->getBaseDir().c_str(), box_dir_length);
-            File* new_file = new File(box->getBaseDir(), hash);
-            message >> *new_file;
-
-            zmqpp::message z_msg;
-            z_msg << message.str();
-            z_bo_disp->send(z_msg);
           }
 
           break;
@@ -462,12 +427,16 @@ int Boxoffice::processEvent(fsm::status_t status,
             node_reply_counter_ = -1;
 
             if (file_list_metadata_.size() > 0) {
+              // have more metadata only files
               status = fsm::status_174;
             } else if (file_list_data_.size() > 1) {
+              // have multiple files
               status = fsm::status_178;
             } else if (file_list_data_.size() > 0) {
+              // have one file
               status = fsm::status_177;
             } else {
+              // everything transmitted
               status = fsm::status_172;
             }
             event = fsm::get_event_by_status_code(status);
@@ -579,6 +548,50 @@ int Boxoffice::processEvent(fsm::status_t status,
         default:
           break;
         }
+    }
+
+
+    // ALL_NODES_REPLIED
+    // ALL_NODES_HAVE_ALL_METADATA_CHANGES_WITH_MORE && STATUS177
+    // The next state requires the dispatcher to fire after
+    // a calculated offset
+    if ( event == fsm::all_nodes_replied_event
+      || (  event == fsm::all_nodes_have_all_metadata_changes_with_more_event
+        && status == fsm::status_177 ) ) {
+      // calculating offset, store it and send it to dispatch
+      std::stringstream message;
+      message << SB_SIGTYPE_FSM << " "
+              << status         << " ";
+
+      char node_hash_s[SB_GENERIC_HASH_LEN];
+      sstream->read(node_hash_s, SB_GENERIC_HASH_LEN);
+      unsigned char node_hash[SB_GENERIC_HASH_LEN];
+      std::memcpy(node_hash, node_hash_s, SB_GENERIC_HASH_LEN);
+      Hash* hash = new Hash(node_hash);
+
+      uint64_t timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+        std::chrono::system_clock::now().time_since_epoch()
+      ).count();
+      uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_OFFSET-SB_MINIMUM_OFFSET);
+      random_offset += SB_MINIMUM_OFFSET;
+      current_timing_offset_ = timestamp
+                               + random_offset
+                               + subscribers[hash].offset; // \TODO this should be the average across all nodes
+      uint32_t timing_offset = htobe32(current_timing_offset_);
+      char* timing_offset_c = new char[4];
+      std::memcpy(timing_offset_c, &timing_offset, 4);
+      message.write(timing_offset_c, 4);
+
+      message.write(node_hash_s, SB_GENERIC_HASH_LEN);
+      Box* box = boxes[hash];
+      uint8_t box_dir_length = box->getBaseDir().length();
+      message.write(box->getBaseDir().c_str(), box_dir_length);
+      File* new_file = new File(box->getBaseDir(), hash);
+      message >> *new_file;
+
+      zmqpp::message z_msg;
+      z_msg << message.str();
+      z_bo_disp->send(z_msg);
     }
 
     // NEW_LOCAL_FILE_EVENT || LOCAL_FILE_METADATA_CHANGE_EVENT
