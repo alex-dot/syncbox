@@ -449,7 +449,6 @@ int Boxoffice::processEvent(fsm::status_t status,
         // STATUS_120 || STATUS_124 || STATUS_140
         case fsm::status_120:
         case fsm::status_124:
-        case fsm::status_140:
           {
             notified_dispatch_ = false;
             break;
@@ -545,6 +544,7 @@ int Boxoffice::processEvent(fsm::status_t status,
               new_file->storeMetadata();
             }
             delete new_file;
+            notified_dispatch_ = false;
 
             status = fsm::status_173;
             event = fsm::get_event_by_status_code(status);
