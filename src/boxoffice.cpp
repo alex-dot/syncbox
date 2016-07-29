@@ -481,6 +481,7 @@ int Boxoffice::processEvent(fsm::status_t status,
         // waiting for file metadata
         case fsm::status_130: {
           if (state_ == fsm::promoting_new_file_metadata_state) {
+            sstream->seekg(1, std::ios_base::cur);
             char box_hash_s[SB_GENERIC_HASH_LEN];
             sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
             unsigned char box_hash[SB_GENERIC_HASH_LEN];
