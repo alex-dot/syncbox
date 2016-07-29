@@ -448,6 +448,7 @@ std::istream& operator>>(std::istream& istream, File& f) {
     istream.read(size_c, 8);
     uint64_t size;
     std::memcpy(&size, size_c, 8);
+    f.size_ = be64toh(size);
   }
   return istream;
 }

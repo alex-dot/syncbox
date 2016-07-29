@@ -471,6 +471,7 @@ int Boxoffice::processEvent(fsm::status_t status,
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
             new_file->storeMetadata();
+            new_file->resize();
             delete new_file;
 
             char* timing_offset_c = new char[4];
