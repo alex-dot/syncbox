@@ -23,7 +23,8 @@ Dispatcher::Dispatcher(zmqpp::context* z_ctx_, fsm::status_t status) :
   z_dispatcher(nullptr),
   z_boxoffice_disp_push(nullptr),
   current_status_(status),
-  timing_offset_(-1) {
+  timing_offset_(-1),
+  waiting_for_stop_(false) {
     tac = (char*)"dis";
     this->connectToBoxofficeDispatcher();
     this->connectToPublisher();
@@ -79,7 +80,7 @@ int Dispatcher::run()
       current_status_ = (fsm::status_t)msg_signal;
     }
 
-    if (SB_MSG_DEBUG) printf("dis: sending disp status code %d\n", (int)current_status_);
+    if (SB_MSG_DEBUG) printf("dis: sending file data status %d\n", (int)current_status_);
 
     if ( current_status_ == fsm::status_122
       || current_status_ == fsm::status_177 ) {
@@ -108,6 +109,8 @@ int Dispatcher::run()
       message = new std::stringstream();
       delete z_msg;
       z_msg = new zmqpp::message();
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
       current_status_ = fsm::status_200;
 
@@ -166,6 +169,8 @@ int Dispatcher::run()
         *z_msg << message->str();
         z_dispatcher->send(*z_msg);
 
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
         delete contents;
         contents = new char[SB_MAXIMUM_FILE_PACKAGE_SIZE];
         delete message;
@@ -174,12 +179,16 @@ int Dispatcher::run()
         z_msg = new zmqpp::message();
       }
 
-      delete contents;
       delete message;
       delete z_msg;
-      delete sstream;
+      delete contents;
+
+      current_status_ = fsm::status_210;
+      int retval = synchronizingStop();
+      if (retval == 0) return retval;
 
     } else if (current_status_ == fsm::status_130) {
+      if (SB_MSG_DEBUG) printf("dis: sending fake file data status %d\n", (int)current_status_);
       uint64_t timing_offset;
       char* timing_offset_c = new char[8];
       sstream->seekg(1, std::ios_base::cur);
@@ -202,30 +211,83 @@ int Dispatcher::run()
       *z_msg << message->str();
       z_boxoffice_pull->send(*z_msg);
       delete message;
-      message = new std::stringstream();
       delete z_msg;
-      z_msg = new zmqpp::message();
 
-      current_status_ = fsm::status_132;
+      std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
-      message = new std::stringstream();
-      *message << SB_SIGTYPE_PUB  << " "
-               << current_status_;
-      z_msg = new zmqpp::message();
-
-      int p = message->tellp();
-      if (SB_MAXIMUM_FILE_PACKAGE_SIZE+21-p > 0)
-        *message << std::setw(SB_MAXIMUM_FILE_PACKAGE_SIZE+21-p)
-                 << std::setfill(' ') << " ";
-
-      delete message;
-      delete z_msg;
+      current_status_ = fsm::status_210;
+      int retval = synchronizingStop();
+      if (retval == 0) return retval;
     }
 
-    delete sstream;
   }
 
   delete sstream;
 
   return 0;
+}
+
+int Dispatcher::synchronizingStop() {
+  while (true) {
+    std::stringstream* sstream = new std::stringstream();
+    int msg_type, msg_signal;
+    int z_return = s_recv_noblock(*z_boxoffice_push,
+                                  *z_boxoffice_disp_push,
+                                  *z_broadcast,
+                                  *sstream,
+                                  250);
+    if ( z_return != 0 ) {
+      *sstream >> msg_type >> msg_signal;
+      if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) {
+        delete sstream;
+        return 0;
+      }
+      if ( msg_type == SB_SIGTYPE_FSM  && msg_signal == fsm::status_155 ) {
+        uint64_t timing_offset;
+        char* timing_offset_c = new char[8];
+        sstream->seekg(1, std::ios_base::cur);
+        sstream->read(timing_offset_c, 8);
+        std::memcpy(&timing_offset, timing_offset_c, 8);
+        timing_offset_ = be64toh(timing_offset);
+        waiting_for_stop_ = true;
+      }
+    } else {
+      uint64_t timestamp =
+        std::chrono::duration_cast< std::chrono::milliseconds >(
+          std::chrono::system_clock::now().time_since_epoch()
+        ).count();
+      if (waiting_for_stop_ && timestamp - timing_offset_ <= 1000000) {
+        if (SB_MSG_DEBUG) printf("dis: stopping transmission\n");
+        break;
+      }
+    }
+
+    delete sstream;
+    sendFakeData();
+  }
+
+  std::stringstream* message = new std::stringstream();
+  *message << SB_SIGTYPE_FSM  << " "
+           << std::to_string(fsm::status_156);
+  zmqpp::message* z_msg = new zmqpp::message();
+  *z_msg << message->str();
+      z_boxoffice_pull->send(*z_msg);
+  return 1;
+}
+
+void Dispatcher::sendFakeData() const {
+  zmqpp::message* z_msg = new zmqpp::message();
+  std::stringstream* message = new std::stringstream();
+  *message << SB_SIGTYPE_PUB  << " "
+           << current_status_;
+
+  int p = message->tellp();
+  *message << std::setw(SB_MAXIMUM_FILE_PACKAGE_SIZE+22-p)
+           << std::setfill(' ') << " ";
+
+  *z_msg << message->str();
+  z_dispatcher->send(*z_msg);
+
+  delete message;
+  delete z_msg;
 }

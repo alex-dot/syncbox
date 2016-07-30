@@ -368,6 +368,7 @@ int Boxoffice::processEvent(fsm::status_t status,
         // STATUS_100
         // if the received status was simply 100, do nothing...
         case fsm::status_100: {
+          stop_sync_timeout_received_ = false;
           break;
         }
 
@@ -608,6 +609,24 @@ int Boxoffice::processEvent(fsm::status_t status,
 
           break;
         }
+        // STATUS_155
+        // when receiving 155 in ready_state_, return to normal heartbeat
+        case fsm::status_155: {
+          if (!stop_sync_timeout_received_) {
+            std::stringstream* message = new std::stringstream();
+            *message << SB_SIGTYPE_FSM  << " "
+                     << fsm::status_155 << " ";
+            sstream->seekg(1, std::ios_base::cur);
+            char* timing_offset_c = new char[8];
+            sstream->read(timing_offset_c, 8);
+            message->write(timing_offset_c, 8);
+            zmqpp::message z_msg;
+            z_msg << message->str();
+            z_bo_disp->send(z_msg);
+            stop_sync_timeout_received_ = true;
+            break;
+          }
+        }
 
         default:
           break;
@@ -641,8 +660,8 @@ int Boxoffice::processEvent(fsm::status_t status,
         std::chrono::duration_cast< std::chrono::milliseconds >(
           std::chrono::system_clock::now().time_since_epoch()
         ).count();
-      uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_OFFSET-SB_MINIMUM_OFFSET);
-      random_offset += SB_MINIMUM_OFFSET;
+      uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_SEND_OFFSET-SB_MINIMUM_SEND_OFFSET);
+      random_offset += SB_MINIMUM_SEND_OFFSET;
       current_timing_offset_ = timestamp
                                + random_offset
                                - subscribers[hash].offset; // \TODO this should be the average across all nodes
@@ -765,6 +784,7 @@ int Boxoffice::processEvent(fsm::status_t status,
     }
 
 
+
     // FSM CONTINUE
     fsm::state_t new_state = fsm::get_new_state(state_, event, status);
     if ( state_ != new_state ) {
@@ -839,6 +859,30 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
     current_file_ << cf.str().substr(32);
     *message << *current_file;
     file_list_metadata_.pop_front();
+  } else if ( new_state == fsm::syncing_stop_state && !stop_sync_timeout_received_ ) {
+    uint64_t timestamp =
+      std::chrono::duration_cast< std::chrono::milliseconds >(
+        std::chrono::system_clock::now().time_since_epoch()
+      ).count();
+    uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_STOP_OFFSET-SB_MINIMUM_STOP_OFFSET);
+    random_offset += SB_MINIMUM_STOP_OFFSET;
+    current_timing_offset_ = timestamp
+                             + random_offset;
+    uint64_t timing_offset = htobe64(current_timing_offset_);
+
+    std::stringstream* disp_message = new std::stringstream();
+    *disp_message << SB_SIGTYPE_FSM  << " "
+             << fsm::status_155 << " ";
+    char* timing_offset_c = new char[8];
+    std::memcpy(timing_offset_c, &timing_offset, 8);
+    disp_message->write(timing_offset_c, 8);
+    zmqpp::message z_msg;
+    z_msg << disp_message->str();
+    z_bo_disp->send(z_msg);
+
+    message->write(timing_offset_c, 8);
+
+    stop_sync_timeout_received_ = true;
   }
 }
 

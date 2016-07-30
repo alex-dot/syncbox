@@ -57,8 +57,10 @@ enum SB_BACKUP_TYPE {
 #define SB_IN_EVENT_MASK  IN_ATTRIB|IN_CREATE|IN_DELETE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE|IN_MOVE_SELF
 
 #define SB_MINIMUM_HB_WIDTH 256
-#define SB_MINIMUM_OFFSET 3000
-#define SB_MAXIMUM_OFFSET 6000
+#define SB_MINIMUM_SEND_OFFSET 3000
+#define SB_MAXIMUM_SEND_OFFSET 6000
+#define SB_MINIMUM_STOP_OFFSET 1000
+#define SB_MAXIMUM_STOP_OFFSET 2000
 
 #define SB_CONFIG_FILE "~/.syncbox"
 #define SB_KEYSTORE_FILE "~/.ssh/syncbox_keystore"
@@ -103,7 +105,7 @@ void s_recv(zmqpp::socket &socket,
             zmqpp::socket &heartbeat,
             zmqpp::socket &dispatch,
             std::stringstream &sstream);
-// wrapper for polling on one socket while simultaneously polling the broadcast, but non-blocking
+// wrapper for polling on three sockets, but non-blocking
 int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &socket2, zmqpp::socket &broadcast, std::stringstream &sstream, int timeout);
 // wrapper for polling on inotify event while simultaneously polling the broadcast
 void s_recv_in(zmqpp::socket &broadcast, zmqpp::socket &socket, int fd, std::stringstream &sstream);

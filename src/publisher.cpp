@@ -96,8 +96,9 @@ int Publisher::run()
     std::string infomessage = sstream->str().substr(5);
     std::stringstream message;
     message << std::to_string(msg_signal) << infomessage;
-    if (SB_MSG_DEBUG) printf("pub: sending status %d message with length %lu\n",
-      msg_signal, message.str().length());
+    if (msg_signal != fsm::status_200 && msg_signal != fsm::status_210 )
+      if (SB_MSG_DEBUG) printf("pub: sending status %d message with length %lu\n",
+          msg_signal, message.str().length());
     // setting the width to SB_MINIMUM_HB_WIDTH so all heartbeats have the same length
     int p = message.tellp();
     if (SB_MINIMUM_HB_WIDTH-p > 0)

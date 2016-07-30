@@ -121,7 +121,7 @@ void s_recv(zmqpp::socket &socket,
   }
 }
 
-// wrapper for polling on one socket while simultaneously polling the broadcast, but non-blocking
+// wrapper for polling on three sockets, but non-blocking
 int s_recv_noblock(zmqpp::socket &socket, zmqpp::socket &socket2, zmqpp::socket &broadcast, std::stringstream &sstream, int timeout)
 {
   int return_val;

@@ -26,7 +26,8 @@ class Dispatcher : public Transmitter
       z_dispatcher(nullptr),
       z_boxoffice_disp_push(nullptr),
       current_status_(fsm::status_100),
-      timing_offset_(-1)
+      timing_offset_(-1),
+      waiting_for_stop_(false)
       {};
     Dispatcher(zmqpp::context* z_ctx_, fsm::status_t status);
     Dispatcher(const Dispatcher&);
@@ -37,11 +38,14 @@ class Dispatcher : public Transmitter
   private:
     int connectToPublisher();
     int connectToBoxofficeDispatcher();
+    int synchronizingStop();
+    void sendFakeData() const;
 
     zmqpp::socket* z_dispatcher;
     zmqpp::socket* z_boxoffice_disp_push;
     fsm::status_t  current_status_;
     uint64_t       timing_offset_;
+    bool           waiting_for_stop_;
 };
 
 #endif
