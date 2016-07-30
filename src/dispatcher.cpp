@@ -82,17 +82,19 @@ int Dispatcher::run()
 
     if ( current_status_ == fsm::status_122
       || current_status_ == fsm::status_177 ) {
-      uint32_t timing_offset;
-      char* timing_offset_c = new char[4];
+      uint64_t timing_offset;
+      char* timing_offset_c = new char[8];
       sstream->seekg(1, std::ios_base::cur);
-      sstream->read(timing_offset_c, 4);
-      std::memcpy(&timing_offset, timing_offset_c, 4);
-      timing_offset_ = be32toh(timing_offset);
+      sstream->read(timing_offset_c, 8);
+      std::memcpy(&timing_offset, timing_offset_c, 8);
+      uint64_t timestamp =
+        std::chrono::duration_cast< std::chrono::milliseconds >(
+          std::chrono::system_clock::now().time_since_epoch()
+        ).count();
+      timing_offset_ = be64toh(timing_offset) - timestamp;
 
 // \TODO needs individual offset
-// \TODO needs DEBUG conditional
-//      std::this_thread::sleep_for(std::chrono::milliseconds(timing_offset_));
-      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(timing_offset_));
       if (SB_MSG_DEBUG) printf("dis: time's up!\n");
 
       std::stringstream* message = new std::stringstream();
@@ -163,17 +165,19 @@ int Dispatcher::run()
       delete message;
       delete z_msg;
     } else if (current_status_ == fsm::status_130) {
-      uint32_t timing_offset;
-      char* timing_offset_c = new char[4];
+      uint64_t timing_offset;
+      char* timing_offset_c = new char[8];
       sstream->seekg(1, std::ios_base::cur);
-      sstream->read(timing_offset_c, 4);
-      std::memcpy(&timing_offset, timing_offset_c, 4);
-      timing_offset_ = be32toh(timing_offset);
+      sstream->read(timing_offset_c, 8);
+      std::memcpy(&timing_offset, timing_offset_c, 8);
+      uint64_t timestamp =
+        std::chrono::duration_cast< std::chrono::milliseconds >(
+          std::chrono::system_clock::now().time_since_epoch()
+        ).count();
+      timing_offset_ = be64toh(timing_offset) - timestamp;
 
 // \TODO needs individual offset
-// \TODO needs DEBUG conditional
-//      std::this_thread::sleep_for(std::chrono::milliseconds(timing_offset_));
-      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(timing_offset_));
       if (SB_MSG_DEBUG) printf("dis: time's up!\n");
 
       std::stringstream* message = new std::stringstream();

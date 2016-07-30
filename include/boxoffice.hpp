@@ -108,7 +108,7 @@ class Boxoffice
     std::deque< File* > file_list_data_;
     int node_reply_counter_;
     int total_node_number_;
-    uint32_t current_timing_offset_;
+    uint64_t current_timing_offset_;
     bool notified_dispatch_;
     unsigned char* current_box_;
     std::stringstream current_file_;

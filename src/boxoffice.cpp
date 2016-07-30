@@ -476,13 +476,13 @@ int Boxoffice::processEvent(fsm::status_t status,
             }
             delete new_file;
 
-            char* timing_offset_c = new char[4];
-            sstream->read(timing_offset_c, 4);
+            char* timing_offset_c = new char[8];
+            sstream->read(timing_offset_c, 8);
 
             std::stringstream* message = new std::stringstream();
             *message << SB_SIGTYPE_FSM  << " "
                      << fsm::status_130 << " ";
-            message->write(timing_offset_c, 4);
+            message->write(timing_offset_c, 8);
             zmqpp::message z_msg;
             z_msg << message->str();
             z_bo_disp->send(z_msg);
@@ -615,14 +615,19 @@ int Boxoffice::processEvent(fsm::status_t status,
       std::memcpy(node_hash, node_hash_s, SB_GENERIC_HASH_LEN);
       Hash* hash = new Hash(node_hash);
 
+      uint64_t timestamp =
+        std::chrono::duration_cast< std::chrono::milliseconds >(
+          std::chrono::system_clock::now().time_since_epoch()
+        ).count();
       uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_OFFSET-SB_MINIMUM_OFFSET);
       random_offset += SB_MINIMUM_OFFSET;
-      current_timing_offset_ = random_offset
+      current_timing_offset_ = timestamp
+                               + random_offset
                                - subscribers[hash].offset; // \TODO this should be the average across all nodes
-      uint32_t timing_offset = htobe32(current_timing_offset_);
-      char* timing_offset_c = new char[4];
-      std::memcpy(timing_offset_c, &timing_offset, 4);
-      message.write(timing_offset_c, 4);
+      uint64_t timing_offset = htobe64(current_timing_offset_);
+      char* timing_offset_c = new char[8];
+      std::memcpy(timing_offset_c, &timing_offset, 8);
+      message.write(timing_offset_c, 8);
 
       char* box_hash = new char[SB_GENERIC_HASH_LEN];
       std::memcpy(box_hash, current_box_, SB_GENERIC_HASH_LEN);
@@ -788,10 +793,10 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
     current_file_ << cf.str().substr(32);
     *message << *current_file;
     file_list_data_.pop_front();
-    uint32_t timing_offset = htobe32(current_timing_offset_);
-    char* timing_offset_c = new char[4];
-    std::memcpy(timing_offset_c, &timing_offset, 4);
-    message->write(timing_offset_c, 4);
+    uint64_t timing_offset = htobe64(current_timing_offset_);
+    char* timing_offset_c = new char[8];
+    std::memcpy(timing_offset_c, &timing_offset, 8);
+    message->write(timing_offset_c, 8);
   } else if ( new_state == fsm::sending_file_metadata_change_state
            || new_state == fsm::sending_file_metadata_change_with_more_state) {
     File* current_file = file_list_metadata_.front();
