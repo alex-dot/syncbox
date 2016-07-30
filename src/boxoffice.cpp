@@ -417,9 +417,25 @@ int Boxoffice::processEvent(fsm::status_t status,
           break;
         }
 
-        // STATUS_141
+        // STATUS_140
         // waiting for all nodes to reply, so increment node_reply_counter_
         // until all nodes replied, then manually change the status to 150
+        case fsm::status_140: {
+          ++node_reply_counter_;
+
+          if ( node_reply_counter_ == total_node_number_ ) {
+            node_reply_counter_ = -1;
+
+            status = fsm::status_142;
+            event = fsm::get_event_by_status_code(status);
+            if ( !check_event(state_, event, status) ) return 1;
+          }
+
+          break;
+        }
+        // STATUS_141
+        // waiting for all nodes to reply, so increment node_reply_counter_
+        // until all nodes replied, then manually change the status
         case fsm::status_141: {
           ++node_reply_counter_;
 
@@ -451,6 +467,12 @@ int Boxoffice::processEvent(fsm::status_t status,
         case fsm::status_124:
           {
             notified_dispatch_ = false;
+            break;
+          }
+        // STATUS_132
+        case fsm::status_132:
+          {
+            node_reply_counter_ = 0;
             break;
           }
 
@@ -728,6 +750,10 @@ int Boxoffice::processEvent(fsm::status_t status,
       file->storeFileData(contents, data_size, offset);
       delete contents;
       delete file;
+
+      status = fsm::status_113;
+      event = fsm::get_event_by_status_code(status);
+      if ( !check_event(state_, event, status) ) return 1;
     }
 
 
