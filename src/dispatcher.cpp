@@ -13,6 +13,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <boost/thread.hpp>
 #include <chrono>
 #include <thread>
@@ -129,7 +130,7 @@ int Dispatcher::run()
 
       message = new std::stringstream();
       *message << SB_SIGTYPE_PUB  << " "
-               << current_status_;
+               << std::to_string(current_status_);
       z_msg = new zmqpp::message();
 
       while (*more) {
@@ -151,6 +152,12 @@ int Dispatcher::run()
         message->write(data_size_c, 8);
 
         message->write(contents, data_size);
+
+        int p = message->tellp();
+        if (SB_MAXIMUM_FILE_PACKAGE_SIZE+21-p > 0)
+          *message << std::setw(SB_MAXIMUM_FILE_PACKAGE_SIZE+21-p)
+                   << std::setfill(' ') << " ";
+
         *z_msg << message->str();
         z_dispatcher->send(*z_msg);
 
@@ -182,7 +189,7 @@ int Dispatcher::run()
 
       std::stringstream* message = new std::stringstream();
       *message << SB_SIGTYPE_FSM  << " "
-               << fsm::status_132;
+               << std::to_string(fsm::status_132);
       zmqpp::message* z_msg = new zmqpp::message();
       *z_msg << message->str();
       z_boxoffice_pull->send(*z_msg);
@@ -197,27 +204,14 @@ int Dispatcher::run()
       *message << SB_SIGTYPE_PUB  << " "
                << current_status_;
       z_msg = new zmqpp::message();
-      bool* more = new bool(true);
 
-      while (*more) {
-*more = false;
-/*
-        data_size += file->readFileData(contents,
-                                         SB_MAXIMUM_FILE_PACKAGE_SIZE,
-                                         offset,
-                                         more);
-        offset += SB_MAXIMUM_FILE_PACKAGE_SIZE;
+      int p = message->tellp();
+      if (SB_MAXIMUM_FILE_PACKAGE_SIZE+21-p > 0)
+        *message << std::setw(SB_MAXIMUM_FILE_PACKAGE_SIZE+21-p)
+                 << std::setfill(' ') << " ";
 
-        message->write(contents, data_size);
-        *z_msg << message->str();
-        z_dispatcher->send(*z_msg);
-*/
-
-        delete message;
-        message = new std::stringstream();
-        delete z_msg;
-        z_msg = new zmqpp::message();
-      }
+      delete message;
+      delete z_msg;
     }
 
     delete sstream;
