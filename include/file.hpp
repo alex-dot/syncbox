@@ -103,8 +103,11 @@ class File {
     uint64_t readFileData(char* data, uint64_t offset, bool* more);
 
     void storeFileData(const char* data,
+                       const int64_t size,
+                       const int64_t offset);
+    void storeFileData(const char* data,
                        const uint64_t size,
-                       uint64_t offset);
+                       const uint64_t offset);
 
  private:
     std::string                              box_path_;

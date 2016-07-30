@@ -469,8 +469,11 @@ int Boxoffice::processEvent(fsm::status_t status,
             Box* box = boxes[hash];
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
-            new_file->storeMetadata();
-            new_file->resize();
+            if (!file_metadata_written_) {
+              new_file->storeMetadata();
+              new_file->resize();
+              file_metadata_written_ = true;
+            }
             delete new_file;
 
             char* timing_offset_c = new char[4];
@@ -488,6 +491,12 @@ int Boxoffice::processEvent(fsm::status_t status,
 
           break;
         }
+        // STATUS_160
+        // acknowledging new file metadata
+        case fsm::status_160: {
+          file_metadata_written_ = false;
+          break;
+        }
         // STATUS_170
         // receiving file metadata
         case fsm::status_170: {
@@ -503,17 +512,19 @@ int Boxoffice::processEvent(fsm::status_t status,
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
 
-            if (!new_file->isToBeDeleted()) {
+            if (!new_file->isToBeDeleted() && !file_metadata_written_) {
               if (new_file->exists()) {
                 new_file->resize();
               } else {
                 new_file->create();
               }
               new_file->storeMetadata();
+              file_metadata_written_ = true;
             }
             delete new_file;
 
             status = fsm::status_173;
+            file_metadata_written_ = false;
             event = fsm::get_event_by_status_code(status);
             if ( !check_event(state_, event, status) ) return 1;
           }
@@ -535,14 +546,22 @@ int Boxoffice::processEvent(fsm::status_t status,
             File* new_file = new File(box->getBaseDir(), hash);
             *sstream >> *new_file;
 
-            if (!new_file->isToBeDeleted()) {
+            if (!new_file->isToBeDeleted() && !file_metadata_written_) {
               if (new_file->exists()) {
                 new_file->resize();
               } else {
                 new_file->create();
               }
               new_file->storeMetadata();
+              // \TODO in status_174 the sender sends the metadata
+              //       of all files without changing the status, this 
+              //       isn't handled yet
+              file_metadata_written_ = true;
             }
+            std::memcpy(current_box_, box_hash, SB_GENERIC_HASH_LEN);
+            std::stringstream cf;
+            cf << *new_file;
+            current_file_ << cf.str().substr(32);
             delete new_file;
             notified_dispatch_ = false;
 
@@ -677,6 +696,36 @@ int Boxoffice::processEvent(fsm::status_t status,
     }
 
 
+    // RECEIVED FILE DATA
+    // read the file data and store it
+    if ( event == fsm::received_file_data_event ) {
+      if (SB_MSG_DEBUG) printf("bo: receiving file data...\n");
+      Hash* box_hash = new Hash(current_box_);
+      Box* box = boxes[box_hash];
+      File* file = new File(box->getBaseDir(), box_hash);
+      current_file_ >> *file;
+
+      sstream->seekg(SB_GENERIC_HASH_LEN, std::ios_base::cur);
+      char* offset_c = new char[8];
+      sstream->read(offset_c, 8);
+      uint64_t offset_be;
+      std::memcpy(&offset_be, offset_c, 8);
+      uint64_t offset = be64toh(offset_be);
+
+      char* data_size_c = new char[8];
+      sstream->read(data_size_c, 8);
+      uint64_t data_size_be;
+      std::memcpy(&data_size_be, data_size_c, 8);
+      uint64_t data_size = be64toh(data_size_be);
+
+      char* contents = new char[data_size];
+      sstream->read(contents, data_size);
+      file->storeFileData(contents, data_size, offset);
+      delete contents;
+      delete file;
+    }
+
+
     // FSM CONTINUE
     fsm::state_t new_state = fsm::get_new_state(state_, event, status);
     if ( state_ != new_state ) {
@@ -734,8 +783,10 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
   if (        new_state == fsm::sending_new_file_metadata_state
            || new_state == fsm::sending_new_file_metadata_with_more_state ) {
     File* current_file = file_list_data_.front();
-    current_file_ << *current_file;
-    *message << current_file_.str();
+    std::stringstream cf;
+    cf << *current_file;
+    current_file_ << cf.str().substr(32);
+    *message << *current_file;
     file_list_data_.pop_front();
     uint32_t timing_offset = htobe32(current_timing_offset_);
     char* timing_offset_c = new char[4];
@@ -744,6 +795,9 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
   } else if ( new_state == fsm::sending_file_metadata_change_state
            || new_state == fsm::sending_file_metadata_change_with_more_state) {
     File* current_file = file_list_metadata_.front();
+    std::stringstream cf;
+    cf << *current_file;
+    current_file_ << cf.str().substr(32);
     *message << *current_file;
     file_list_metadata_.pop_front();
   }

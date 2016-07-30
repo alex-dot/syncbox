@@ -59,7 +59,7 @@ int Subscriber::run()
       msg_signal = msg_type;
     }
 
-    std::getline(*sstream, infomessage);
+    std::string infomessage = sstream->str().substr(3);
     std::stringstream message;
     message << SB_SIGTYPE_SUB << " "
             << msg_signal;

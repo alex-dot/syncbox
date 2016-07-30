@@ -116,7 +116,7 @@ void s_recv(zmqpp::socket &socket,
   }
   if ( poller.events(z_items[3]) & ZMQ_POLLIN )
   {
-    heartbeat.receive(z_msg);
+    dispatch.receive(z_msg);
     sstream << z_msg.get(0);
   }
 }

@@ -37,7 +37,6 @@ Publisher::~Publisher() {
 
 int Publisher::connectToHeartbeater()
 {
-  // connect to process broadcast
   z_heartbeater = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
   z_heartbeater->connect("inproc://pub_hb_pair");
 
@@ -46,7 +45,6 @@ int Publisher::connectToHeartbeater()
 
 int Publisher::connectToDispatcher()
 {
-  // connect to process broadcast
   z_dispatcher = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
   z_dispatcher->connect("inproc://pub_disp_pair");
 
@@ -95,15 +93,15 @@ int Publisher::run()
     if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
 
     // send a message
-    std::string infomessage;
-    std::getline(*sstream, infomessage);
+    std::string infomessage = sstream->str().substr(5);
     std::stringstream message;
     message << std::to_string(msg_signal) << infomessage;
     if (SB_MSG_DEBUG) printf("pub: sending status %d message with length %lu\n",
       msg_signal, message.str().length());
     // setting the width to SB_MINIMUM_HB_WIDTH so all heartbeats have the same length
-    uint p = message.tellp();
-    message << std::setw(SB_MINIMUM_HB_WIDTH-p) << std::setfill(' ') << " ";
+    int p = message.tellp();
+    if (SB_MINIMUM_HB_WIDTH-p > 0)
+      message << std::setw(SB_MINIMUM_HB_WIDTH-p) << std::setfill(' ') << " ";
     zmqpp::message z_msg;
     z_msg << message.str();
     z_publisher->send(z_msg);

@@ -24,7 +24,7 @@ Dispatcher::Dispatcher(zmqpp::context* z_ctx_, fsm::status_t status) :
   current_status_(status),
   timing_offset_(-1) {
     tac = (char*)"dis";
-    this->connectToBoxofficeHB();
+    this->connectToBoxofficeDispatcher();
     this->connectToPublisher();
 }
 
@@ -45,7 +45,7 @@ int Dispatcher::connectToPublisher()
   return 0;
 }
 
-int Dispatcher::connectToBoxofficeHB()
+int Dispatcher::connectToBoxofficeDispatcher()
 {
   // open connection to receive HB data from boxoffice
   z_boxoffice_disp_push = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
@@ -93,6 +93,7 @@ int Dispatcher::run()
 // \TODO needs DEBUG conditional
 //      std::this_thread::sleep_for(std::chrono::milliseconds(timing_offset_));
       std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+      if (SB_MSG_DEBUG) printf("dis: time's up!\n");
 
       std::stringstream* message = new std::stringstream();
       *message << SB_SIGTYPE_FSM  << " "
@@ -130,18 +131,26 @@ int Dispatcher::run()
       z_msg = new zmqpp::message();
 
       while (*more) {
-*more = false;
-/*
         data_size += file->readFileData(contents,
-                                         SB_MAXIMUM_FILE_PACKAGE_SIZE,
-                                         offset,
-                                         more);
+                                        SB_MAXIMUM_FILE_PACKAGE_SIZE,
+                                        offset,
+                                        more);
+
+        uint64_t offset_be = htobe64(offset);
+        char* offset_c = new char[8];
+        std::memcpy(offset_c, &offset_be, 8);
+        message->write(offset_c, 8);
+
         offset += SB_MAXIMUM_FILE_PACKAGE_SIZE;
+
+        uint64_t data_size_be = htobe64(data_size);
+        char* data_size_c = new char[8];
+        std::memcpy(data_size_c, &data_size_be, 8);
+        message->write(data_size_c, 8);
 
         message->write(contents, data_size);
         *z_msg << message->str();
         z_dispatcher->send(*z_msg);
-*/
 
         delete contents;
         contents = new char[SB_MAXIMUM_FILE_PACKAGE_SIZE];
@@ -165,6 +174,7 @@ int Dispatcher::run()
 // \TODO needs DEBUG conditional
 //      std::this_thread::sleep_for(std::chrono::milliseconds(timing_offset_));
       std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+      if (SB_MSG_DEBUG) printf("dis: time's up!\n");
 
       std::stringstream* message = new std::stringstream();
       *message << SB_SIGTYPE_FSM  << " "

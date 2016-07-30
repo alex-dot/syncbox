@@ -58,6 +58,7 @@ class Boxoffice
       notified_dispatch_(false),
       current_box_(new unsigned char[SB_GENERIC_HASH_LEN]),
       current_file_(),
+      file_metadata_written_(false),
       z_ctx(nullptr),
       z_bo_main(nullptr),
       z_router(nullptr),
@@ -111,6 +112,7 @@ class Boxoffice
     bool notified_dispatch_;
     unsigned char* current_box_;
     std::stringstream current_file_;
+    bool file_metadata_written_;
 
     zmqpp::context* z_ctx;
     zmqpp::socket* z_bo_main;

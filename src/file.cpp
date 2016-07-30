@@ -275,7 +275,9 @@ void File::create() {
 }
 
 void File::openFile() {
-  fstream_.open(bpath_.string(), std::ios_base::in | std::ios_base::out);
+  fstream_.open(bpath_.string(),
+    std::ios_base::in | std::ios_base::out | std::ios_base::binary);
+  fstream_.unsetf(std::ios_base::skipws);
 }
 void File::closeFile() {
   fstream_.close();
@@ -294,18 +296,16 @@ uint64_t File::readFileData(char* data,
   if (size_ <= SB_MAXIMUM_FILE_PACKAGE_SIZE && size_ <= size) {
     fstream_.seekg(offset, std::ios_base::beg);
     fstream_.read(data, size_);
-    data_size = size_;
   } else if (size < SB_MAXIMUM_FILE_PACKAGE_SIZE) {
     fstream_.seekg(offset, std::ios_base::beg);
     fstream_.read(data, size);
-    data_size = size;
   } else {
     fstream_.seekg(offset, std::ios_base::beg);
     fstream_.read(data, SB_MAXIMUM_FILE_PACKAGE_SIZE);
-    data_size = SB_MAXIMUM_FILE_PACKAGE_SIZE;
   }
+  data_size = fstream_.gcount();
 
-  if (offset + size < size_) {
+  if (offset + data_size < size_) {
     *more = true;
   } else {
     *more = false;
@@ -321,25 +321,34 @@ uint64_t File::readFileData(char* data, uint64_t offset, bool* more) {
 }
 
 void File::storeFileData(const char* data,
-                         const uint64_t size,
-                         uint64_t offset) {
+                         const int64_t size,
+                         const int64_t offset) {
   if (deleted_file_) return;
 
-  if (!fstream_.is_open())
+  if (!fstream_.is_open()) {
     openFile();
+  }
 
-  if (size_ <= SB_MAXIMUM_FILE_PACKAGE_SIZE && size_ <= size) {
-    fstream_.seekp(offset, std::ios_base::beg);
+  if ( static_cast<int64_t>(size_) <= SB_MAXIMUM_FILE_PACKAGE_SIZE
+    && static_cast<int64_t>(size_) <= size) {
+    fstream_.seekp(offset);
     fstream_.write(data, size_);
   } else if (size < SB_MAXIMUM_FILE_PACKAGE_SIZE) {
-    fstream_.seekp(offset, std::ios_base::beg);
+    fstream_.seekp(offset);
     fstream_.write(data, size);
   } else {
-    fstream_.seekp(offset, std::ios_base::beg);
+    fstream_.seekp(offset);
     fstream_.write(data, SB_MAXIMUM_FILE_PACKAGE_SIZE);
   }
 
   boost::filesystem::last_write_time(bpath_, static_cast<time_t>(mtime_));
+}
+void File::storeFileData(const char* data,
+                         const uint64_t size,
+                         const uint64_t offset) {
+  storeFileData(data,
+                static_cast<int64_t>(size),
+                static_cast<int64_t>(offset));
 }
 
 const std::string File::constructPath(const std::string box_path,

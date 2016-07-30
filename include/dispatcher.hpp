@@ -36,7 +36,7 @@ class Dispatcher : public Transmitter
 
   private:
     int connectToPublisher();
-    int connectToBoxofficeHB();
+    int connectToBoxofficeDispatcher();
 
     zmqpp::socket* z_dispatcher;
     zmqpp::socket* z_boxoffice_disp_push;
