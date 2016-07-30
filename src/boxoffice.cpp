@@ -745,15 +745,23 @@ int Boxoffice::processEvent(fsm::status_t status,
       std::memcpy(&data_size_be, data_size_c, 8);
       uint64_t data_size = be64toh(data_size_be);
 
+      char* more_c = new char[1];
+      sstream->read(more_c, 1);
+      int8_t more_i;
+      std::memcpy(&more_i, more_c, 1);
+      bool more = static_cast<bool>(more_i);
+
       char* contents = new char[data_size];
       sstream->read(contents, data_size);
       file->storeFileData(contents, data_size, offset);
       delete contents;
       delete file;
 
-      status = fsm::status_113;
-      event = fsm::get_event_by_status_code(status);
-      if ( !check_event(state_, event, status) ) return 1;
+      if (!more) {
+        status = fsm::status_113;
+        event = fsm::get_event_by_status_code(status);
+        if ( !check_event(state_, event, status) ) return 1;
+      }
     }
 
 

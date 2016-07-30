@@ -151,11 +151,16 @@ int Dispatcher::run()
         std::memcpy(data_size_c, &data_size_be, 8);
         message->write(data_size_c, 8);
 
+        int8_t more_i = static_cast<int8_t>(*more);
+        char* more_c = new char[1];
+        std::memcpy(more_c, &more_i, 1);
+        message->write(more_c, 1);
+
         message->write(contents, data_size);
 
         int p = message->tellp();
-        if (SB_MAXIMUM_FILE_PACKAGE_SIZE+21-p > 0)
-          *message << std::setw(SB_MAXIMUM_FILE_PACKAGE_SIZE+21-p)
+        if (SB_MAXIMUM_FILE_PACKAGE_SIZE+22-p > 0)
+          *message << std::setw(SB_MAXIMUM_FILE_PACKAGE_SIZE+22-p)
                    << std::setfill(' ') << " ";
 
         *z_msg << message->str();
@@ -168,9 +173,12 @@ int Dispatcher::run()
         delete z_msg;
         z_msg = new zmqpp::message();
       }
+
       delete contents;
       delete message;
       delete z_msg;
+      delete sstream;
+
     } else if (current_status_ == fsm::status_130) {
       uint64_t timing_offset;
       char* timing_offset_c = new char[8];
