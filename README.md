@@ -102,7 +102,7 @@ sudo make install
 cd ..
 ```
 
-### Compiling flocksy
+#### Compiling flocksy
 
 ```
 #Compiling flocksy
