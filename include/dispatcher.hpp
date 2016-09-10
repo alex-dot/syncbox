@@ -7,8 +7,8 @@
  * For each dispatcher there shall be a separate dispatcher thread. 
  */
 
-#ifndef SB_DISPATCHER_HPP
-#define SB_DISPATCHER_HPP
+#ifndef F_DISPATCHER_HPP
+#define F_DISPATCHER_HPP
 
 #include <zmqpp/zmqpp.hpp>
 

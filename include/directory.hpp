@@ -3,8 +3,8 @@
  *
  */
 
-#ifndef SB_DIRS_HPP
-#define SB_DIRS_HPP
+#ifndef F_DIRS_HPP
+#define F_DIRS_HPP
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 
 #include <boost/filesystem.hpp>

@@ -7,8 +7,8 @@
  * For each publisher there shall be a separate publisher thread. 
  */
 
-#ifndef SB_PUBLISHER_HPP
-#define SB_PUBLISHER_HPP
+#ifndef F_PUBLISHER_HPP
+#define F_PUBLISHER_HPP
 
 #include <zmqpp/zmqpp.hpp>
 

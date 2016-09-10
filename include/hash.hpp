@@ -20,7 +20,7 @@
 
 #include <iostream>
 
-#define SB_GENERIC_HASH_LEN 32U
+#define F_GENERIC_HASH_LEN 32U
 
 /**
  * \brief Wrapper class for hashed strings enabling sorting etc.
@@ -36,7 +36,7 @@
 class Hash {
  public:
   Hash();
-  explicit Hash(const unsigned char hash_bytes[SB_GENERIC_HASH_LEN]);
+  explicit Hash(const unsigned char hash_bytes[F_GENERIC_HASH_LEN]);
   explicit Hash(const std::string& string);
   ~Hash();
 
@@ -59,7 +59,7 @@ class Hash {
 };
 
 inline bool operator<  (const Hash& lhs, const Hash& rhs) {
-  return (memcmp(lhs.hash_, rhs.hash_, SB_GENERIC_HASH_LEN) < 0)? true : false;
+  return (memcmp(lhs.hash_, rhs.hash_, F_GENERIC_HASH_LEN) < 0)? true : false;
 }
 inline bool operator>  (const Hash& lhs, const Hash& rhs)
   { return rhs < lhs; }
@@ -68,7 +68,7 @@ inline bool operator<= (const Hash& lhs, const Hash& rhs)
 inline bool operator>= (const Hash& lhs, const Hash& rhs)
   { return !(lhs < rhs); }
 inline bool operator== (const Hash& lhs, const Hash& rhs) {
-  return (memcmp(lhs.hash_, rhs.hash_, SB_GENERIC_HASH_LEN) == 0) ? true : false;
+  return (memcmp(lhs.hash_, rhs.hash_, F_GENERIC_HASH_LEN) == 0) ? true : false;
 }
 inline bool operator!= (const Hash& lhs, const Hash& rhs)
   { return !(lhs == rhs); }

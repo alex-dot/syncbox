@@ -99,7 +99,7 @@ int Boxoffice::connectToBroadcast()
   // since we want to rarely use that (mostly interrupt) we assume that by 
   // the time we need it, we have long been connected to it
   z_broadcast = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
-  z_broadcast->connect("inproc://sb_broadcast");
+  z_broadcast->connect("inproc://f_broadcast");
   z_broadcast->subscribe("");
 
   return 0;
@@ -109,7 +109,7 @@ int Boxoffice::connectToMain()
 {
   // open PAIR sender to main thread
   z_bo_main = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pair);
-  z_bo_main->connect("inproc://sb_bo_main_pair");
+  z_bo_main->connect("inproc://f_bo_main_pair");
 
   return 0;
 }
@@ -118,17 +118,17 @@ int Boxoffice::setupConnectionToChildren()
 {
   // connection for information from subscribers, publishers and boxes
   z_router = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pull);
-  z_router->bind("inproc://sb_boxoffice_pull_in");
+  z_router->bind("inproc://f_boxoffice_pull_in");
   // connection to send information to publishers and boxes
   z_bo_pub = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pub);
-  z_bo_pub->bind("inproc://sb_boxoffice_push_out");
+  z_bo_pub->bind("inproc://f_boxoffice_push_out");
   // connection to send information to heartbeaters
   z_bo_hb = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pub);
-  z_bo_hb->bind("inproc://sb_boxoffice_hb_push_out");
+  z_bo_hb->bind("inproc://f_boxoffice_hb_push_out");
   // connection to send information to dispatchers
   z_bo_disp = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pub);
-  z_bo_disp->bind("inproc://sb_boxoffice_disp_push_out");
-  if (SB_MSG_DEBUG) printf("bo: starting to listen to children...\n");
+  z_bo_disp->bind("inproc://f_boxoffice_disp_push_out");
+  if (F_MSG_DEBUG) printf("bo: starting to listen to children...\n");
 
   return 0;
 }
@@ -139,7 +139,7 @@ int Boxoffice::setupBoxes()
   std::vector< box_t > box_dirs = conf->getBoxes();
 
   box_threads.reserve(box_dirs.size());
-  if (SB_MSG_DEBUG) printf("bo: opening %d box threads\n", (int)box_dirs.size());
+  if (F_MSG_DEBUG) printf("bo: opening %d box threads\n", (int)box_dirs.size());
   for (std::vector<box_t>::iterator i = box_dirs.begin(); i != box_dirs.end(); ++i)
   {
     // initializing the boxes here, so we can use file IO while it's thread 
@@ -152,7 +152,7 @@ int Boxoffice::setupBoxes()
     boost::thread* bt = new boost::thread(box_thread, box);
     box_threads.push_back(bt);
   }
-  if (SB_MSG_DEBUG) printf("bo: opened %d box threads\n", (int)box_dirs.size());
+  if (F_MSG_DEBUG) printf("bo: opened %d box threads\n", (int)box_dirs.size());
 
   return 0;
 }
@@ -163,14 +163,14 @@ int Boxoffice::setupPublishers()
   zmqpp::message z_msg;
 
   // opening publisher threads
-  if (SB_MSG_DEBUG) printf("bo: opening %d publisher threads\n", (int)publishers.size());
+  if (F_MSG_DEBUG) printf("bo: opening %d publisher threads\n", (int)publishers.size());
   for (std::vector< host_t >::iterator i = publishers.begin(); 
         i != publishers.end(); ++i)
   {
     boost::thread* pub_thread = new boost::thread(publisher_thread, z_ctx, *i);
     pub_threads.push_back(pub_thread);
   }
-  if (SB_MSG_DEBUG) printf("bo: opened %d publisher threads\n", (int)pub_threads.size());
+  if (F_MSG_DEBUG) printf("bo: opened %d publisher threads\n", (int)pub_threads.size());
 
   return 0;
 }
@@ -181,14 +181,14 @@ int Boxoffice::setupHeartbeaters()
   zmqpp::message z_msg;
 
   // opening heartbeater threads
-  if (SB_MSG_DEBUG) printf("bo: opening %d heartbeater threads\n", (int)publishers.size());
+  if (F_MSG_DEBUG) printf("bo: opening %d heartbeater threads\n", (int)publishers.size());
   for (std::vector< host_t >::iterator i = publishers.begin(); 
         i != publishers.end(); ++i)
   {
     boost::thread* hb_thread = new boost::thread(heartbeater_thread, z_ctx, fsm::status_100);
     hb_threads.push_back(hb_thread);
   }
-  if (SB_MSG_DEBUG) printf("bo: opened %d heartbeater threads\n", (int)hb_threads.size());
+  if (F_MSG_DEBUG) printf("bo: opened %d heartbeater threads\n", (int)hb_threads.size());
 
   return 0;
 }
@@ -199,14 +199,14 @@ int Boxoffice::setupDispatchers()
   zmqpp::message z_msg;
 
   // opening dispatcher threads
-  if (SB_MSG_DEBUG) printf("bo: opening %d dispatcher threads\n", (int)publishers.size());
+  if (F_MSG_DEBUG) printf("bo: opening %d dispatcher threads\n", (int)publishers.size());
   for (std::vector< host_t >::iterator i = publishers.begin(); 
         i != publishers.end(); ++i)
   {
     boost::thread* disp_thread = new boost::thread(dispatcher_thread, z_ctx, fsm::status_100);
     disp_threads.push_back(disp_thread);
   }
-  if (SB_MSG_DEBUG) printf("bo: opened %d dispatcher threads\n", (int)disp_threads.size());
+  if (F_MSG_DEBUG) printf("bo: opened %d dispatcher threads\n", (int)disp_threads.size());
 
   return 0;
 }
@@ -214,7 +214,7 @@ int Boxoffice::setupDispatchers()
 int Boxoffice::setupSubscribers()
 {
   // opening subscriber threads
-  if (SB_MSG_DEBUG) printf("bo: opening %d subscriber threads\n", (int)subscribers.size());
+  if (F_MSG_DEBUG) printf("bo: opening %d subscriber threads\n", (int)subscribers.size());
   for (node_map::iterator i = subscribers.begin(); 
         i != subscribers.end(); ++i)
   {
@@ -224,7 +224,7 @@ int Boxoffice::setupSubscribers()
     sub_threads.push_back(sub_thread);
     ++total_node_number_;
   }
-  if (SB_MSG_DEBUG) printf("bo: opened %d subscriber threads\n", (int)sub_threads.size());
+  if (F_MSG_DEBUG) printf("bo: opened %d subscriber threads\n", (int)sub_threads.size());
 
   return 0;
 }
@@ -246,11 +246,11 @@ int Boxoffice::checkChildren() {
     sstream = new std::stringstream();
     s_recv(*z_router, *z_broadcast, *sstream);
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type != SB_SIGTYPE_LIFE || msg_signal != SB_SIGLIFE_ALIVE ) return 1;
+    if ( msg_type != F_SIGTYPE_LIFE || msg_signal != F_SIGLIFE_ALIVE ) return 1;
     delete sstream;
   }
-  if (SB_MSG_DEBUG) printf("bo: all subscribers, publishers, heartbeaters, dispatchers and boxes connected\n");
-  if (SB_MSG_DEBUG) printf("bo: counted %d threads\n", heartbeats);
+  if (F_MSG_DEBUG) printf("bo: all subscribers, publishers, heartbeaters, dispatchers and boxes connected\n");
+  if (F_MSG_DEBUG) printf("bo: counted %d threads\n", heartbeats);
 
   return 0;
 }
@@ -273,11 +273,11 @@ int Boxoffice::closeConnections()
     sstream = new std::stringstream();
     s_recv(*z_router, *z_broadcast, *sstream);
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type != SB_SIGTYPE_LIFE || (   msg_signal != SB_SIGLIFE_EXIT
-                                         && msg_signal != SB_SIGLIFE_INTERRUPT ) ) return_value = 1;
+    if ( msg_type != F_SIGTYPE_LIFE || (   msg_signal != F_SIGLIFE_EXIT
+                                         && msg_signal != F_SIGLIFE_INTERRUPT ) ) return_value = 1;
     delete sstream;
   }
-  if (SB_MSG_DEBUG) printf("bo: all subscribers, publishers, heartbeaters, dispatchers and boxes exited\n");
+  if (F_MSG_DEBUG) printf("bo: all subscribers, publishers, heartbeaters, dispatchers and boxes exited\n");
 
   // closing broadcast socket
   // we check if the sockets are nullptrs, but z_broadcast is never
@@ -307,16 +307,16 @@ int Boxoffice::closeConnections()
   z_bo_disp->close();
 
   // sending exit signal to the main thread...
-  if (SB_MSG_DEBUG) printf("bo: sending exit signal...\n");
+  if (F_MSG_DEBUG) printf("bo: sending exit signal...\n");
   std::stringstream message;
-  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_EXIT;
+  message << F_SIGTYPE_LIFE << " " << F_SIGLIFE_EXIT;
   zmqpp::message z_msg;
   z_msg << message.str();
   z_bo_main->send(z_msg);
   // ...and exiting
   z_bo_main->close();
 
-  if (SB_MSG_DEBUG) printf("bo: exit signal sent, exiting...\n");
+  if (F_MSG_DEBUG) printf("bo: exit signal sent, exiting...\n");
 
   return return_value;
 }
@@ -328,14 +328,14 @@ int Boxoffice::runRouter()
   int msg_type, msg_signal;
   std::stringstream* sstream;
 
-  if (SB_MSG_DEBUG) printf("bo: waiting for input from subscribers and watchers\n");
+  if (F_MSG_DEBUG) printf("bo: waiting for input from subscribers and watchers\n");
   while(true)
   {
     // waiting for subscriber or inotify input
     sstream = new std::stringstream();
     s_recv(*z_router, *z_bo_main, *sstream);
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type == SB_SIGTYPE_LIFE    && msg_signal == SB_SIGLIFE_INTERRUPT ) 
+    if ( msg_type == F_SIGTYPE_LIFE    && msg_signal == F_SIGLIFE_INTERRUPT ) 
     {
       delete sstream;
       break;
@@ -355,7 +355,7 @@ int Boxoffice::processEvent(fsm::status_t status,
                             std::stringstream* sstream) {
   fsm::event_t event = fsm::get_event_by_status_code(status);
 
-  if (SB_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
+  if (F_MSG_DEBUG) printf("bo: checking event with state %d, event %d and status %d\n", 
     state_, event, status);
   if ( fsm::check_event(state_, event, status) ) {
 
@@ -483,10 +483,10 @@ int Boxoffice::processEvent(fsm::status_t status,
           if ( state_ == fsm::promoting_new_file_metadata_state
                 && !notified_dispatch_ ) {
             sstream->seekg(1, std::ios_base::cur);
-            char box_hash_s[SB_GENERIC_HASH_LEN];
-            sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
-            unsigned char box_hash[SB_GENERIC_HASH_LEN];
-            std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
+            char box_hash_s[F_GENERIC_HASH_LEN];
+            sstream->read(box_hash_s, F_GENERIC_HASH_LEN);
+            unsigned char box_hash[F_GENERIC_HASH_LEN];
+            std::memcpy(box_hash, box_hash_s, F_GENERIC_HASH_LEN);
 
             Hash* hash = new Hash(box_hash);
             Box* box = boxes[hash];
@@ -503,7 +503,7 @@ int Boxoffice::processEvent(fsm::status_t status,
             sstream->read(timing_offset_c, 8);
 
             std::stringstream* message = new std::stringstream();
-            *message << SB_SIGTYPE_FSM  << " "
+            *message << F_SIGTYPE_FSM  << " "
                      << fsm::status_130 << " ";
             message->write(timing_offset_c, 8);
             zmqpp::message z_msg;
@@ -525,10 +525,10 @@ int Boxoffice::processEvent(fsm::status_t status,
         case fsm::status_170: {
           if (state_ == fsm::receiving_file_metadata_change_state) {
             sstream->seekg(1, std::ios_base::cur);
-            char box_hash_s[SB_GENERIC_HASH_LEN];
-            sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
-            unsigned char box_hash[SB_GENERIC_HASH_LEN];
-            std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
+            char box_hash_s[F_GENERIC_HASH_LEN];
+            sstream->read(box_hash_s, F_GENERIC_HASH_LEN);
+            unsigned char box_hash[F_GENERIC_HASH_LEN];
+            std::memcpy(box_hash, box_hash_s, F_GENERIC_HASH_LEN);
 
             Hash* hash = new Hash(box_hash);
             Box* box = boxes[hash];
@@ -559,10 +559,10 @@ int Boxoffice::processEvent(fsm::status_t status,
         case fsm::status_174: {
           if (state_ == fsm::receiving_file_metadata_change_with_more_state) {
             sstream->seekg(1, std::ios_base::cur);
-            char box_hash_s[SB_GENERIC_HASH_LEN];
-            sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
-            unsigned char box_hash[SB_GENERIC_HASH_LEN];
-            std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
+            char box_hash_s[F_GENERIC_HASH_LEN];
+            sstream->read(box_hash_s, F_GENERIC_HASH_LEN);
+            unsigned char box_hash[F_GENERIC_HASH_LEN];
+            std::memcpy(box_hash, box_hash_s, F_GENERIC_HASH_LEN);
 
             Hash* hash = new Hash(box_hash);
             Box* box = boxes[hash];
@@ -581,7 +581,7 @@ int Boxoffice::processEvent(fsm::status_t status,
               //       isn't handled yet
               file_metadata_written_ = true;
             }
-            std::memcpy(current_box_, box_hash, SB_GENERIC_HASH_LEN);
+            std::memcpy(current_box_, box_hash, F_GENERIC_HASH_LEN);
             std::stringstream cf;
             cf << *new_file;
             current_file_ << cf.str().substr(32);
@@ -614,7 +614,7 @@ int Boxoffice::processEvent(fsm::status_t status,
         case fsm::status_155: {
           if (!stop_sync_timeout_received_) {
             std::stringstream* message = new std::stringstream();
-            *message << SB_SIGTYPE_FSM  << " "
+            *message << F_SIGTYPE_FSM  << " "
                      << fsm::status_155 << " ";
             sstream->seekg(1, std::ios_base::cur);
             char* timing_offset_c = new char[8];
@@ -644,24 +644,24 @@ int Boxoffice::processEvent(fsm::status_t status,
         && status == fsm::status_177 ) ) {
       // calculating offset, store it and send it to dispatch
       std::stringstream message;
-      message << SB_SIGTYPE_FSM << " "
+      message << F_SIGTYPE_FSM << " "
               << status         << " ";
 
       // jump back to the beginning of the stream to
       // re-read the node_hash
       sstream->seekg(5, std::ios_base::beg);
-      char node_hash_s[SB_GENERIC_HASH_LEN];
-      sstream->read(node_hash_s, SB_GENERIC_HASH_LEN);
-      unsigned char node_hash[SB_GENERIC_HASH_LEN];
-      std::memcpy(node_hash, node_hash_s, SB_GENERIC_HASH_LEN);
+      char node_hash_s[F_GENERIC_HASH_LEN];
+      sstream->read(node_hash_s, F_GENERIC_HASH_LEN);
+      unsigned char node_hash[F_GENERIC_HASH_LEN];
+      std::memcpy(node_hash, node_hash_s, F_GENERIC_HASH_LEN);
       Hash* hash = new Hash(node_hash);
 
       uint64_t timestamp =
         std::chrono::duration_cast< std::chrono::milliseconds >(
           std::chrono::system_clock::now().time_since_epoch()
         ).count();
-      uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_SEND_OFFSET-SB_MINIMUM_SEND_OFFSET);
-      random_offset += SB_MINIMUM_SEND_OFFSET;
+      uint32_t random_offset = randombytes_uniform(F_MAXIMUM_SEND_OFFSET-F_MINIMUM_SEND_OFFSET);
+      random_offset += F_MINIMUM_SEND_OFFSET;
       current_timing_offset_ = timestamp
                                + random_offset
                                - subscribers[hash].offset; // \TODO this should be the average across all nodes
@@ -670,9 +670,9 @@ int Boxoffice::processEvent(fsm::status_t status,
       std::memcpy(timing_offset_c, &timing_offset, 8);
       message.write(timing_offset_c, 8);
 
-      char* box_hash = new char[SB_GENERIC_HASH_LEN];
-      std::memcpy(box_hash, current_box_, SB_GENERIC_HASH_LEN);
-      message.write(box_hash, SB_GENERIC_HASH_LEN);
+      char* box_hash = new char[F_GENERIC_HASH_LEN];
+      std::memcpy(box_hash, current_box_, F_GENERIC_HASH_LEN);
+      message.write(box_hash, F_GENERIC_HASH_LEN);
       Hash* box_hash_obj = new Hash(current_box_);
       Box* box = boxes[box_hash_obj];
       message << box->getBaseDir() << " ";
@@ -697,17 +697,17 @@ int Boxoffice::processEvent(fsm::status_t status,
       int inotify_mask;
       *sstream >> inotify_mask;
 
-      char box_hash_s[SB_GENERIC_HASH_LEN];
-      sstream->read(box_hash_s, SB_GENERIC_HASH_LEN);
-      unsigned char box_hash[SB_GENERIC_HASH_LEN];
-      std::memcpy(box_hash, box_hash_s, SB_GENERIC_HASH_LEN);
-      std::memcpy(current_box_, box_hash, SB_GENERIC_HASH_LEN);
+      char box_hash_s[F_GENERIC_HASH_LEN];
+      sstream->read(box_hash_s, F_GENERIC_HASH_LEN);
+      unsigned char box_hash[F_GENERIC_HASH_LEN];
+      std::memcpy(box_hash, box_hash_s, F_GENERIC_HASH_LEN);
+      std::memcpy(current_box_, box_hash, F_GENERIC_HASH_LEN);
 
       std::string path;
       *sstream >> path;
 
       if ( path.length() > 128 ) {
-        std::cerr << "[E]: filepath is too long, syncbox only supports "
+        std::cerr << "[E]: filepath is too long, flocksy only supports "
                   << "files up to 128 characters (including subdirectories, "
                   << "excluding the base path)" << std::endl;
         return 1;
@@ -745,13 +745,13 @@ int Boxoffice::processEvent(fsm::status_t status,
     // RECEIVED FILE DATA
     // read the file data and store it
     if ( event == fsm::received_file_data_event ) {
-      if (SB_MSG_DEBUG) printf("bo: receiving file data...\n");
+      if (F_MSG_DEBUG) printf("bo: receiving file data...\n");
       Hash* box_hash = new Hash(current_box_);
       Box* box = boxes[box_hash];
       File* file = new File(box->getBaseDir(), box_hash);
       current_file_ >> *file;
 
-      sstream->seekg(SB_GENERIC_HASH_LEN, std::ios_base::cur);
+      sstream->seekg(F_GENERIC_HASH_LEN, std::ios_base::cur);
       char* offset_c = new char[8];
       sstream->read(offset_c, 8);
       uint64_t offset_be;
@@ -790,13 +790,13 @@ int Boxoffice::processEvent(fsm::status_t status,
     if ( state_ != new_state ) {
       fsm::action_t action = fsm::get_action(state_, event, status);
       performAction(event, action, status, new_state);
-      if (SB_MSG_DEBUG) printf("bo: updating self to state %d\n", 
+      if (F_MSG_DEBUG) printf("bo: updating self to state %d\n", 
         fsm::get_new_state(state_, event, status));
       state_ = new_state;
     }
 
   } else {
-    if (SB_MSG_DEBUG) printf("bo: unhandled event, ignoring...\n");
+    if (F_MSG_DEBUG) printf("bo: unhandled event, ignoring...\n");
   }
 
   return 0;
@@ -814,7 +814,7 @@ int Boxoffice::performAction(fsm::event_t const event,
       break;
     }
     default:
-      if (SB_MSG_DEBUG) printf("bo: could not perform action: %d\n", action);
+      if (F_MSG_DEBUG) printf("bo: could not perform action: %d\n", action);
       break;
   }
 
@@ -823,9 +823,9 @@ int Boxoffice::performAction(fsm::event_t const event,
 
 int Boxoffice::updateHeartbeat(fsm::status_t const new_status,
                                fsm::state_t const new_state) {
-  if (SB_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
+  if (F_MSG_DEBUG) printf("bo: changing status code to %d\n", new_status);
   std::stringstream* message = new std::stringstream();
-  *message << SB_SIGTYPE_FSM << " " << new_status << " ";
+  *message << F_SIGTYPE_FSM << " " << new_status << " ";
   prepareHeartbeatMessage(message, new_state);
   zmqpp::message z_msg;
   z_msg << message->str();
@@ -864,14 +864,14 @@ void Boxoffice::prepareHeartbeatMessage(std::stringstream* message,
       std::chrono::duration_cast< std::chrono::milliseconds >(
         std::chrono::system_clock::now().time_since_epoch()
       ).count();
-    uint32_t random_offset = randombytes_uniform(SB_MAXIMUM_STOP_OFFSET-SB_MINIMUM_STOP_OFFSET);
-    random_offset += SB_MINIMUM_STOP_OFFSET;
+    uint32_t random_offset = randombytes_uniform(F_MAXIMUM_STOP_OFFSET-F_MINIMUM_STOP_OFFSET);
+    random_offset += F_MINIMUM_STOP_OFFSET;
     current_timing_offset_ = timestamp
                              + random_offset;
     uint64_t timing_offset = htobe64(current_timing_offset_);
 
     std::stringstream* disp_message = new std::stringstream();
-    *disp_message << SB_SIGTYPE_FSM  << " "
+    *disp_message << F_SIGTYPE_FSM  << " "
              << fsm::status_155 << " ";
     char* timing_offset_c = new char[8];
     std::memcpy(timing_offset_c, &timing_offset, 8);
@@ -890,17 +890,17 @@ bool Boxoffice::checkEvent(fsm::state_t const state,
                            fsm::event_t const event,
                            fsm::status_t const status) const {
   if ( !fsm::check_event(state, event, status) ) {
-    if (SB_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
+    if (F_MSG_DEBUG) printf("bo: changed to unhandled event, ignoring...\n");
     return false;
   }
   return true;
 }
 
 int Boxoffice::updateTimestamp(std::stringstream* sstream) {
-  char node_hash_s[SB_GENERIC_HASH_LEN];
-  sstream->read(node_hash_s, SB_GENERIC_HASH_LEN);
-  unsigned char node_hash[SB_GENERIC_HASH_LEN];
-  std::memcpy(node_hash, node_hash_s, SB_GENERIC_HASH_LEN);
+  char node_hash_s[F_GENERIC_HASH_LEN];
+  sstream->read(node_hash_s, F_GENERIC_HASH_LEN);
+  unsigned char node_hash[F_GENERIC_HASH_LEN];
+  std::memcpy(node_hash, node_hash_s, F_GENERIC_HASH_LEN);
   Hash* hash = new Hash(node_hash);
   uint64_t node_timestamp, local_timestamp;
   uint16_t offset;

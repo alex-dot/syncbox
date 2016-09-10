@@ -2,8 +2,8 @@
  * generic constants and globals for application
  */
 
-#ifndef SB_CONSTANTS_HPP
-#define SB_CONSTANTS_HPP
+#ifndef F_CONSTANTS_HPP
+#define F_CONSTANTS_HPP
 
 #include <string>
 #include <sstream>
@@ -18,66 +18,66 @@
 
 #include <hash.hpp>
 
-enum SB_SIGTYPE {
-  SB_SIGTYPE_LIFE,
-  SB_SIGTYPE_PUB,
-  SB_SIGTYPE_SUB,
-  SB_SIGTYPE_INOTIFY,
-  SB_SIGTYPE_FSM
+enum F_SIGTYPE {
+  F_SIGTYPE_LIFE,
+  F_SIGTYPE_PUB,
+  F_SIGTYPE_SUB,
+  F_SIGTYPE_INOTIFY,
+  F_SIGTYPE_FSM
 };
-enum SB_SIGLIFE {
-  SB_SIGLIFE_ALIVE,
-  SB_SIGLIFE_EXIT,
-  SB_SIGLIFE_INTERRUPT,
-  SB_SIGLIFE_ERROR=-1
+enum F_SIGLIFE {
+  F_SIGLIFE_ALIVE,
+  F_SIGLIFE_EXIT,
+  F_SIGLIFE_INTERRUPT,
+  F_SIGLIFE_ERROR=-1
 };
-enum SB_SIGPUB {
-  SB_SIGPUB_GET_CHANNELS
+enum F_SIGPUB {
+  F_SIGPUB_GET_CHANNELS
 };
-enum SB_SIGSUB {
-  SB_SIGSUB_GET_CHANNELS
+enum F_SIGSUB {
+  F_SIGSUB_GET_CHANNELS
 };
-enum SB_SUB_TYPE {
-  SB_SUBTYPE_TCP_BIDIR,
-  SB_SUBTYPE_TCP_UNIDIR
+enum F_SUB_TYPE {
+  F_SUBTYPE_TCP_BIDIR,
+  F_SUBTYPE_TCP_UNIDIR
 };
-enum SB_BACKUP_TYPE {
-  SB_BACKUP_NONE,
-  SB_BACKUP_LOCAL,
-  SB_BACKUP_REMOTE,
-  SB_BACKUP_BOTH
+enum F_BACKUP_TYPE {
+  F_BACKUP_NONE,
+  F_BACKUP_LOCAL,
+  F_BACKUP_REMOTE,
+  F_BACKUP_BOTH
 };
 
-#define SB_MSG_DEBUG true
+#define F_MSG_DEBUG true
 
 //static size_t  
-#define SB_IN_EVENT_SIZE (sizeof(struct inotify_event))
+#define F_IN_EVENT_SIZE (sizeof(struct inotify_event))
 //static size_t  
-#define SB_IN_BUF_LEN    (1024 * (SB_IN_EVENT_SIZE + 16))
-#define SB_IN_EVENT_MASK  IN_ATTRIB|IN_CREATE|IN_DELETE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE|IN_MOVE_SELF
+#define F_IN_BUF_LEN    (1024 * (F_IN_EVENT_SIZE + 16))
+#define F_IN_EVENT_MASK  IN_ATTRIB|IN_CREATE|IN_DELETE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE|IN_MOVE_SELF
 
-#define SB_MINIMUM_HB_WIDTH 256
-#define SB_MINIMUM_SEND_OFFSET 3000
-#define SB_MAXIMUM_SEND_OFFSET 6000
-#define SB_MINIMUM_STOP_OFFSET 1000
-#define SB_MAXIMUM_STOP_OFFSET 2000
+#define F_MINIMUM_HB_WIDTH 256
+#define F_MINIMUM_SEND_OFFSET 3000
+#define F_MAXIMUM_SEND_OFFSET 6000
+#define F_MINIMUM_STOP_OFFSET 1000
+#define F_MAXIMUM_STOP_OFFSET 2000
 
-#define SB_CONFIG_FILE "~/.syncbox"
-#define SB_KEYSTORE_FILE "~/.ssh/syncbox_keystore"
-#define SB_PRIVATEKEY_FILE "~/.ssh/syncbox_privatekeys"
+#define F_CONFIG_FILE "~/.flocksy"
+#define F_KEYSTORE_FILE "~/.ssh/flocksy_keystore"
+#define F_PRIVATEKEY_FILE "~/.ssh/flocksy_privatekeys"
 
-#define SB_MAXIMUM_PATH_LENGTH 128
-#define SB_MAXIMUM_FILE_PACKAGE_SIZE 4096
+#define F_MAXIMUM_PATH_LENGTH 128
+#define F_MAXIMUM_FILE_PACKAGE_SIZE 4096
 
 // basic structs
 // TODO What if I have multiple publishers? Nodes must have a way to query the correct host keypair...
 struct node_t {
   std::string   endpoint;
-  int           sb_subtype;
+  int           f_subtype;
   int64_t       last_timestamp;
   int16_t       offset;
   std::string   public_key;
-  unsigned char uid[SB_GENERIC_HASH_LEN];
+  unsigned char uid[F_GENERIC_HASH_LEN];
 };
 struct host_t {
   std::string           endpoint;
@@ -85,7 +85,7 @@ struct host_t {
   std::string           uid;
 };
 struct box_t {
-  unsigned char uid[SB_GENERIC_HASH_LEN];
+  unsigned char uid[F_GENERIC_HASH_LEN];
   std::string   base_path;
 };
 

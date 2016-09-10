@@ -29,12 +29,12 @@ Box::Box() :
 
 Box::Box(zmqpp::context* z_ctx_,
          boost::filesystem::path p,
-         const unsigned char box_hash[SB_GENERIC_HASH_LEN]) :
+         const unsigned char box_hash[F_GENERIC_HASH_LEN]) :
   Transmitter(z_ctx_),
   path_(p),
   entries_(),
   hash_tree_(),
-  box_hash_(new unsigned char[SB_GENERIC_HASH_LEN])
+  box_hash_(new unsigned char[F_GENERIC_HASH_LEN])
   {
     tac = (char*)"box";
     Directory* baseDir = new Directory(p);
@@ -54,7 +54,7 @@ Box::Box(zmqpp::context* z_ctx_,
     std::swap(hash_tree_,temp_ht);
     delete temp_ht;
 
-    std::memcpy(box_hash_, box_hash, SB_GENERIC_HASH_LEN);
+    std::memcpy(box_hash_, box_hash, F_GENERIC_HASH_LEN);
   }
 
 Box::~Box()
@@ -112,7 +112,7 @@ int Box::run()
   for (std::unordered_map<std::string,Directory*>::iterator i = 
        entries_.begin(); i != entries_.end(); ++i)
   {
-    wd = inotify_add_watch( fd, i->second->getAbsolutePath().c_str(), SB_IN_EVENT_MASK );
+    wd = inotify_add_watch( fd, i->second->getAbsolutePath().c_str(), F_IN_EVENT_MASK );
     watch_descriptors_.insert(std::make_pair(wd,i->second));
   }
 
@@ -123,7 +123,7 @@ int Box::run()
     sstream = new std::stringstream();
     s_recv_in(*z_broadcast, *z_boxoffice_push, fd, *sstream);
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) 
+    if ( msg_type == F_SIGTYPE_LIFE && msg_signal == F_SIGLIFE_INTERRUPT ) 
     {
       delete sstream;
       break;
@@ -151,10 +151,10 @@ int Box::run()
       }
 
       std::stringstream message;
-      message << SB_SIGTYPE_INOTIFY << " "
+      message << F_SIGTYPE_INOTIFY << " "
               << status             << " "
               << inotify_mask;
-      message.write(reinterpret_cast<char*>(box_hash_), SB_GENERIC_HASH_LEN);
+      message.write(reinterpret_cast<char*>(box_hash_), F_GENERIC_HASH_LEN);
       message << " " << dir_path    << "/"
               << name.c_str();
 

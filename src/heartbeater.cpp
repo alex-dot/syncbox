@@ -48,7 +48,7 @@ int Heartbeater::connectToBoxofficeHB()
 {
   // open connection to receive HB data from boxoffice
   z_boxoffice_hb_push = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
-  z_boxoffice_hb_push->connect("inproc://sb_boxoffice_hb_push_out");
+  z_boxoffice_hb_push->connect("inproc://f_boxoffice_hb_push_out");
   z_boxoffice_hb_push->subscribe("");
 
   return 0;
@@ -60,7 +60,7 @@ int Heartbeater::run()
   if ( z_ctx == nullptr )
     return 1;
 
-  if (SB_MSG_DEBUG) printf("hb: starting hb socket and sending...\n");
+  if (F_MSG_DEBUG) printf("hb: starting hb socket and sending...\n");
 
   std::stringstream* sstream;
   int msg_type, msg_signal;
@@ -73,15 +73,15 @@ int Heartbeater::run()
 
     if ( z_return != 0 ) {
       *sstream >> msg_type >> msg_signal;
-      if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
-      if ( msg_type == SB_SIGTYPE_FSM ) {
+      if ( msg_type == F_SIGTYPE_LIFE && msg_signal == F_SIGLIFE_INTERRUPT ) break;
+      if ( msg_type == F_SIGTYPE_FSM ) {
         current_status_ = (fsm::status_t)msg_signal;
         std::getline(*sstream, current_message_);
       }
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    if (SB_MSG_DEBUG) printf("hb: sending hb status code %d\n", (int)current_status_);
+    if (F_MSG_DEBUG) printf("hb: sending hb status code %d\n", (int)current_status_);
 
     // send a message
     uint64_t timestamp = htobe64(
@@ -93,7 +93,7 @@ int Heartbeater::run()
     std::memcpy(timestamp_c, &timestamp, 8);
 
     std::stringstream* message = new std::stringstream();
-    *message << SB_SIGTYPE_PUB  << " "
+    *message << F_SIGTYPE_PUB  << " "
              << current_status_ << " ";
     message->write(timestamp_c, 8);
     *message << current_message_;

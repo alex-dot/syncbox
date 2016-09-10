@@ -187,12 +187,12 @@ void s_recv_in(zmqpp::socket &broadcast, zmqpp::socket &socket, int fd, std::str
 
   if ( poller.events(z_items[0]) & ZMQ_POLLIN )
   {
-    sstream << SB_SIGTYPE_INOTIFY << " ";
+    sstream << F_SIGTYPE_INOTIFY << " ";
 
     int length, i = 0;
-    char buffer[SB_IN_BUF_LEN];
+    char buffer[F_IN_BUF_LEN];
 
-    length = read( fd, buffer, SB_IN_BUF_LEN );
+    length = read( fd, buffer, F_IN_BUF_LEN );
     if ( length < 0 ) perror("inotify poll");
 
     while( i < length )
@@ -202,7 +202,7 @@ void s_recv_in(zmqpp::socket &broadcast, zmqpp::socket &socket, int fd, std::str
       sstream << event->mask << " ";
       sstream << event->wd   << " ";
       sstream << event->name;
-      i += SB_IN_EVENT_SIZE + event->len;
+      i += F_IN_EVENT_SIZE + event->len;
       if ( i < length ) sstream << "\n";
     }
   }

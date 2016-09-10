@@ -5,7 +5,7 @@
  *  A Box is a collection of a base directory and its sub-directories
  *  contained in an unordered map with the hash of a directory as the key. 
  *  The Box gets defined and added by the user. It is the base files
- *  class through which syncbox handles all files in a given directory.
+ *  class through which flocksy handles all files in a given directory.
  *
  * \todo      create new wd on newly created directories;
  *            subdirectory expansion
@@ -34,7 +34,7 @@ class Box : public Transmitter {
     Box();
     Box(zmqpp::context* z_ctx_,
         boost::filesystem::path,
-        const unsigned char box_hash[SB_GENERIC_HASH_LEN]);
+        const unsigned char box_hash[F_GENERIC_HASH_LEN]);
     ~Box();
 
     HashTree* getHashTree() const;

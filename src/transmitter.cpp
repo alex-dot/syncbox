@@ -49,7 +49,7 @@ int Transmitter::connectToBroadcast()
 {
   // connect to process broadcast
   z_broadcast = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
-  z_broadcast->connect("inproc://sb_broadcast");
+  z_broadcast->connect("inproc://f_broadcast");
   z_broadcast->subscribe("");
 
   return 0;
@@ -59,16 +59,16 @@ int Transmitter::connectToBoxoffice()
 {
   // open connection to send data to boxoffice
   z_boxoffice_pull = new zmqpp::socket(*z_ctx, zmqpp::socket_type::push);
-  z_boxoffice_pull->connect("inproc://sb_boxoffice_pull_in");
+  z_boxoffice_pull->connect("inproc://f_boxoffice_pull_in");
   // open connection to receive data from boxoffice
   z_boxoffice_push = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
-  z_boxoffice_push->connect("inproc://sb_boxoffice_push_out");
+  z_boxoffice_push->connect("inproc://f_boxoffice_push_out");
   z_boxoffice_push->subscribe("");
 
   // send a heartbeat to boxoffice, so it knows the heartbeater is ready
-  if (SB_MSG_DEBUG) printf("%s: sending heartbeat...\n", tac);
+  if (F_MSG_DEBUG) printf("%s: sending heartbeat...\n", tac);
   std::stringstream message;
-  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_ALIVE;
+  message << F_SIGTYPE_LIFE << " " << F_SIGLIFE_ALIVE;
   zmqpp::message z_msg;
   z_msg << message.str();
   z_boxoffice_pull->send(z_msg);
@@ -79,14 +79,14 @@ int Transmitter::connectToBoxoffice()
 int Transmitter::sendExitSignal()
 {
   // send exit signal to boxoffice
-  if (SB_MSG_DEBUG) printf("%s: sending exit signal...\n", tac);
+  if (F_MSG_DEBUG) printf("%s: sending exit signal...\n", tac);
   std::stringstream message;
-  message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_EXIT;
+  message << F_SIGTYPE_LIFE << " " << F_SIGLIFE_EXIT;
   zmqpp::message z_msg;
   z_msg << message.str();
   z_boxoffice_pull->send(z_msg);
 
-  if (SB_MSG_DEBUG) printf("%s: signal sent, exiting...\n", tac);
+  if (F_MSG_DEBUG) printf("%s: signal sent, exiting...\n", tac);
 
   return 0;
 }

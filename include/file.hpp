@@ -113,7 +113,7 @@ class File {
     std::string                              box_path_;
     Hash*                                    box_hash_;
     boost::filesystem::path                  bpath_;
-    std::array<char, SB_MAXIMUM_PATH_LENGTH> path_;
+    std::array<char, F_MAXIMUM_PATH_LENGTH> path_;
     boost::filesystem::perms                 mode_;
     uint32_t                                 mtime_;
     boost::filesystem::file_type             type_;

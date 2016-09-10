@@ -14,8 +14,8 @@
  *       in member variable
  */
 
-#ifndef SB_BOXOFFICE_HPP
-#define SB_BOXOFFICE_HPP
+#ifndef F_BOXOFFICE_HPP
+#define F_BOXOFFICE_HPP
 
 #include <zmqpp/zmqpp.hpp>
 #include <boost/thread.hpp>
@@ -56,7 +56,7 @@ class Boxoffice
       total_node_number_(0),
       current_timing_offset_(-1),
       notified_dispatch_(false),
-      current_box_(new unsigned char[SB_GENERIC_HASH_LEN]),
+      current_box_(new unsigned char[F_GENERIC_HASH_LEN]),
       current_file_(),
       file_metadata_written_(false),
       stop_sync_timeout_received_(false),

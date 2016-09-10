@@ -167,10 +167,10 @@ void File::checkArguments(const std::string& path,
                           const boost::filesystem::file_type type,
                           const bool create) const {
   // check if the path is not too long
-  if (path.length() > SB_MAXIMUM_PATH_LENGTH) {
+  if (path.length() > F_MAXIMUM_PATH_LENGTH) {
     std::stringstream error_msg;
     error_msg << "File path too long. "
-      << "Currently supports paths up to " << SB_MAXIMUM_PATH_LENGTH
+      << "Currently supports paths up to " << F_MAXIMUM_PATH_LENGTH
       << " characters. The file " << path << " was "<< path.length()
       << " characters long. ";
     throw std::range_error(error_msg.str());
@@ -293,15 +293,15 @@ uint64_t File::readFileData(char* data,
     openFile();
 
   uint64_t data_size;
-  if (size_ <= SB_MAXIMUM_FILE_PACKAGE_SIZE && size_ <= size) {
+  if (size_ <= F_MAXIMUM_FILE_PACKAGE_SIZE && size_ <= size) {
     fstream_.seekg(offset, std::ios_base::beg);
     fstream_.read(data, size_);
-  } else if (size < SB_MAXIMUM_FILE_PACKAGE_SIZE) {
+  } else if (size < F_MAXIMUM_FILE_PACKAGE_SIZE) {
     fstream_.seekg(offset, std::ios_base::beg);
     fstream_.read(data, size);
   } else {
     fstream_.seekg(offset, std::ios_base::beg);
-    fstream_.read(data, SB_MAXIMUM_FILE_PACKAGE_SIZE);
+    fstream_.read(data, F_MAXIMUM_FILE_PACKAGE_SIZE);
   }
   data_size = fstream_.gcount();
 
@@ -314,10 +314,10 @@ uint64_t File::readFileData(char* data,
   return data_size;
 }
 uint64_t File::readFileData(char* data, uint64_t offset) {
-  return readFileData(data, SB_MAXIMUM_FILE_PACKAGE_SIZE, offset, new bool());
+  return readFileData(data, F_MAXIMUM_FILE_PACKAGE_SIZE, offset, new bool());
 }
 uint64_t File::readFileData(char* data, uint64_t offset, bool* more) {
-  return readFileData(data, SB_MAXIMUM_FILE_PACKAGE_SIZE, offset, more);
+  return readFileData(data, F_MAXIMUM_FILE_PACKAGE_SIZE, offset, more);
 }
 
 void File::storeFileData(const char* data,
@@ -329,16 +329,16 @@ void File::storeFileData(const char* data,
     openFile();
   }
 
-  if ( static_cast<int64_t>(size_) <= SB_MAXIMUM_FILE_PACKAGE_SIZE
+  if ( static_cast<int64_t>(size_) <= F_MAXIMUM_FILE_PACKAGE_SIZE
     && static_cast<int64_t>(size_) <= size) {
     fstream_.seekp(offset);
     fstream_.write(data, size_);
-  } else if (size < SB_MAXIMUM_FILE_PACKAGE_SIZE) {
+  } else if (size < F_MAXIMUM_FILE_PACKAGE_SIZE) {
     fstream_.seekp(offset);
     fstream_.write(data, size);
   } else {
     fstream_.seekp(offset);
-    fstream_.write(data, SB_MAXIMUM_FILE_PACKAGE_SIZE);
+    fstream_.write(data, F_MAXIMUM_FILE_PACKAGE_SIZE);
   }
 
   boost::filesystem::last_write_time(bpath_, static_cast<time_t>(mtime_));
@@ -369,10 +369,10 @@ const std::string File::constructPath(const std::string box_path,
 std::ostream& operator<<(std::ostream& ostream, const File& f) {
   ostream.write(reinterpret_cast<char*>(
                   const_cast<unsigned char*>(f.box_hash_->getBytes())
-                ), SB_GENERIC_HASH_LEN);
+                ), F_GENERIC_HASH_LEN);
 
   std::string path(f.path_.begin(), f.path_.end());
-  ostream.write(path.c_str(), SB_MAXIMUM_PATH_LENGTH);
+  ostream.write(path.c_str(), F_MAXIMUM_PATH_LENGTH);
 
   if (f.deleted_file_) {
     ostream << "IN_DELETE\0";
@@ -407,9 +407,9 @@ std::istream& operator>>(std::istream& istream, File& f) {
   if (f.box_hash_ == nullptr || f.box_path_.length() == 0)
     throw std::out_of_range("Box info not found, File object probably not correctly initialised.");
 
-  char* path_c = new char[SB_MAXIMUM_PATH_LENGTH];
-  istream.read(path_c, SB_MAXIMUM_PATH_LENGTH);
-  for (int i = 0; i < SB_MAXIMUM_PATH_LENGTH; ++i) {
+  char* path_c = new char[F_MAXIMUM_PATH_LENGTH];
+  istream.read(path_c, F_MAXIMUM_PATH_LENGTH);
+  for (int i = 0; i < F_MAXIMUM_PATH_LENGTH; ++i) {
     f.path_[i] = path_c[i];
   }
   std::string path(f.path_.begin(), f.path_.end());

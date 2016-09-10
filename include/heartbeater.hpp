@@ -5,8 +5,8 @@
  * For each heartbeater there shall be a separate heartbeater thread. 
  */
 
-#ifndef SB_HEARTBEATER_HPP
-#define SB_HEARTBEATER_HPP
+#ifndef F_HEARTBEATER_HPP
+#define F_HEARTBEATER_HPP
 
 #include <zmqpp/zmqpp.hpp>
 

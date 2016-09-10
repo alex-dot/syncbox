@@ -57,9 +57,9 @@ int Publisher::run()
   if ( z_ctx == nullptr || data.endpoint.compare("") == 0 )
     return 1;
 
-  if (SB_MSG_DEBUG) printf("pub: setting up authentication...\n");
+  if (F_MSG_DEBUG) printf("pub: setting up authentication...\n");
   zmqpp::auth authenticator(*z_ctx);
-  if (SB_MSG_DEBUG) authenticator.set_verbose (true);
+  if (F_MSG_DEBUG) authenticator.set_verbose (true);
   authenticator.configure_domain("*");
 
   Config* conf = Config::getInstance();
@@ -69,7 +69,7 @@ int Publisher::run()
     authenticator.configure_curve(*i);
   }
 
-  if (SB_MSG_DEBUG) printf("pub: starting pub socket and sending...\n");
+  if (F_MSG_DEBUG) printf("pub: starting pub socket and sending...\n");
   z_publisher = new zmqpp::socket(*z_ctx, zmqpp::socket_type::pub);
   z_publisher->set(zmqpp::socket_option::identity, data.uid);
   z_publisher->set(zmqpp::socket_option::curve_server, 1);
@@ -90,19 +90,19 @@ int Publisher::run()
            *sstream);
 
     *sstream >> msg_type >> msg_signal;
-    if ( msg_type == SB_SIGTYPE_LIFE && msg_signal == SB_SIGLIFE_INTERRUPT ) break;
+    if ( msg_type == F_SIGTYPE_LIFE && msg_signal == F_SIGLIFE_INTERRUPT ) break;
 
     // send a message
     std::string infomessage = sstream->str().substr(5);
     std::stringstream message;
     message << std::to_string(msg_signal) << infomessage;
     if (msg_signal != fsm::status_200 && msg_signal != fsm::status_210 )
-      if (SB_MSG_DEBUG) printf("pub: sending status %d message with length %lu\n",
+      if (F_MSG_DEBUG) printf("pub: sending status %d message with length %lu\n",
           msg_signal, message.str().length());
-    // setting the width to SB_MINIMUM_HB_WIDTH so all heartbeats have the same length
+    // setting the width to F_MINIMUM_HB_WIDTH so all heartbeats have the same length
     int p = message.tellp();
-    if (SB_MINIMUM_HB_WIDTH-p > 0)
-      message << std::setw(SB_MINIMUM_HB_WIDTH-p) << std::setfill(' ') << " ";
+    if (F_MINIMUM_HB_WIDTH-p > 0)
+      message << std::setw(F_MINIMUM_HB_WIDTH-p) << std::setfill(' ') << " ";
     zmqpp::message z_msg;
     z_msg << message.str();
     z_publisher->send(z_msg);

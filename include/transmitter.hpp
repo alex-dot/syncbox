@@ -3,8 +3,8 @@
  * heartbeaters and boxes. 
  */
 
-#ifndef SB_TRANSMITTER_HPP
-#define SB_TRANSMITTER_HPP
+#ifndef F_TRANSMITTER_HPP
+#define F_TRANSMITTER_HPP
 
 #include <zmqpp/zmqpp.hpp>
 

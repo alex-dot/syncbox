@@ -30,10 +30,10 @@ int Subscriber::run()
 {
   // internal check if subscriber was correctly initialized
   if ( z_ctx == nullptr || data.endpoint.compare("") == 0
-      || ( data.sb_subtype != SB_SUBTYPE_TCP_BIDIR && data.sb_subtype != SB_SUBTYPE_TCP_UNIDIR ) )
+      || ( data.f_subtype != F_SUBTYPE_TCP_BIDIR && data.f_subtype != F_SUBTYPE_TCP_UNIDIR ) )
     return 1;
 
-  if (SB_MSG_DEBUG) printf("sub: receiving from publisher...\n");
+  if (F_MSG_DEBUG) printf("sub: receiving from publisher...\n");
   Config* conf = Config::getInstance();
   zmqpp::curve::keypair host_keypair = conf->getHostKeypair();
   z_subscriber = new zmqpp::socket(*z_ctx, zmqpp::socket_type::sub);
@@ -52,20 +52,20 @@ int Subscriber::run()
     sstream = new std::stringstream();
     s_recv(*z_boxoffice_push, *z_broadcast, *z_subscriber, *sstream);
     *sstream >> msg_type;
-    if ( msg_type == SB_SIGTYPE_LIFE ) {
+    if ( msg_type == F_SIGTYPE_LIFE ) {
       *sstream >> msg_signal;
-      if ( msg_signal == SB_SIGLIFE_INTERRUPT ) break;
+      if ( msg_signal == F_SIGLIFE_INTERRUPT ) break;
     } else {
       msg_signal = msg_type;
     }
 
     std::string infomessage = sstream->str().substr(3);
     std::stringstream message;
-    message << SB_SIGTYPE_SUB << " "
+    message << F_SIGTYPE_SUB << " "
             << msg_signal;
     message.write(reinterpret_cast<char*>(
                     const_cast<unsigned char*>(data.uid)
-                  ), SB_GENERIC_HASH_LEN);
+                  ), F_GENERIC_HASH_LEN);
     message << infomessage;
     zmqpp::message z_msg;
     z_msg << message.str();

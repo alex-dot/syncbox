@@ -3,8 +3,8 @@
  *
  */
 
-#ifndef SB_HASH_TREE_HPP
-#define SB_HASH_TREE_HPP
+#ifndef F_HASH_TREE_HPP
+#define F_HASH_TREE_HPP
 
 #include <vector>
 #include <memory>

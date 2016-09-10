@@ -79,17 +79,17 @@ int main_application(int argc, char* argv[])
 
   // bind process broadcast pub
   zmqpp::socket z_broadcast(z_context, zmqpp::socket_type::pub);
-  z_broadcast.bind("inproc://sb_broadcast");
+  z_broadcast.bind("inproc://f_broadcast");
   // bind to boxoffice endpoint
   zmqpp::socket z_boxoffice(z_context, zmqpp::socket_type::pair);
-  z_boxoffice.bind("inproc://sb_bo_main_pair");
+  z_boxoffice.bind("inproc://f_bo_main_pair");
 
   // opening boxoffice thread
-  if (SB_MSG_DEBUG) printf("main: opening boxoffice thread\n");
+  if (F_MSG_DEBUG) printf("main: opening boxoffice thread\n");
   boost::thread bo_thread(boxoffice_thread, &z_context);
 
   // wait for signal from boxoffice
-  if (SB_MSG_DEBUG) printf("main: waiting for boxoffice to send exit signal\n");
+  if (F_MSG_DEBUG) printf("main: waiting for boxoffice to send exit signal\n");
   while(s_interrupted == 0)
   {
     usleep(100);
@@ -97,7 +97,7 @@ int main_application(int argc, char* argv[])
 
   std::cout << "main: received interrupt, broadcasting signal to boxoffice..." << std::endl;
   std::stringstream* message = new std::stringstream();
-  *message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_INTERRUPT;
+  *message << F_SIGTYPE_LIFE << " " << F_SIGLIFE_INTERRUPT;
   zmqpp::message* z_msg = new zmqpp::message();
   *z_msg << message->str();
   z_boxoffice.send(*z_msg);
@@ -105,7 +105,7 @@ int main_application(int argc, char* argv[])
 
   std::cout << "main: boxoffice exited, broadcasting signal..." << std::endl;
   message = new std::stringstream();
-  *message << SB_SIGTYPE_LIFE << " " << SB_SIGLIFE_INTERRUPT;
+  *message << F_SIGTYPE_LIFE << " " << F_SIGLIFE_INTERRUPT;
   z_msg = new zmqpp::message();
   *z_msg << message->str();
   z_broadcast.send(*z_msg);
@@ -120,8 +120,8 @@ int main_application(int argc, char* argv[])
   delete z_msg;
 
   sstream >> msg_type >> msg_signal;
-  if ( msg_type != SB_SIGTYPE_LIFE && msg_signal != SB_SIGLIFE_EXIT ) return 1;
-  if (SB_MSG_DEBUG) printf("main: boxoffice sent exit signal, cleaning up and exiting...\n");
+  if ( msg_type != F_SIGTYPE_LIFE && msg_signal != F_SIGLIFE_EXIT ) return 1;
+  if (F_MSG_DEBUG) printf("main: boxoffice sent exit signal, cleaning up and exiting...\n");
 
   bo_thread.join();
 
@@ -136,7 +136,7 @@ int main_application(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
   // FORKING
-  if (SB_MSG_DEBUG)
+  if (F_MSG_DEBUG)
   {
     return main_application(argc, argv);
   } else {

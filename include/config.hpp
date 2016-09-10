@@ -4,8 +4,8 @@
  * These settings are uniform for all hosts, nodes and boxes. 
  */
 
-#ifndef SB_CONFIG_HPP
-#define SB_CONFIG_HPP
+#ifndef F_CONFIG_HPP
+#define F_CONFIG_HPP
 
 #include <vector>
 #include <boost/filesystem.hpp>

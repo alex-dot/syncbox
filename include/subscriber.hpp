@@ -1,12 +1,12 @@
 /*
- * For each known syncbox node a subscriber subscribes to the corresponding
+ * For each known flocksy node a subscriber subscribes to the corresponding
  * publisher. After receiving a message, a subscriber shall forward it
  * to the boxoffice. 
  * For each subscriber there shall be a separate subscriber thread. 
  */
 
-#ifndef SB_SUBSCRIBER_HPP
-#define SB_SUBSCRIBER_HPP
+#ifndef F_SUBSCRIBER_HPP
+#define F_SUBSCRIBER_HPP
 
 #include <zmqpp/zmqpp.hpp>
 

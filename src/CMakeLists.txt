@@ -1,5 +1,5 @@
 include_directories(../include)
-add_executable(syncbox  main.cpp
+add_executable(flocksy  main.cpp
                         constants.cpp
                         config.cpp
                         transmitter.cpp
@@ -13,7 +13,7 @@ add_executable(syncbox  main.cpp
                         heartbeater.cpp
                         dispatcher.cpp
                         subscriber.cpp)
-target_link_libraries(syncbox ${CMAKE_THREAD_LIBS_INIT}
+target_link_libraries(flocksy ${CMAKE_THREAD_LIBS_INIT}
                               ${Boost_LIBRARIES}
                               ${LIBSODIUM_LIBRARY}
                               ${ZEROMQ_LIBRARY}

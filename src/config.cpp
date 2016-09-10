@@ -66,14 +66,14 @@ int Config::initialize(int argc, char* argv[])
     // parse config file, if any
     wordexp_t expanded_config_file_path;
     if (configfile.empty()) {
-        wordexp( SB_CONFIG_FILE, &expanded_config_file_path, 0 );
+        wordexp( F_CONFIG_FILE, &expanded_config_file_path, 0 );
     } else {
         wordexp( configfile.c_str(), &expanded_config_file_path, 0 );
     }
     std::ifstream ifs( expanded_config_file_path.we_wordv[0] );
     wordfree(&expanded_config_file_path);
     if ( !ifs ) {
-        if (SB_MSG_DEBUG) printf("config: no config file found\n");
+        if (F_MSG_DEBUG) printf("config: no config file found\n");
     } else {
         po::store(po::parse_config_file(ifs, generic_options), c->vm_);
         po::notify(c->vm_);
@@ -83,7 +83,7 @@ int Config::initialize(int argc, char* argv[])
     // parse keystore file
     wordexp_t expanded_keystore_file_path;
     if (keystore_file.empty()) {
-        wordexp( SB_KEYSTORE_FILE, &expanded_keystore_file_path, 0 );
+        wordexp( F_KEYSTORE_FILE, &expanded_keystore_file_path, 0 );
     } else {
         wordexp( keystore_file.c_str(), &expanded_keystore_file_path, 0 );
     }
@@ -93,7 +93,7 @@ int Config::initialize(int argc, char* argv[])
     // parse privatekey file
     wordexp_t expanded_privatekey_file_path;
     if (private_key_file.empty()) {
-        wordexp( SB_PRIVATEKEY_FILE, &expanded_privatekey_file_path, 0 );
+        wordexp( F_PRIVATEKEY_FILE, &expanded_privatekey_file_path, 0 );
     } else {
         wordexp( private_key_file.c_str(), &expanded_privatekey_file_path, 0 );
     }
@@ -155,7 +155,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
     }
 
     // checking nodes (need at least one)
-    if (SB_MSG_DEBUG) printf("config: checking nodes\n");
+    if (F_MSG_DEBUG) printf("config: checking nodes\n");
     if ( nodes->size() >= 1 ) {
         // TODO add logic for non-bidirectional nodes
 
@@ -183,18 +183,18 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 // add it to the config class for later use
                 node_t new_node;
                 new_node.endpoint = endpoint;
-                new_node.sb_subtype = SB_SUBTYPE_TCP_BIDIR;
+                new_node.f_subtype = F_SUBTYPE_TCP_BIDIR;
                 new_node.last_timestamp = 0;
                 new_node.offset = 0;
                 this->nodes_vec_.push_back( new_node );
-            } else if ( SB_MSG_DEBUG && std::regex_match( *i, 
+            } else if ( F_MSG_DEBUG && std::regex_match( *i, 
                                    sm, 
                                    std::regex("(ipc://)(.*)")
                                  ) ) {
                 // add it to the config class for later use
                 node_t new_node;
                 new_node.endpoint = *i;
-                new_node.sb_subtype = SB_SUBTYPE_TCP_BIDIR;
+                new_node.f_subtype = F_SUBTYPE_TCP_BIDIR;
                 new_node.last_timestamp = 0;
                 new_node.offset = 0;
                 this->nodes_vec_.push_back( new_node );
@@ -209,7 +209,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
     }
 
     // checking publishers
-    if (SB_MSG_DEBUG) printf("config: checking publishers\n");
+    if (F_MSG_DEBUG) printf("config: checking publishers\n");
     if ( hostnames->size() >= 1 ) {
         // Let's make the nodes vector unique before turning it over
         std::vector<std::string>::iterator i;
@@ -235,7 +235,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
                 host_t host;
                 host.endpoint = endpoint;
                 this->hosts_.push_back(host);
-            } else if ( SB_MSG_DEBUG && std::regex_match( *i, 
+            } else if ( F_MSG_DEBUG && std::regex_match( *i, 
                                    sm, 
                                    std::regex("(ipc://)(.*)")
                                  ) ) {
@@ -253,7 +253,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
     }
 
     // checking boxes
-    if (SB_MSG_DEBUG) printf("config: checking boxes\n");
+    if (F_MSG_DEBUG) printf("config: checking boxes\n");
     if ( box_strings->size() >= 1 ) {
         std::vector< std::string >::iterator i;
         for (i = box_strings->begin(); 
@@ -279,7 +279,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
             // check if the box location is already mapped or the box name has already been claimed
             for (std::vector<box_t>::iterator j = this->boxes_.begin();
                  j != this->boxes_.end(); ++j) {
-                if (std::memcmp(box_name.getBytes(), j->uid, SB_GENERIC_HASH_LEN) == 0 ) {
+                if (std::memcmp(box_name.getBytes(), j->uid, F_GENERIC_HASH_LEN) == 0 ) {
                     std::cerr << "[E] " << box_name.getBytes() << " is already used." << std::endl;
                     return 1;
                 }
@@ -291,7 +291,7 @@ int Config::doSanityCheck(boost::program_options::options_description* options,
 
             // add new box strings to Config
             box_t new_box;
-            std::memcpy(new_box.uid, box_name.getBytes(), SB_GENERIC_HASH_LEN);
+            std::memcpy(new_box.uid, box_name.getBytes(), F_GENERIC_HASH_LEN);
             new_box.base_path = box_path;
             this->boxes_.push_back( new_box );
         }
@@ -360,7 +360,7 @@ int Config::synchronizeKeystore( std::string* keystore_file,
     Json::Value ks;
     if ( !if_ks ) {
         std::cerr << "[E] Could not find the keystore. Please share all "
-                  << "public keys before starting syncbox" << std::endl;
+                  << "public keys before starting flocksy" << std::endl;
         return 1;
     } else {
         Json::Reader json_reader;
@@ -375,7 +375,7 @@ int Config::synchronizeKeystore( std::string* keystore_file,
           i != this->nodes_vec_.end(); ++i ) {
         i->public_key = ks.get(i->endpoint, "").asString();
         Hash* hash = new Hash(i->public_key);
-        std::memcpy(i->uid, hash->getBytes(), SB_GENERIC_HASH_LEN);
+        std::memcpy(i->uid, hash->getBytes(), F_GENERIC_HASH_LEN);
         nodes_.insert( std::make_pair(hash, *i) );
     }
 
