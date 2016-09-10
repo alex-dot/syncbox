@@ -40,7 +40,7 @@ int Config::initialize(int argc, char* argv[])
             "Use supplied keystore file instead of default one")
         ("privatekey", po::value<std::string>(&private_key_file),
             "Use supplied privatekey file instead of default one")
-        ("create-private-keys", "Create new keypair for hostnames")
+        ("create-private-key", "Create new keypair for hostnames")
     ;
 
     po::options_description generic_options("Allowed options");
@@ -307,10 +307,10 @@ int Config::synchronizeKeystore( std::string* keystore_file,
                                  std::string* private_key_file ) {
 
     // Getting all private keys for hostnames
-    // Generating new keypairs for hostnames on flag create-private-keys
+    // Generating new keypairs for hostnames on flag create-private-key
     Json::Value pks;
     std::fstream f_pk( *private_key_file );
-    if ( !f_pk && !vm_.count("create-private-keys") ) {
+    if ( !f_pk && !vm_.count("create-private-key") ) {
         std::cerr << "[E] Could not open the private key file. Please check "
                   << "your permissions" << std::endl;
         return 1;
@@ -323,8 +323,8 @@ int Config::synchronizeKeystore( std::string* keystore_file,
         f_pk.close();
     }
 
-    // Writing keypairs for hostnames on flag create-private-keys
-    if ( vm_.count("create-private-keys") ) {
+    // Writing keypairs for hostnames on flag create-private-key
+    if ( vm_.count("create-private-key") ) {
         f_pk.open( *private_key_file, std::fstream::out );
         std::cout << "config: Generating keys for hosts" << std::endl;
         for (std::vector<host_t>::iterator i = hosts_.begin(); 
